@@ -46,6 +46,7 @@ class ChatConversation {
   final bool isGroup;
   final int memberCount;
   final String description;
+  final List<String> members;
 
   ChatConversation({
     required this.id,
@@ -59,6 +60,7 @@ class ChatConversation {
     this.isGroup = false,
     this.memberCount = 1,
     this.description = '',
+    this.members = const [],
   });
 
   String get latestMessageContent {
@@ -153,6 +155,16 @@ class NetworkProvider extends ChangeNotifier {
       isGroup: true,
       memberCount: 8,
       description: 'Coordination group for MedCore Hea',
+      members: const [
+        'Alex Kumar',
+        'Marcus Johnson',
+        'Sarah Chen',
+        'Emily Rodriguez',
+        'Dr. Alan Park',
+        'Lisa Wong',
+        'Raj Kumar',
+        'Aisha Mensah',
+      ],
       messages: [
         ChatMessage(
           id: 'mg1',
@@ -225,6 +237,22 @@ class NetworkProvider extends ChangeNotifier {
       isGroup: true,
       memberCount: 14,
       description: 'Researchers and trial coordinators at Health',
+      members: const [
+        'Alex Kumar',
+        'Emily Rodriguez',
+        'Marcus Johnson',
+        'Dr. Sarah Chen',
+        'Dr. Alan Park',
+        'Lisa Wong',
+        'Raj Kumar',
+        'Aisha Mensah',
+        'Thomas Ng',
+        'Sofia Okonjo',
+        'James Osei',
+        'Priya Nair',
+        'David Kim',
+        'Emma Watson',
+      ],
       messages: [
         ChatMessage(
           id: 'mg4_1',
@@ -265,6 +293,39 @@ class NetworkProvider extends ChangeNotifier {
       isGroup: true,
       memberCount: 31,
       description: 'Attendees passionate about AI appli',
+      members: const [
+        'Alex Kumar',
+        'Alan Park',
+        'Marcus Johnson',
+        'Dr. Sarah Chen',
+        'Dr. Alan Park',
+        'Lisa Wong',
+        'Raj Kumar',
+        'Aisha Mensah',
+        'Thomas Ng',
+        'Sofia Okonjo',
+        'James Osei',
+        'Priya Nair',
+        'David Kim',
+        'Emma Watson',
+        'David Chen',
+        'Sarah Wong',
+        'Michael Chang',
+        'Jessica Lee',
+        'Robert Miller',
+        'Linda Davis',
+        'William Rodriguez',
+        'Elizabeth Martinez',
+        'James Anderson',
+        'Jennifer Taylor',
+        'David Thomas',
+        'Patricia Moore',
+        'John Jackson',
+        'Mary Martin',
+        'Christopher Lee',
+        'Barbara Perez',
+        'Daniel Thompson',
+      ],
       messages: [
         ChatMessage(
           id: 'mg6_1',
@@ -353,6 +414,7 @@ class NetworkProvider extends ChangeNotifier {
       isGroup: true,
       memberCount: participantNames.length + 1,
       description: description,
+      members: ['Alex Kumar', ...participantNames],
       messages: [
         ChatMessage(
           id: 'mg_init_${DateTime.now().millisecondsSinceEpoch}',
