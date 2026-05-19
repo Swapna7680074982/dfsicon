@@ -28,8 +28,10 @@ class SessionItem {
 
 class SessionsProvider extends ChangeNotifier {
   String _searchQuery = '';
+  bool _showOnlyBookmarked = false;
 
   String get searchQuery => _searchQuery;
+  bool get showOnlyBookmarked => _showOnlyBookmarked;
 
   final List<SessionItem> _sessions = [
     SessionItem(
@@ -98,8 +100,12 @@ class SessionsProvider extends ChangeNotifier {
 
   List<SessionItem> get filteredSessions {
     final query = _searchQuery.toLowerCase().trim();
-    if (query.isEmpty) return _sessions;
-    return _sessions.where((session) {
+    List<SessionItem> list = _sessions;
+    if (_showOnlyBookmarked) {
+      list = list.where((session) => session.isBookmarked).toList();
+    }
+    if (query.isEmpty) return list;
+    return list.where((session) {
       return session.title.toLowerCase().contains(query) ||
           session.speakerName.toLowerCase().contains(query) ||
           session.speakerTitle.toLowerCase().contains(query);
@@ -108,6 +114,11 @@ class SessionsProvider extends ChangeNotifier {
 
   void setSearchQuery(String query) {
     _searchQuery = query;
+    notifyListeners();
+  }
+
+  void setShowOnlyBookmarked(bool val) {
+    _showOnlyBookmarked = val;
     notifyListeners();
   }
 

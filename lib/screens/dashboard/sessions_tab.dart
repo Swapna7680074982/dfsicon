@@ -114,15 +114,69 @@ class _SessionsTabState extends State<SessionsTab> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: [
+                    _buildFilterChip(
+                      label: 'All Sessions',
+                      isSelected: !sessionsProvider.showOnlyBookmarked,
+                      count: sessionsProvider.sessions.length,
+                      onTap: () => sessionsProvider.setShowOnlyBookmarked(false),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      label: 'Bookmarked',
+                      isSelected: sessionsProvider.showOnlyBookmarked,
+                      count: sessionsProvider.sessions.where((s) => s.isBookmarked).length,
+                      icon: Icons.bookmark,
+                      onTap: () => sessionsProvider.setShowOnlyBookmarked(true),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               Expanded(
                 child: filteredSessions.isEmpty
                     ? Center(
-                        child: Text(
-                          'No sessions found matching "${sessionsProvider.searchQuery}"',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                sessionsProvider.showOnlyBookmarked
+                                    ? Icons.bookmark_border_rounded
+                                    : Icons.search_off_rounded,
+                                size: 48,
+                                color: Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                sessionsProvider.showOnlyBookmarked
+                                    ? 'No bookmarked sessions yet'
+                                    : 'No sessions found matching "${sessionsProvider.searchQuery}"',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (sessionsProvider.showOnlyBookmarked) ...[
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Tap the bookmark icon on any session to save it here.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textLight,
+                                  ),
+                                ),
+                              ]
+                            ],
                           ),
                         ),
                       )
@@ -315,6 +369,78 @@ class _SessionsTabState extends State<SessionsTab> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required int count,
+    IconData? icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withAlpha(20) : Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.tileBorder,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withAlpha(10),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? AppColors.primary : AppColors.textLight,
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withAlpha(30)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count.toString(),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? AppColors.primary : AppColors.textLight,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
