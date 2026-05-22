@@ -12,19 +12,30 @@ import '../help_desk/help_desk_screen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'DL';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0].isNotEmpty && parts[1].isNotEmpty)
+          ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+          : parts[0][0].toUpperCase();
+    }
+    return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'DL';
+  }
+
   @override
   Widget build(BuildContext context) {
     final photoProvider = Provider.of<PhotoProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final isSpeaker = authProvider.isSpeaker;
 
-    final String name = isSpeaker ? 'Sarah Ahmed' : 'Alex Kumar';
-    final String initials = isSpeaker ? 'SA' : 'AK';
-    final String specialization = isSpeaker ? 'Senior Pathologist' : 'Sr. Surgeon';
+    final String name = authProvider.userName;
+    final String initials = _getInitials(name);
+    final String designation = authProvider.designation;
     final String roleLabel = isSpeaker ? 'Speaker' : 'Delegate';
-    final String email = isSpeaker ? 'sarah.ahmed@example.com' : 'alex.kumar@hotmail.com';
-    final String phone = isSpeaker ? '+91 87654 32109' : '+91 98765 43210';
-    final String orgName = isSpeaker ? 'National Pathology Institute' : 'Medcare Hospitals';
+    final String email = authProvider.email;
+    final String phone = authProvider.mobile;
+    final String orgName = authProvider.hospitalClinicName;
     final String orgLabel = isSpeaker ? 'Organization' : 'Hospital Name';
 
     return Scaffold(
@@ -125,7 +136,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        specialization,
+                        designation,
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -310,13 +321,15 @@ class ProfileScreen extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  Provider.of<AuthProvider>(context, listen: false).logout();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-                  );
+                onPressed: () async {
+                  await Provider.of<AuthProvider>(context, listen: false).logout();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
                 },
                 icon: const Icon(Icons.logout_outlined, size: 16),
                 label: const Text(

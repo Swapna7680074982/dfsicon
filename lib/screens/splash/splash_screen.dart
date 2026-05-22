@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../constants/colors.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -25,8 +27,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
 
     _animationController.forward();
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacementNamed('/login');
+    Future.delayed(const Duration(seconds: 3), () async {
+      if (!mounted) return;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final bool isLoggedIn = await authProvider.tryAutoLogin();
+      if (!mounted) return;
+      if (isLoggedIn) {
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     });
   }
 

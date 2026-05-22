@@ -5,6 +5,7 @@ import '../../constants/colors.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/sessions_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../profile/profile_screen.dart';
@@ -427,10 +428,22 @@ class HomeTab extends StatelessWidget {
     );
   }
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'DL';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0].isNotEmpty && parts[1].isNotEmpty)
+          ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+          : parts[0][0].toUpperCase();
+    }
+    return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'DL';
+  }
+
   @override
   Widget build(BuildContext context) {
     final photoProvider = Provider.of<PhotoProvider>(context);
     final homeProvider = Provider.of<HomeProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -444,8 +457,8 @@ class HomeTab extends StatelessWidget {
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Welcome back',
                         style: TextStyle(
                           fontSize: 13,
@@ -453,10 +466,10 @@ class HomeTab extends StatelessWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'Alex Kumar',
-                        style: TextStyle(
+                        authProvider.userName,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -530,10 +543,10 @@ class HomeTab extends StatelessWidget {
                               File(photoProvider.imagePath!),
                               fit: BoxFit.cover,
                             )
-                          : const Center(
+                          : Center(
                               child: Text(
-                                'AK',
-                                style: TextStyle(
+                                _getInitials(authProvider.userName),
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -616,7 +629,7 @@ class HomeTab extends StatelessWidget {
                         showDialog(
                           context: context,
                           builder: (context) => EventQrModal(
-                            userName: 'Alex Kumar',
+                            userName: authProvider.userName,
                             eventName: homeProvider.eventInfo.name,
                           ),
                         );

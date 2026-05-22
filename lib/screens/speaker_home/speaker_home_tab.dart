@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/photo_provider.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_abstract/create_abstract_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -13,8 +17,22 @@ class SpeakerHomeTab extends StatelessWidget {
     required this.onNavigateToSessions,
   });
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'SK';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0].isNotEmpty && parts[1].isNotEmpty)
+          ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+          : parts[0][0].toUpperCase();
+    }
+    return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'SK';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final photoProvider = Provider.of<PhotoProvider>(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -44,18 +62,18 @@ class SpeakerHomeTab extends StatelessWidget {
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'Welcome back',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.white70,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'Sarah Ahmed',
-                            style: TextStyle(
+                            authProvider.userName,
+                            style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -123,10 +141,36 @@ class SpeakerHomeTab extends StatelessWidget {
                                 color: Colors.white,
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child: Image.network(
-                                'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400',
-                                fit: BoxFit.cover,
-                              ),
+                              child: photoProvider.hasPhoto
+                                  ? Image.file(
+                                      File(photoProvider.imagePath!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : (authProvider.profileImage != 'NA' && authProvider.profileImage.isNotEmpty)
+                                      ? Image.network(
+                                          authProvider.profileImage,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Center(
+                                            child: Text(
+                                              _getInitials(authProvider.userName),
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            _getInitials(authProvider.userName),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
                             ),
                           ),
                         ],
