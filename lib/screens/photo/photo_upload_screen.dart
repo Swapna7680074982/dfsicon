@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/photo_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/dashed_circle_avatar.dart';
 
@@ -168,9 +169,12 @@ class PhotoUploadScreen extends StatelessWidget {
                 isEnabled: photoProvider.hasPhoto,
                 isLoading: photoProvider.isUploading,
                 onPressed: () async {
-                  final bool success = await photoProvider.uploadPhoto();
-                  if (success && context.mounted) {
-                    Navigator.of(context).pushReplacementNamed('/dashboard');
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final navigator = Navigator.of(context);
+                  final String? photoUrl = await photoProvider.uploadPhoto(authProvider.accessToken);
+                  if (photoUrl != null) {
+                    await authProvider.updateProfileImage(photoUrl);
+                    navigator.pushReplacementNamed('/dashboard');
                   }
                 },
               ),

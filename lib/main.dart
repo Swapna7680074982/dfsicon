@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'constants/colors.dart';
 import 'providers/auth_provider.dart';
 import 'providers/photo_provider.dart';
+import 'providers/abstract_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/sessions_provider.dart';
 import 'providers/connections_provider.dart';
@@ -20,6 +21,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   const MyApp({super.key});
 
   @override
@@ -28,6 +30,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PhotoProvider()),
+        ChangeNotifierProvider(create: (_) => AbstractProvider()),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => SessionsProvider()),
         ChangeNotifierProvider(create: (_) => ConnectionsProvider()),
@@ -36,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GalleryProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'DFSICON 2026',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

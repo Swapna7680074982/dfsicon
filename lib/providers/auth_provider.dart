@@ -11,6 +11,7 @@ class AuthProvider with ChangeNotifier {
   bool _otpSent = false;
   String _otpCode = '';
   bool _isVerifying = false;
+  bool _isSendingOtp = false;
   
   int _resendSeconds = 0;
   Timer? _resendTimer;
@@ -40,6 +41,7 @@ class AuthProvider with ChangeNotifier {
   bool get otpSent => _otpSent;
   String get otpCode => _otpCode;
   bool get isVerifying => _isVerifying;
+  bool get isSendingOtp => _isSendingOtp;
   int get resendSeconds => _resendSeconds;
   
   String get accessToken => _accessToken;
@@ -79,6 +81,9 @@ class AuthProvider with ChangeNotifier {
   Future<bool> sendOtp() async {
     if (!isPhoneValid) return false;
     
+    _isSendingOtp = true;
+    notifyListeners();
+    
     try {
       final url = Uri.parse(ApiUrls.sendOtp);
       final headers = {'Content-Type': 'application/json'};
@@ -99,6 +104,7 @@ class AuthProvider with ChangeNotifier {
 
       CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
+      _isSendingOtp = false;
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
@@ -109,9 +115,12 @@ class AuthProvider with ChangeNotifier {
           return true;
         }
       }
+      notifyListeners();
       return false;
     } catch (e, stack) {
       CustomLogger.logError('Send OTP failed', e, stack);
+      _isSendingOtp = false;
+      notifyListeners();
       return false;
     }
   }
@@ -316,6 +325,12 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProfileImage(String profileImageUrl) async {
+    _profileData['profile_image'] = profileImageUrl;
+    await _saveSession();
+    notifyListeners();
+  }
+
   Future<bool> tryAutoLogin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -329,8 +344,6 @@ class AuthProvider with ChangeNotifier {
       
       final profileStr = prefs.getString('profile_data') ?? '{}';
       _profileData = json.decode(profileStr) as Map<String, dynamic>;
-
-      // Verify and refresh the token synchronously
       final success = await refreshSessionToken();
       if (success) {
         notifyListeners();

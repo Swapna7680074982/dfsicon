@@ -4,18 +4,38 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/photo_provider.dart';
+import '../../providers/abstract_provider.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_abstract/create_abstract_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
 
-class SpeakerHomeTab extends StatelessWidget {
+class SpeakerHomeTab extends StatefulWidget {
   final VoidCallback onNavigateToSessions;
 
   const SpeakerHomeTab({
     super.key,
     required this.onNavigateToSessions,
   });
+
+  @override
+  State<SpeakerHomeTab> createState() => _SpeakerHomeTabState();
+}
+
+class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchAbstracts();
+    });
+  }
+
+  Future<void> _fetchAbstracts() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+    await abstractProvider.fetchMyAbstracts(auth.accessToken);
+  }
 
   String _getInitials(String name) {
     if (name.isEmpty) return 'SK';
@@ -32,6 +52,7 @@ class SpeakerHomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final photoProvider = Provider.of<PhotoProvider>(context);
+    final abstractProvider = Provider.of<AbstractProvider>(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -131,7 +152,10 @@ class SpeakerHomeTab extends StatelessWidget {
                                 MaterialPageRoute(
                                   builder: (context) => const ProfileScreen(),
                                 ),
-                              );
+                              ).then((_) {
+                                // Re-fetch details when returning from profile screen (e.g. image changed)
+                                _fetchAbstracts();
+                              });
                             },
                             child: Container(
                               width: 44,
@@ -221,7 +245,7 @@ class SpeakerHomeTab extends StatelessWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: onNavigateToSessions,
+                    onTap: widget.onNavigateToSessions,
                     child: Row(
                       children: const [
                         Text(
@@ -275,7 +299,7 @@ class SpeakerHomeTab extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                      );
+                      ).then((_) => _fetchAbstracts());
                     },
                     child: Row(
                       children: const [
@@ -299,138 +323,242 @@ class SpeakerHomeTab extends StatelessWidget {
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AbstractDetailScreen(
-                      title: 'Artificial Intelligence in Clinical Diagnostics: A Systematic',
-                      version: 'v2.0',
-                      status: 'Accepted',
-                      topic: 'AI & Machine Learning',
-                      date: 'Feb 10, 2026',
-                      hasFeedback: false,
-                    ),
-                  ),
-                );
-              },
-              child: Container(
+            if (abstractProvider.isLoadingList)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              )
+            else if (abstractProvider.myAbstracts.isEmpty)
+              Container(
                 margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: AppColors.tileBorder, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Row(
+                child: Column(
                   children: [
                     Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEECF9),
-                        borderRadius: BorderRadius.circular(12),
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF3F4F6),
+                        shape: BoxShape.circle,
                       ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.description_outlined,
-                        color: AppColors.primary,
-                        size: 20,
+                      child: const Icon(Icons.description_outlined, color: AppColors.textLight, size: 24),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No Abstracts Submitted Yet',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEEECF9),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'v2.0',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  children: const [
-                                    Icon(
-                                      Icons.check,
-                                      color: Color(0xFF10B981),
-                                      size: 10,
-                                    ),
-                                    SizedBox(width: 2),
-                                    Text(
-                                      'Accepted',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF10B981),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Submit your research paper abstracts here.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textLight,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      height: 40,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
+                          ).then((_) => _fetchAbstracts());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Artificial Intelligence in Clinical Diagnostics: A Systematic',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          elevation: 0,
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            'Submit Abstract',
                             style: TextStyle(
+                              color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'AI & Machine Learning · Feb 10, 2026',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textLight,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(
-                      Icons.arrow_forward_ios_outlined,
-                      size: 14,
-                      color: AppColors.textLight,
-                    ),
+                    )
                   ],
                 ),
+              )
+            else ...[
+              GestureDetector(
+                onTap: () {
+                  final abs = abstractProvider.myAbstracts.first;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AbstractDetailScreen(
+                        abstractId: abs['abstract_id'].toString(),
+                        initialTitle: (abs['abstract_title'] ?? '').toString(),
+                        initialStatus: (abs['review_status'] ?? 'Submitted').toString(),
+                        initialTopic: (abs['summit_title'] ?? 'Test Summit').toString(),
+                        initialDate: (abs['submitted_at'] ?? '').toString(),
+                      ),
+                    ),
+                  ).then((_) {
+                    _fetchAbstracts();
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.tileBorder, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEECF9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.description_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEECF9),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'ID: ${abstractProvider.myAbstracts.first['abstract_id']}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _buildStatusBadge(abstractProvider.myAbstracts.first['review_status'] ?? 'Submitted'),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              (abstractProvider.myAbstracts.first['abstract_title'] ?? '').toString(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${abstractProvider.myAbstracts.first['summit_title'] ?? 'Test Summit'} · ${abstractProvider.myAbstracts.first['submitted_at'] ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(
+                        Icons.arrow_forward_ios_outlined,
+                        size: 14,
+                        color: AppColors.textLight,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 36),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color badgeBgColor;
+    Color badgeTextColor;
+    IconData? badgeIcon;
+
+    if (status == 'Accepted') {
+      badgeBgColor = const Color(0xFFECFDF5);
+      badgeTextColor = const Color(0xFF10B981);
+      badgeIcon = Icons.check;
+    } else if (status == 'Submitted' || status == 'Under Review') {
+      badgeBgColor = const Color(0xFFFEF3C7);
+      badgeTextColor = const Color(0xFFF59E0B);
+      badgeIcon = Icons.access_time;
+    } else {
+      badgeBgColor = const Color(0xFFFEE2E2);
+      badgeTextColor = const Color(0xFFEF4444);
+      badgeIcon = Icons.cancel_outlined;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeBgColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            badgeIcon,
+            color: badgeTextColor,
+            size: 10,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: badgeTextColor,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: authProvider.isPhoneValid
+                      onPressed: (authProvider.isPhoneValid && !authProvider.isSendingOtp)
                           ? () {
                               if (!authProvider.otpSent) {
                                 authProvider.sendOtp();
@@ -111,16 +111,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text(
-                        authProvider.otpSent ? 'Resend' : 'Send OTP',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: authProvider.isPhoneValid
-                              ? AppColors.primary
-                              : AppColors.textLight,
-                        ),
-                      ),
+                      child: authProvider.isSendingOtp
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : Text(
+                              authProvider.otpSent ? 'Resend' : 'Send OTP',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: authProvider.isPhoneValid
+                                    ? AppColors.primary
+                                    : AppColors.textLight,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -162,7 +171,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   final navigator = Navigator.of(context);
                   final bool success = await authProvider.verifyOtp();
                   if (success && mounted) {
-                    navigator.pushNamed('/photo_upload');
+                    if (authProvider.profileImage != 'NA' && authProvider.profileImage.isNotEmpty) {
+                      navigator.pushReplacementNamed('/dashboard');
+                    } else {
+                      navigator.pushNamed('/photo_upload');
+                    }
                   }
                 },
               ),

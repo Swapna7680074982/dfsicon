@@ -1,23 +1,32 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/abstract_provider.dart';
 import '../notifications/notifications_screen.dart';
 
 class CreateAbstractScreen extends StatefulWidget {
   final bool isUpdate;
+  final String? abstractId;
   final String? initialTitle;
   final String? initialTopic;
   final String? initialDescription;
   final String? initialFileName;
   final String? initialFileSize;
+  final String? initialKeywords;
 
   const CreateAbstractScreen({
     super.key,
     this.isUpdate = false,
+    this.abstractId,
     this.initialTitle,
     this.initialTopic,
     this.initialDescription,
     this.initialFileName,
     this.initialFileSize,
+    this.initialKeywords,
   });
 
   @override
@@ -27,9 +36,13 @@ class CreateAbstractScreen extends StatefulWidget {
 class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final TextEditingController _keywordsController = TextEditingController();
   String? _selectedTopic;
+  String? _selectedSummitId;
+  String _selectedPresentationType = 'oral';
   int _wordCount = 0;
 
+  File? _pickedFile;
   String? _uploadedFileName;
   String? _uploadedFileSize;
 
@@ -46,11 +59,30 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
     super.initState();
     _titleController.text = widget.initialTitle ?? '';
     _descController.text = widget.initialDescription ?? '';
+    _keywordsController.text = widget.initialKeywords ?? '';
     _selectedTopic = widget.initialTopic;
     _uploadedFileName = widget.initialFileName;
     _uploadedFileSize = widget.initialFileSize;
     _descController.addListener(_updateWordCount);
     _updateWordCount();
+
+    if (!widget.isUpdate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadSummits();
+      });
+    }
+  }
+
+  Future<void> _loadSummits() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+    final success = await abstractProvider.fetchSummits(authProvider.accessToken);
+    if (success && mounted && abstractProvider.summits.isNotEmpty) {
+      setState(() {
+        _selectedSummitId = abstractProvider.summits.first['summit_id']?.toString();
+        _selectedTopic = abstractProvider.summits.first['summit_title']?.toString();
+      });
+    }
   }
 
   void _updateWordCount() {
@@ -71,11 +103,16 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
+    _keywordsController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final abstractProvider = Provider.of<AbstractProvider>(context);
+    final isSubmitting = widget.isUpdate ? abstractProvider.isResubmitting : abstractProvider.isSubmitting;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -122,39 +159,94 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildFieldLabel('Topic'),
+                _buildFieldLabel(widget.isUpdate ? 'Summit' : 'Select Summit'),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.tileBorder),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedTopic,
-                      hint: const Text(
-                        'Select a topic',
-                        style: TextStyle(color: AppColors.textLight, fontSize: 14),
+                widget.isUpdate
+                    ? Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.tileBorder),
+                        ),
+                        child: Text(
+                          _selectedTopic ?? 'N/A',
+                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.tileBorder),
+                        ),
+                        child: abstractProvider.isLoadingSummits
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      'Loading summits...',
+                                      style: TextStyle(color: AppColors.textLight, fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedSummitId,
+                                  hint: const Text(
+                                    'Select a summit',
+                                    style: TextStyle(color: AppColors.textLight, fontSize: 14),
+                                  ),
+                                  isExpanded: true,
+                                  icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textLight),
+                                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                                  items: abstractProvider.summits.isEmpty
+                                      ? _topics.map((t) {
+                                          return DropdownMenuItem<String>(
+                                            value: t,
+                                            child: Text(t),
+                                          );
+                                        }).toList()
+                                      : abstractProvider.summits.map((summit) {
+                                          final String id = summit['summit_id']?.toString() ?? '';
+                                          final String title = summit['summit_title']?.toString() ?? '';
+                                          return DropdownMenuItem<String>(
+                                            value: id,
+                                            child: Text(title),
+                                          );
+                                        }).toList(),
+                                  onChanged: (val) {
+                                    if (val == null) return;
+                                    setState(() {
+                                      if (abstractProvider.summits.isEmpty) {
+                                        _selectedSummitId = val;
+                                        _selectedTopic = val;
+                                      } else {
+                                        _selectedSummitId = val;
+                                        final matched = abstractProvider.summits.firstWhere(
+                                          (s) => s['summit_id']?.toString() == val,
+                                          orElse: () => <String, dynamic>{},
+                                        );
+                                        _selectedTopic = matched['summit_title']?.toString() ?? val;
+                                      }
+                                    });
+                                  },
+                                ),
+                              ),
                       ),
-                      isExpanded: true,
-                      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textLight),
-                      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                      items: _topics.map((t) {
-                        return DropdownMenuItem<String>(
-                          value: t,
-                          child: Text(t),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedTopic = val;
-                        });
-                      },
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
                 _buildFieldLabel('Description'),
                 const SizedBox(height: 8),
@@ -183,6 +275,36 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                   style: const TextStyle(fontSize: 12, color: AppColors.textLight),
                 ),
                 const SizedBox(height: 24),
+                _buildFieldLabel('Keywords (comma separated)'),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.tileBorder),
+                  ),
+                  child: TextField(
+                    controller: _keywordsController,
+                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'e.g. AI, Healthcare, Radiology',
+                      hintStyle: TextStyle(color: AppColors.textLight, fontSize: 14),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildFieldLabel('Presentation Type'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildPresentationTypeCard('Oral', 'oral'),
+                    const SizedBox(width: 16),
+                    _buildPresentationTypeCard('Poster', 'poster'),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 const Text(
                   'Supporting Document',
                   style: TextStyle(
@@ -194,17 +316,54 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                 const SizedBox(height: 10),
                 if (_uploadedFileName == null)
                   GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _uploadedFileName = 'Abstract_Diagnostics_Draft_v2.pdf';
-                        _uploadedFileSize = '4.8 MB';
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Document "Abstract_Diagnostics_Draft_v2.pdf" uploaded.'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                    onTap: () async {
+                      try {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.custom,
+                          allowedExtensions: ['pdf', 'doc', 'docx'],
+                        );
+                        if (result != null && result.files.single.path != null) {
+                          final path = result.files.single.path!;
+                          final file = File(path);
+                          final sizeInBytes = await file.length();
+                          final sizeInMb = sizeInBytes / (1024 * 1024);
+                          if (sizeInMb > 10.0) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('File size exceeds the 10MB limit!'),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+                          setState(() {
+                            _pickedFile = file;
+                            _uploadedFileName = result.files.single.name;
+                            _uploadedFileSize = '${sizeInMb.toStringAsFixed(1)} MB';
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Document "${result.files.single.name}" selected.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to pick file: $e'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      }
                     },
                     child: Container(
                       width: double.infinity,
@@ -336,6 +495,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           ),
                           onPressed: () {
                             setState(() {
+                              _pickedFile = null;
                               _uploadedFileName = null;
                               _uploadedFileSize = null;
                             });
@@ -355,39 +515,106 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: () {
-                  if (_titleController.text.isEmpty || _selectedTopic == null || _descController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please fill out all required fields!'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: Colors.redAccent,
-                      ),
-                    );
-                    return;
-                  }
-                  final title = _titleController.text;
-                  if (widget.isUpdate) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Revised abstract updated successfully!'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                    Navigator.pop(context, true);
-                  } else {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NotificationsScreen(
-                          submittedAbstractTitle: title,
-                        ),
-                      ),
-                    );
-                  }
-                },
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final title = _titleController.text.trim();
+                        final description = _descController.text.trim();
+                        final keywords = _keywordsController.text.trim();
+
+                        final hasTopicOrSummit = widget.isUpdate ? (_selectedTopic != null) : (_selectedSummitId != null);
+                        if (title.isEmpty || !hasTopicOrSummit || description.isEmpty || keywords.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please fill out all required fields!'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (_pickedFile == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please upload a supporting document!'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (widget.isUpdate) {
+                          if (widget.abstractId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Error: Abstract ID is missing!'),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+
+                          final success = await abstractProvider.resubmitAbstract(
+                            abstractId: widget.abstractId!,
+                            title: title,
+                            description: description,
+                            keywords: keywords,
+                            file: _pickedFile!,
+                            accessToken: authProvider.accessToken,
+                          );
+
+                          if (success && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Revised abstract updated successfully!'),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: AppColors.primary,
+                              ),
+                            );
+                            Navigator.pop(context, true);
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to resubmit abstract. Please try again.'),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          }
+                        } else {
+                          final abstractId = await abstractProvider.submitAbstract(
+                            summitId: _selectedSummitId!,
+                            title: title,
+                            description: description,
+                            keywords: keywords,
+                            presentationType: _selectedPresentationType,
+                            file: _pickedFile!,
+                            accessToken: authProvider.accessToken,
+                          );
+
+                          if (abstractId != null && mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => NotificationsScreen(
+                                  submittedAbstractTitle: title,
+                                ),
+                              ),
+                            );
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to submit abstract. Please try again.'),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          }
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
@@ -395,18 +622,60 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                   ),
                   elevation: 4,
                 ),
-                child: Text(
-                  widget.isUpdate ? 'Update Abstract' : 'Submit Abstract',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: isSubmitting
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : Text(
+                        widget.isUpdate ? 'Update Abstract' : 'Submit Abstract',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPresentationTypeCard(String label, String value) {
+    final isSelected = _selectedPresentationType == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedPresentationType = value;
+          });
+        },
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFF5F3FF) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.tileBorder,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+            ),
+          ),
+        ),
       ),
     );
   }

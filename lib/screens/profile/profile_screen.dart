@@ -110,16 +110,31 @@ class ProfileScreen extends StatelessWidget {
                           File(photoProvider.imagePath!),
                           fit: BoxFit.cover,
                         )
-                      : Center(
-                          child: Text(
-                            initials,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      : (authProvider.profileImage != 'NA' && authProvider.profileImage.isNotEmpty)
+                          ? Image.network(
+                              authProvider.profileImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Center(
+                                child: Text(
+                                  initials,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Center(
+                              child: Text(
+                                initials,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
@@ -321,15 +336,22 @@ class ProfileScreen extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                onPressed: () async {
-                  await Provider.of<AuthProvider>(context, listen: false).logout();
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      (route) => false,
-                    );
-                  }
+                onPressed: () {
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final photo = Provider.of<PhotoProvider>(context, listen: false);
+
+                  // 1. Navigate to LoginScreen first so profile screen is popped and we don't flash empty data on this screen
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                  
+                  // 2. Perform logout cleanup asynchronously in the next frame
+                  Future.microtask(() {
+                    photo.clearImage();
+                    auth.logout();
+                  });
                 },
                 icon: const Icon(Icons.logout_outlined, size: 16),
                 label: const Text(

@@ -1,27 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/abstract_provider.dart';
 import 'create_abstract_screen.dart';
 
-class AbstractDetailScreen extends StatelessWidget {
-  final String title;
-  final String version;
-  final String status;
-  final String topic;
-  final String date;
-  final bool hasFeedback;
+class AbstractDetailScreen extends StatefulWidget {
+  final String abstractId;
+  final String initialTitle;
+  final String initialStatus;
+  final String initialTopic;
+  final String initialDate;
 
   const AbstractDetailScreen({
     super.key,
-    required this.title,
-    required this.version,
-    required this.status,
-    required this.topic,
-    required this.date,
-    required this.hasFeedback,
+    required this.abstractId,
+    required this.initialTitle,
+    required this.initialStatus,
+    required this.initialTopic,
+    required this.initialDate,
   });
 
   @override
+  State<AbstractDetailScreen> createState() => _AbstractDetailScreenState();
+}
+
+class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDetails();
+    });
+  }
+
+  Future<void> _loadDetails() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+    await abstractProvider.fetchAbstractDetails(widget.abstractId, auth.accessToken);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final abstractProvider = Provider.of<AbstractProvider>(context);
+    final details = abstractProvider.selectedAbstractDetails;
+    final isLoading = abstractProvider.isLoadingDetails;
+
+    // Fallbacks from parameters
+    final String title = details != null ? (details['abstract_title'] ?? widget.initialTitle).toString() : widget.initialTitle;
+    final String status = details != null ? (details['review_status'] ?? widget.initialStatus).toString() : widget.initialStatus;
+    final String topic = details != null ? (details['summit_title'] ?? widget.initialTopic).toString() : widget.initialTopic;
+    final String date = details != null ? (details['submitted_at'] ?? widget.initialDate).toString() : widget.initialDate;
+    final String description = details != null ? (details['abstract_description'] ?? '').toString() : '';
+    final String keywords = details != null ? (details['keywords'] ?? '').toString() : '';
+    final String? fileUrl = details != null ? (details['file_path'] ?? details['abstract_file'])?.toString() : null;
+    final String? feedback = details != null ? details['reviewer_feedback']?.toString() : null;
+    final bool hasFeedback = feedback != null && feedback.trim().isNotEmpty;
+
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
@@ -30,7 +65,7 @@ class AbstractDetailScreen extends StatelessWidget {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
-    } else if (status == 'Under Review') {
+    } else if (status == 'Submitted' || status == 'Under Review') {
       badgeBgColor = const Color(0xFFFEF3C7);
       badgeTextColor = const Color(0xFFF59E0B);
       badgeIcon = Icons.access_time;
@@ -39,6 +74,8 @@ class AbstractDetailScreen extends StatelessWidget {
       badgeTextColor = const Color(0xFFEF4444);
       badgeIcon = Icons.cancel_outlined;
     }
+
+    final String displayVersion = "ID: ${widget.abstractId}";
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -60,192 +97,350 @@ class AbstractDetailScreen extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.tileBorder, width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEECF9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.description_outlined,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEEECF9),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    version,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: badgeBgColor,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        badgeIcon,
-                                        color: badgeTextColor,
-                                        size: 10,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        status,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: badgeTextColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                topic,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.tileBorder, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Description',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'This systematic review examines the integration of artificial intelligence technologies in clinical diagnostic processes. We analyzed 147 studies from 2018–2025 encompassing machine learning, deep learning, and natural language processing applications across radiology, pathology, and general practice settings...',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (hasFeedback) ...[
-                  const SizedBox(height: 20),
+          if (isLoading)
+            const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          else
+            SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, status == 'Revision Required' ? 100 : 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFFBEB),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFFDE68A), width: 1),
+                      border: Border.all(color: AppColors.tileBorder, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Reviewer Feedback',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF92400E),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEECF9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.description_outlined,
+                            color: AppColors.primary,
+                            size: 22,
                           ),
                         ),
-                        SizedBox(height: 12),
-                        Text(
-                          'Please expand the methodology section and include more recent references (2023–2025). Add statistical analysis details.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFFB45309),
-                            height: 1.5,
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEEECF9),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      displayVersion,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: badgeBgColor,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          badgeIcon,
+                                          color: badgeTextColor,
+                                          size: 10,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          status,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: badgeTextColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  topic,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Submitted: $date',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textLight,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppColors.tileBorder, width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          description.isNotEmpty ? description : 'No description provided.',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (keywords.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.tileBorder, width: 1),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Keywords',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: keywords.split(',').map((kw) {
+                              final trimmed = kw.trim();
+                              if (trimmed.isEmpty) return const SizedBox.shrink();
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEECF9),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Text(
+                                  trimmed,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (fileUrl != null && fileUrl.isNotEmpty && fileUrl != 'NA') ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.tileBorder, width: 1),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Supporting Document',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF9F9FB),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEECF9),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    color: AppColors.primary,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        fileUrl.split('/').last,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 3),
+                                      const Text(
+                                        'PDF/Document Attachment',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textLight,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.open_in_new_outlined,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Opening document: ${fileUrl.split('/').last}'),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (hasFeedback) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFFDE68A), width: 1),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Reviewer Feedback',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            feedback,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFFB45309),
+                              height: 1.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          if (status == 'Revision Required')
+          if (status == 'Revision Required' && !isLoading)
             Positioned(
               bottom: 24,
               left: 20,
@@ -260,16 +455,18 @@ class AbstractDetailScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => CreateAbstractScreen(
                           isUpdate: true,
+                          abstractId: widget.abstractId,
                           initialTitle: title,
                           initialTopic: topic,
-                          initialDescription: 'This systematic review examines the integration of artificial intelligence technologies in clinical diagnostic processes. We analyzed 147 studies from 2018–2025 encompassing machine learning, deep learning, and natural language processing applications across radiology, pathology, and general practice settings...',
-                          initialFileName: 'Abstract_Diagnostics_Draft_v2.pdf',
-                          initialFileSize: '4.8 MB',
+                          initialDescription: description,
+                          initialFileName: fileUrl?.split('/').last ?? 'Abstract_Draft.pdf',
+                          initialFileSize: 'Click to select revised draft',
+                          initialKeywords: keywords,
                         ),
                       ),
                     ).then((updated) {
                       if (updated == true && context.mounted) {
-                        Navigator.pop(context);
+                        Navigator.pop(context, true);
                       }
                     });
                   },

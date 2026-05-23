@@ -118,28 +118,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    await authProvider.updateProfileLocal(
-                      name: _nameController.text,
-                      email: _emailController.text,
-                      mobile: _phoneController.text,
-                      hospitalClinicName: _hospitalController.text,
-                      specialization: _specializationController.text,
-                      designation: _designationController.text,
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profile saved successfully!'),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: AppColors.primary,
-                        ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  }
-                },
+                onPressed: photoProvider.isUploading
+                    ? null
+                    : () async {
+                        if (_formKey.currentState!.validate()) {
+                          // Upload photo if a new one is selected
+                          if (photoProvider.hasPhoto && !photoProvider.uploadSuccess) {
+                            final String? newProfilePic = await photoProvider.uploadPhoto(authProvider.accessToken);
+                            if (newProfilePic != null) {
+                              await authProvider.updateProfileImage(newProfilePic);
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Failed to upload profile photo. Saving text changes.'),
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+
+                          await authProvider.updateProfileLocal(
+                            name: _nameController.text,
+                            email: _emailController.text,
+                            mobile: _phoneController.text,
+                            hospitalClinicName: _hospitalController.text,
+                            specialization: _specializationController.text,
+                            designation: _designationController.text,
+                          );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Profile saved successfully!'),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: AppColors.primary,
+                              ),
+                            );
+                            Navigator.pop(context);
+                          }
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   elevation: 0,
@@ -150,14 +171,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'Save',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: photoProvider.isUploading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Save',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -189,16 +219,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 File(photoProvider.imagePath!),
                                 fit: BoxFit.cover,
                               )
-                            : Center(
-                                child: Text(
-                                  initials,
-                                  style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                            : (authProvider.profileImage != 'NA' && authProvider.profileImage.isNotEmpty)
+                                ? Image.network(
+                                    authProvider.profileImage,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Center(
+                                      child: Text(
+                                        initials,
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      initials,
+                                      style: const TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
                       ),
                       Positioned(
                         bottom: 0,

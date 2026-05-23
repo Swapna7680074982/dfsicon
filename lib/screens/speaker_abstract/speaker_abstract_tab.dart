@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/abstract_provider.dart';
 import 'abstract_detail_screen.dart';
 import 'create_abstract_screen.dart';
 
@@ -14,38 +17,33 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _allAbstracts = [
-    {
-      'title': 'Artificial Intelligence in Clinical Diagnostics: A Systematic',
-      'version': 'v2.0',
-      'status': 'Accepted',
-      'topic': 'AI & Machine Learning',
-      'date': 'Feb 10, 2026',
-      'hasFeedback': false,
-    },
-    {
-      'title': 'Digital Pathology Workflow Optimization',
-      'version': 'v1.0',
-      'status': 'Under Review',
-      'topic': 'Digital Health',
-      'date': 'Jan 28, 2026',
-      'hasFeedback': false,
-    },
-    {
-      'title': 'Telemedicine Adoption in Post-Pandemic Healthcare',
-      'version': 'v1.0',
-      'status': 'Revision Required',
-      'topic': 'Telehealth',
-      'date': 'Jan 15, 2026',
-      'hasFeedback': true,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchAbstracts();
+    });
+  }
+
+  Future<void> _fetchAbstracts() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+    await abstractProvider.fetchMyAbstracts(auth.accessToken);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _allAbstracts.where((abs) {
-      final title = abs['title'].toString().toLowerCase();
-      final topic = abs['topic'].toString().toLowerCase();
+    final abstractProvider = Provider.of<AbstractProvider>(context);
+
+    final filtered = abstractProvider.myAbstracts.where((abs) {
+      final title = (abs['abstract_title'] ?? '').toString().toLowerCase();
+      final topic = (abs['summit_title'] ?? '').toString().toLowerCase();
       final query = _searchQuery.toLowerCase();
       return title.contains(query) || topic.contains(query);
     }).toList();
@@ -133,21 +131,35 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                 ),
               ),
               Expanded(
-                child: filtered.isEmpty
+                child: abstractProvider.isLoadingList
                     ? const Center(
-                        child: Text(
-                          'No abstracts found',
-                          style: TextStyle(color: AppColors.textLight),
-                        ),
+                        child: CircularProgressIndicator(color: AppColors.primary),
                       )
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) {
-                          final abs = filtered[index];
-                          return _buildAbstractItemCard(context, abs);
-                        },
+                    : RefreshIndicator(
+                        onRefresh: _fetchAbstracts,
+                        color: AppColors.primary,
+                        child: filtered.isEmpty
+                            ? ListView(
+                                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                                children: const [
+                                  SizedBox(height: 100),
+                                  Center(
+                                    child: Text(
+                                      'No abstracts found',
+                                      style: TextStyle(color: AppColors.textLight),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.builder(
+                                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                                padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                                itemCount: filtered.length,
+                                itemBuilder: (context, index) {
+                                  final abs = filtered[index];
+                                  return _buildAbstractItemCard(context, abs);
+                                },
+                              ),
                       ),
               ),
             ],
@@ -161,7 +173,9 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                );
+                ).then((_) {
+                  _fetchAbstracts();
+                });
               },
               child: Container(
                 height: 60,
@@ -220,7 +234,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   }
 
   Widget _buildAbstractItemCard(BuildContext context, Map<String, dynamic> abs) {
-    final status = abs['status'].toString();
+    final status = (abs['review_status'] ?? 'Submitted').toString();
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
@@ -229,7 +243,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
-    } else if (status == 'Under Review') {
+    } else if (status == 'Submitted' || status == 'Under Review') {
       badgeBgColor = const Color(0xFFFEF3C7);
       badgeTextColor = const Color(0xFFF59E0B);
       badgeIcon = Icons.access_time;
@@ -239,21 +253,26 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
       badgeIcon = Icons.cancel_outlined;
     }
 
+    final String displayVersion = "ID: ${abs['abstract_id']}";
+    final String displayDate = abs['submitted_at'] ?? '';
+    final String displayTopic = abs['summit_title'] ?? 'Test Summit';
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => AbstractDetailScreen(
-              title: abs['title'].toString(),
-              version: abs['version'].toString(),
-              status: status,
-              topic: abs['topic'].toString(),
-              date: abs['date'].toString(),
-              hasFeedback: abs['hasFeedback'] as bool,
+              abstractId: abs['abstract_id'].toString(),
+              initialTitle: (abs['abstract_title'] ?? '').toString(),
+              initialStatus: status,
+              initialTopic: displayTopic,
+              initialDate: displayDate,
             ),
           ),
-        );
+        ).then((_) {
+          _fetchAbstracts();
+        });
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -300,7 +319,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          abs['version'].toString(),
+                          displayVersion,
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -338,7 +357,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    abs['title'].toString(),
+                    (abs['abstract_title'] ?? '').toString(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -349,7 +368,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${abs['topic']} · ${abs['date']}",
+                    "$displayTopic · $displayDate",
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textLight,
