@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_provider.dart';
+import '../../main.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
@@ -27,6 +29,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final photoProvider = Provider.of<PhotoProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final homeProvider = Provider.of<HomeProvider>(context);
     final isSpeaker = authProvider.isSpeaker;
 
     final String name = authProvider.userName;
@@ -185,7 +188,7 @@ class ProfileScreen extends StatelessWidget {
                   context: context,
                   builder: (context) => EventQrModal(
                     userName: name,
-                    eventName: 'TechSummit 2026',
+                    eventName: homeProvider.eventInfo.name,
                   ),
                 );
               },
@@ -340,12 +343,8 @@ class ProfileScreen extends StatelessWidget {
                   final auth = Provider.of<AuthProvider>(context, listen: false);
                   final photo = Provider.of<PhotoProvider>(context, listen: false);
 
-                  // 1. Navigate to LoginScreen first so profile screen is popped and we don't flash empty data on this screen
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-                  );
+                  // 1. Navigate to LoginScreen first using standard debounced redirect
+                  MyApp.redirectToLogin();
                   
                   // 2. Perform logout cleanup asynchronously in the next frame
                   Future.microtask(() {

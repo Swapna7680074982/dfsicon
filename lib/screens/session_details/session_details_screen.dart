@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../gallery/gallery_tab.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/home_provider.dart';
 import '../../widgets/event_qr_modal.dart';
 
 class SessionDetailsScreen extends StatefulWidget {
@@ -478,9 +479,9 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     onTap: () {
                       showDialog(
                         context: context,
-                        builder: (context) => const EventQrModal(
+                        builder: (context) => EventQrModal(
                           userName: 'Alex Kumar',
-                          eventName: 'TechSummit 2026',
+                          eventName: Provider.of<HomeProvider>(context, listen: false).eventInfo.name,
                         ),
                       );
                     },

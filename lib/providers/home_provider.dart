@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../constants/api_urls.dart';
 
 class HomeEventInfo {
   final String name;
@@ -88,14 +91,89 @@ class HomeSightsee {
   });
 }
 
-class HomeProvider extends ChangeNotifier {
-  final HomeEventInfo _eventInfo = HomeEventInfo(
+class HomeProvider with ChangeNotifier {
+  List<Map<String, dynamic>> _summits = [];
+  bool _isLoading = false;
+
+  HomeEventInfo _eventInfo = HomeEventInfo(
     name: 'TechSummit 2026',
     location: 'Convention Center, Hall 4',
     date: 'Oct 12 - 14, 2026',
   );
 
+  bool get isLoading => _isLoading;
   HomeEventInfo get eventInfo => _eventInfo;
+  List<Map<String, dynamic>> get summits => _summits;
+
+  String _formatSummitDates(String start, String end) {
+    if (start.isEmpty && end.isEmpty) return 'Oct 12 - 14, 2026';
+    if (start.isEmpty) return end;
+    if (end.isEmpty) return start;
+    
+    try {
+      final startDate = DateTime.tryParse(start);
+      final endDate = DateTime.tryParse(end);
+      if (startDate != null && endDate != null) {
+        final List<String> months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final startMonth = months[startDate.month - 1];
+        final endMonth = months[endDate.month - 1];
+        
+        if (startDate.year == endDate.year) {
+          if (startDate.month == endDate.month) {
+            return '$startMonth ${startDate.day} - ${endDate.day}, ${startDate.year}';
+          } else {
+            return '$startMonth ${startDate.day} - $endMonth ${endDate.day}, ${startDate.year}';
+          }
+        } else {
+          return '$startMonth ${startDate.day}, ${startDate.year} - $endMonth ${endDate.day}, ${endDate.year}';
+        }
+      }
+    } catch (_) {}
+    
+    return '$start - $end';
+  }
+
+  Future<void> fetchSummits(String accessToken) async {
+    if (accessToken.isEmpty) return;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final url = Uri.parse(ApiUrls.getSummits);
+      final headers = {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      };
+
+      final response = await http.get(url, headers: headers);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null && (data['data'] as List).isNotEmpty) {
+          _summits = List<Map<String, dynamic>>.from(data['data']);
+          final first = _summits.first;
+          _eventInfo = HomeEventInfo(
+            name: first['summit_title'] ?? 'TechSummit 2026',
+            location: first['venue_name'] ?? 'Convention Center, Hall 4',
+            date: _formatSummitDates(
+              first['summit_start_date']?.toString() ?? '',
+              first['summit_end_date']?.toString() ?? '',
+            ),
+          );
+
+          // Fetch the dynamic sponsors for the current active summit
+          final String summitId = first['summit_id']?.toString() ?? '';
+          if (summitId.isNotEmpty) {
+            await fetchSponsors(summitId, accessToken);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching summits in HomeProvider: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   final List<HomeStat> _stats = [
     HomeStat(
@@ -150,7 +228,7 @@ class HomeProvider extends ChangeNotifier {
 
   List<HomeSession> get featuredSessions => _featuredSessions;
 
-  final List<HomeExhibitor> _exhibitors = [
+  List<HomeExhibitor> _exhibitors = [
     HomeExhibitor(
       initials: 'MC',
       color: const Color(0xFF1E3A8A),
@@ -198,4 +276,81 @@ class HomeProvider extends ChangeNotifier {
   ];
 
   List<HomeSightsee> get sightseeSpots => _sightseeSpots;
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'featured':
+        return const Color(0xFF1E3A8A);
+      case 'premium':
+        return const Color(0xFF8B5CF6);
+      case 'standard':
+        return const Color(0xFF10B981);
+      default:
+        return const Color(0xFF3B82F6);
+    }
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'EX';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0].isNotEmpty && parts[1].isNotEmpty)
+          ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+          : parts[0][0].toUpperCase();
+    }
+    return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'EX';
+  }
+
+  Future<void> fetchSponsors(String summitId, String accessToken) async {
+    try {
+      final url = Uri.parse(ApiUrls.getSponsors);
+      final headers = {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      };
+      
+      final body = json.encode({
+        "summit_id": summitId
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          final List<dynamic> list = data['data'];
+          
+          // Only replace if there are active sponsors returned from the API
+          if (list.isNotEmpty) {
+            final List<HomeExhibitor> fetchedList = [];
+            for (var item in list) {
+              final String sponsorId = item['sponsor_id']?.toString() ?? '';
+              final String companyName = item['company_name']?.toString() ?? '';
+              final String category = item['sponsor_category']?.toString() ?? 'Standard';
+              
+              final String initials = _getInitials(companyName);
+              final Color bg = _getCategoryColor(category);
+
+              fetchedList.add(
+                HomeExhibitor(
+                  initials: initials,
+                  color: bg,
+                  title: companyName,
+                  subtitle: category,
+                  booth: 'Booth $sponsorId',
+                ),
+              );
+            }
+            _exhibitors = fetchedList;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching sponsors in HomeProvider: $e');
+    }
+  }
 }

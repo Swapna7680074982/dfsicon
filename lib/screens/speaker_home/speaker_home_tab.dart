@@ -5,6 +5,7 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/abstract_provider.dart';
+import '../../providers/home_provider.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_abstract/create_abstract_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -55,6 +56,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
     final authProvider = Provider.of<AuthProvider>(context);
     final photoProvider = Provider.of<PhotoProvider>(context);
     final abstractProvider = Provider.of<AbstractProvider>(context);
+    final homeProvider = Provider.of<HomeProvider>(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -155,8 +157,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                   builder: (context) => const ProfileScreen(),
                                 ),
                               ).then((_) {
-                                // Re-fetch details when returning from profile screen (e.g. image changed)
-                                _fetchAbstracts();
+                                if (mounted) {
+                                  // Re-fetch details when returning from profile screen (e.g. image changed)
+                                  _fetchAbstracts();
+                                }
                               });
                             },
                             child: Container(

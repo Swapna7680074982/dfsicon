@@ -22,6 +22,20 @@ void main() {
 
 class MyApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static bool _isRedirectingToLogin = false;
+
+  static void redirectToLogin() {
+    if (_isRedirectingToLogin) return;
+    _isRedirectingToLogin = true;
+
+    // Reset the flag after a short delay to allow transition to complete
+    Future.delayed(const Duration(seconds: 1), () {
+      _isRedirectingToLogin = false;
+    });
+
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+  }
+
   const MyApp({super.key});
 
   @override

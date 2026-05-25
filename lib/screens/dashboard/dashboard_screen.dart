@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_provider.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
 import 'network_tab.dart';
@@ -20,6 +21,16 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      homeProvider.fetchSummits(auth.accessToken);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

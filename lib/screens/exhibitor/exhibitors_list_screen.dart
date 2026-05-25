@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_provider.dart';
 import 'exhibitor_details_screen.dart';
 
 class ExhibitorsListScreen extends StatefulWidget {
@@ -27,7 +28,11 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
   Future<void> _fetchSponsors() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final explore = Provider.of<ExploreProvider>(context, listen: false);
-    await explore.fetchSponsors(auth.accessToken);
+    final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+    final String summitId = homeProvider.summits.isNotEmpty
+        ? homeProvider.summits.first['summit_id']?.toString() ?? ''
+        : '';
+    await explore.fetchSponsors(summitId, auth.accessToken);
   }
 
   @override

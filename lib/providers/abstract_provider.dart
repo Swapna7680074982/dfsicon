@@ -40,6 +40,7 @@ class AbstractProvider with ChangeNotifier {
 
   // API Call: Fetch my abstracts
   Future<bool> fetchMyAbstracts(String accessToken) async {
+    if (accessToken.isEmpty) return false;
     _isLoadingList = true;
     notifyListeners();
 
@@ -66,7 +67,7 @@ class AbstractProvider with ChangeNotifier {
         await prefs.remove('refresh_token');
         await prefs.remove('profile_data');
         notifyListeners();
-        MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        MyApp.redirectToLogin();
         return false;
       }
       if (response.statusCode == 200) {
@@ -89,6 +90,7 @@ class AbstractProvider with ChangeNotifier {
 
   // API Call: Fetch abstract details
   Future<bool> fetchAbstractDetails(String abstractId, String accessToken) async {
+    if (accessToken.isEmpty) return false;
     _isLoadingDetails = true;
     _selectedAbstractDetails = null;
     notifyListeners();
@@ -120,7 +122,7 @@ class AbstractProvider with ChangeNotifier {
         await prefs.remove('refresh_token');
         await prefs.remove('profile_data');
         notifyListeners();
-        MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        MyApp.redirectToLogin();
         return false;
       }
       if (response.statusCode == 200) {
@@ -143,6 +145,7 @@ class AbstractProvider with ChangeNotifier {
 
   // API Call: Fetch summits
   Future<bool> fetchSummits(String accessToken) async {
+    if (accessToken.isEmpty) return false;
     _isLoadingSummits = true;
     notifyListeners();
 
@@ -169,7 +172,7 @@ class AbstractProvider with ChangeNotifier {
         await prefs.remove('refresh_token');
         await prefs.remove('profile_data');
         notifyListeners();
-        MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        MyApp.redirectToLogin();
         return false;
       }
       if (response.statusCode == 200) {
@@ -200,6 +203,7 @@ class AbstractProvider with ChangeNotifier {
     required File file,
     required String accessToken,
   }) async {
+    if (accessToken.isEmpty) return null;
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
@@ -265,7 +269,7 @@ class AbstractProvider with ChangeNotifier {
         await prefs.remove('refresh_token');
         await prefs.remove('profile_data');
         notifyListeners();
-        MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        MyApp.redirectToLogin();
         return null;
       }
       try {
@@ -299,6 +303,7 @@ class AbstractProvider with ChangeNotifier {
     required File file,
     required String accessToken,
   }) async {
+    if (accessToken.isEmpty) return false;
     _isResubmitting = true;
     _errorMessage = null;
     notifyListeners();
@@ -363,7 +368,7 @@ class AbstractProvider with ChangeNotifier {
         await prefs.remove('refresh_token');
         await prefs.remove('profile_data');
         notifyListeners();
-        MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        MyApp.redirectToLogin();
         return false;
       }
       try {

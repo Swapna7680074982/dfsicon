@@ -45,6 +45,7 @@ class PhotoProvider extends ChangeNotifier {
   }
 
   Future<String?> uploadPhoto(String accessToken) async {
+    if (accessToken.isEmpty) return null;
     if (!hasPhoto) return null;
 
     _isUploading = true;
@@ -86,7 +87,7 @@ class PhotoProvider extends ChangeNotifier {
         await prefs.remove('refresh_token');
         await prefs.remove('profile_data');
         notifyListeners();
-        MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+        MyApp.redirectToLogin();
         return null;
       }
       if (response.statusCode == 200) {
