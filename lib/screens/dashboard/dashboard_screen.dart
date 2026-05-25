@@ -34,6 +34,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _currentIndex = 2;
                 });
               },
+              onNavigateToAbstracts: () {
+                setState(() {
+                  _currentIndex = 1;
+                });
+              },
             ),
             const SpeakerAbstractTab(),
             const SpeakerSessionsTab(),

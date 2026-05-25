@@ -2,13 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../exhibitor/exhibitors_list_screen.dart';
 import '../sightseeing/sightseeing_list_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../help_desk/help_desk_screen.dart';
 
-class ExploreTab extends StatelessWidget {
+class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
+
+  @override
+  State<ExploreTab> createState() => _ExploreTabState();
+}
+
+class _ExploreTabState extends State<ExploreTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchSponsors();
+    });
+  }
+
+  Future<void> _fetchSponsors() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final explore = Provider.of<ExploreProvider>(context, listen: false);
+    await explore.fetchSponsors(auth.accessToken);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,18 +182,35 @@ class ExploreTab extends StatelessWidget {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: ex.bg,
+                            color: ex.logoUrl != null ? Colors.white : ex.bg,
                             shape: BoxShape.circle,
+                            border: ex.logoUrl != null ? Border.all(color: AppColors.tileBorder, width: 1) : null,
                           ),
                           alignment: Alignment.center,
-                          child: Text(
-                            ex.initials,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: ex.logoUrl != null
+                              ? Image.network(
+                                  ex.logoUrl!,
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Text(
+                                    ex.initials,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  ex.initials,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                         const SizedBox(height: 10),
                         Text(

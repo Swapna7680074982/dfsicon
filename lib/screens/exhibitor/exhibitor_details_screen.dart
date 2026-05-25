@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
 
@@ -53,18 +54,35 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: exhibitor.bg,
+                      color: exhibitor.logoUrl != null ? Colors.white : exhibitor.bg,
                       shape: BoxShape.circle,
+                      border: exhibitor.logoUrl != null ? Border.all(color: AppColors.tileBorder, width: 1) : null,
                     ),
                     alignment: Alignment.center,
-                    child: Text(
-                      exhibitor.initials,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: exhibitor.logoUrl != null
+                        ? Image.network(
+                            exhibitor.logoUrl!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Text(
+                              exhibitor.initials,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            exhibitor.initials,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -197,13 +215,31 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 48,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Downloading brochure for ${exhibitor.name}...'),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                      onPressed: () async {
+                        final String? url = exhibitor.brochureUrl;
+                        if (url != null && url.isNotEmpty) {
+                          final Uri uri = Uri.parse(url);
+                          try {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to open brochure: $e'),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('No brochure available for ${exhibitor.name}.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.download, size: 18),
                       label: const Text(

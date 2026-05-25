@@ -13,4 +13,5 @@ class ApiUrls {
   static const String myAbstracts = '$baseUrl/speaker/my_abstracts';
   static const String abstractDetails = '$baseUrl/speaker/abstract_details';
   static const String resubmitAbstract = '$baseUrl/speaker/resubmit_abstract';
+  static const String getSponsors = '$baseUrl/utility/get_sponsors';
 }

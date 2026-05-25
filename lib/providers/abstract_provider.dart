@@ -21,6 +21,8 @@ class AbstractProvider with ChangeNotifier {
   List<Map<String, dynamic>> _summits = [];
   bool _isLoadingSummits = false;
 
+  String? _errorMessage;
+
   // Getters
   List<Map<String, dynamic>> get myAbstracts => _myAbstracts;
   bool get isLoadingList => _isLoadingList;
@@ -33,6 +35,8 @@ class AbstractProvider with ChangeNotifier {
 
   List<Map<String, dynamic>> get summits => _summits;
   bool get isLoadingSummits => _isLoadingSummits;
+
+  String? get errorMessage => _errorMessage;
 
   // API Call: Fetch my abstracts
   Future<bool> fetchMyAbstracts(String accessToken) async {
@@ -197,6 +201,7 @@ class AbstractProvider with ChangeNotifier {
     required String accessToken,
   }) async {
     _isSubmitting = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -217,6 +222,20 @@ class AbstractProvider with ChangeNotifier {
         mimeType = 'application/msword';
       } else if (fileExtension == 'docx') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      } else if (fileExtension == 'png') {
+        mimeType = 'image/png';
+      } else if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (fileExtension == 'ppt') {
+        mimeType = 'application/vnd.ms-powerpoint';
+      } else if (fileExtension == 'pptx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      } else if (fileExtension == 'xls') {
+        mimeType = 'application/vnd.ms-excel';
+      } else if (fileExtension == 'xlsx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      } else if (fileExtension == 'txt') {
+        mimeType = 'text/plain';
       }
 
       request.files.add(
@@ -249,18 +268,23 @@ class AbstractProvider with ChangeNotifier {
         MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
         return null;
       }
-      if (response.statusCode == 200) {
+      try {
         final data = json.decode(response.body);
-        if (data['status'] == true) {
+        if (response.statusCode == 200 && data['status'] == true) {
           notifyListeners();
           return data['abstract_id'] is int ? data['abstract_id'] : int.tryParse(data['abstract_id'].toString());
+        } else {
+          _errorMessage = data['message'] ?? 'Failed to submit abstract.';
         }
+      } catch (e) {
+        _errorMessage = 'Server error: ${response.statusCode}';
       }
       notifyListeners();
       return null;
     } catch (e, stack) {
       CustomLogger.logError('Submit abstract failed', e, stack);
       _isSubmitting = false;
+      _errorMessage = e.toString();
       notifyListeners();
       return null;
     }
@@ -276,6 +300,7 @@ class AbstractProvider with ChangeNotifier {
     required String accessToken,
   }) async {
     _isResubmitting = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -295,6 +320,20 @@ class AbstractProvider with ChangeNotifier {
         mimeType = 'application/msword';
       } else if (fileExtension == 'docx') {
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      } else if (fileExtension == 'png') {
+        mimeType = 'image/png';
+      } else if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (fileExtension == 'ppt') {
+        mimeType = 'application/vnd.ms-powerpoint';
+      } else if (fileExtension == 'pptx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      } else if (fileExtension == 'xls') {
+        mimeType = 'application/vnd.ms-excel';
+      } else if (fileExtension == 'xlsx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      } else if (fileExtension == 'txt') {
+        mimeType = 'text/plain';
       }
 
       request.files.add(
@@ -327,18 +366,23 @@ class AbstractProvider with ChangeNotifier {
         MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
         return false;
       }
-      if (response.statusCode == 200) {
+      try {
         final data = json.decode(response.body);
-        if (data['status'] == true) {
+        if (response.statusCode == 200 && data['status'] == true) {
           notifyListeners();
           return true;
+        } else {
+          _errorMessage = data['message'] ?? 'Failed to resubmit abstract.';
         }
+      } catch (e) {
+        _errorMessage = 'Server error: ${response.statusCode}';
       }
       notifyListeners();
       return false;
     } catch (e, stack) {
       CustomLogger.logError('Resubmit abstract failed', e, stack);
       _isResubmitting = false;
+      _errorMessage = e.toString();
       notifyListeners();
       return false;
     }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
+import '../../constants/api_urls.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import 'create_abstract_screen.dart';
@@ -386,13 +388,30 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                                     color: AppColors.primary,
                                     size: 20,
                                   ),
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Opening document: ${fileUrl.split('/').last}'),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
+                                  onPressed: () async {
+                                    String finalFileUrl = fileUrl;
+                                    if (!finalFileUrl.startsWith('http')) {
+                                      if (finalFileUrl.startsWith('/')) {
+                                        finalFileUrl = '${ApiUrls.domain}$finalFileUrl';
+                                      } else {
+                                        finalFileUrl = '${ApiUrls.domain}/$finalFileUrl';
+                                      }
+                                    }
+                                    
+                                    final Uri uri = Uri.parse(finalFileUrl);
+                                    try {
+                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Failed to open document: $e'),
+                                            behavior: SnackBarBehavior.floating,
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                               ],

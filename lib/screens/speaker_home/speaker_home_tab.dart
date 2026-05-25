@@ -12,10 +12,12 @@ import '../profile/profile_screen.dart';
 
 class SpeakerHomeTab extends StatefulWidget {
   final VoidCallback onNavigateToSessions;
+  final VoidCallback onNavigateToAbstracts;
 
   const SpeakerHomeTab({
     super.key,
     required this.onNavigateToSessions,
+    required this.onNavigateToAbstracts,
   });
 
   @override
@@ -299,7 +301,12 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                      ).then((_) => _fetchAbstracts());
+                      ).then((success) {
+                        _fetchAbstracts();
+                        if (success == true) {
+                          widget.onNavigateToAbstracts();
+                        }
+                      });
                     },
                     child: Row(
                       children: const [
@@ -376,7 +383,12 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                          ).then((_) => _fetchAbstracts());
+                          ).then((success) {
+                            _fetchAbstracts();
+                            if (success == true) {
+                              widget.onNavigateToAbstracts();
+                            }
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -416,8 +428,11 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         initialDate: (abs['submitted_at'] ?? '').toString(),
                       ),
                     ),
-                  ).then((_) {
+                  ).then((success) {
                     _fetchAbstracts();
+                    if (success == true) {
+                      widget.onNavigateToAbstracts();
+                    }
                   });
                 },
                 child: Container(

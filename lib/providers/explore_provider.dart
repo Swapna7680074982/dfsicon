@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:dfsicon/constants/api_urls.dart';
+import 'package:dfsicon/utils/custom_logger.dart';
 
 class Exhibitor {
   final String id;
@@ -12,6 +16,9 @@ class Exhibitor {
   final List<String> products;
   final String website;
   final String email;
+  final String? logoUrl;
+  final String? bannerUrl;
+  final String? brochureUrl;
 
   const Exhibitor({
     required this.id,
@@ -25,6 +32,9 @@ class Exhibitor {
     required this.products,
     required this.website,
     required this.email,
+    this.logoUrl,
+    this.bannerUrl,
+    this.brochureUrl,
   });
 }
 
@@ -49,7 +59,10 @@ class SightseeingPlace {
 }
 
 class ExploreProvider with ChangeNotifier {
-  final List<Exhibitor> _exhibitors = const [
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  List<Exhibitor> _exhibitors = const [
     Exhibitor(
       id: 'mc',
       name: 'MedCore Health',
@@ -200,6 +213,148 @@ class ExploreProvider with ChangeNotifier {
 
   List<Exhibitor> get exhibitors => _exhibitors;
   List<SightseeingPlace> get places => _places;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-  List<Exhibitor> get featuredExhibitors => _exhibitors.take(4).toList();
+  List<Exhibitor> get featuredExhibitors {
+    final featured = _exhibitors.where((ex) => ex.category.toLowerCase() == 'featured').toList();
+    if (featured.isEmpty && _exhibitors.isNotEmpty) {
+      return _exhibitors.take(4).toList();
+    }
+    return featured;
+  }
+
+  Future<bool> fetchSponsors(String accessToken) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final url = Uri.parse(ApiUrls.getSponsors);
+      final headers = {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      };
+      
+      final body = json.encode({
+        "summit_id": "4"
+      });
+
+      CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+
+      _isLoading = false;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          final List<dynamic> list = data['data'] ?? [];
+          final List<Exhibitor> fetchedList = [];
+          
+          for (var item in list) {
+            final String sponsorId = item['sponsor_id']?.toString() ?? '';
+            final String companyName = item['company_name']?.toString() ?? '';
+            final String category = item['sponsor_category']?.toString() ?? 'Standard';
+            final String email = item['email']?.toString() ?? '';
+            final String website = item['website']?.toString() ?? '';
+            final String description = item['company_description']?.toString() ?? '';
+            
+            String? logoUrl;
+            String? bannerUrl;
+            String? brochureUrl;
+            
+            final media = item['media'];
+            if (media != null) {
+              final logos = media['logo'] as List<dynamic>?;
+              if (logos != null && logos.isNotEmpty) {
+                logoUrl = logos.first['media_url']?.toString();
+              }
+              final banners = media['banner'] as List<dynamic>?;
+              if (banners != null && banners.isNotEmpty) {
+                bannerUrl = banners.first['media_url']?.toString();
+              }
+              final brochures = media['brochure'] as List<dynamic>?;
+              if (brochures != null && brochures.isNotEmpty) {
+                brochureUrl = brochures.first['media_url']?.toString();
+              }
+            }
+
+            final String initials = _getInitials(companyName);
+            final Color bg = _getCategoryColor(category);
+
+            fetchedList.add(
+              Exhibitor(
+                id: sponsorId,
+                name: companyName,
+                category: category,
+                boothCode: 'Booth $sponsorId',
+                boothZone: category.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall',
+                initials: initials,
+                bg: bg,
+                description: description.isEmpty ? 'Exhibitor & Sponsor' : description,
+                products: const [
+                  'Healthcare Infrastructure',
+                  'Clinical Operations Management',
+                  'Vibrant Medical Technologies',
+                ],
+                website: website.isEmpty ? 'heterohcl.com' : website,
+                email: email.isEmpty ? 'sponsors@heterohcl.com' : email,
+                logoUrl: logoUrl,
+                bannerUrl: bannerUrl,
+                brochureUrl: brochureUrl,
+              ),
+            );
+          }
+          
+          if (fetchedList.isNotEmpty) {
+            _exhibitors = fetchedList;
+          }
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = data['message'] ?? 'Failed to fetch sponsors';
+        }
+      } else {
+        _errorMessage = 'Server error: ${response.statusCode}';
+      }
+      notifyListeners();
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch sponsors failed', e, stack);
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'EX';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0].isNotEmpty && parts[1].isNotEmpty)
+          ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+          : parts[0][0].toUpperCase();
+    }
+    return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'EX';
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'featured':
+        return const Color(0xFF1E1B4B);
+      case 'premium':
+        return const Color(0xFF9333EA);
+      case 'standard':
+        return const Color(0xFF10B981);
+      default:
+        return const Color(0xFF3B82F6);
+    }
+  }
 }

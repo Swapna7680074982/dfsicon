@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
+import '../../providers/auth_provider.dart';
 import 'exhibitor_details_screen.dart';
 
 class ExhibitorsListScreen extends StatefulWidget {
@@ -14,6 +15,20 @@ class ExhibitorsListScreen extends StatefulWidget {
 class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchSponsors();
+    });
+  }
+
+  Future<void> _fetchSponsors() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final explore = Provider.of<ExploreProvider>(context, listen: false);
+    await explore.fetchSponsors(auth.accessToken);
+  }
 
   @override
   void dispose() {
@@ -129,18 +144,35 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: ex.bg,
+                              color: ex.logoUrl != null ? Colors.white : ex.bg,
                               shape: BoxShape.circle,
+                              border: ex.logoUrl != null ? Border.all(color: AppColors.tileBorder, width: 1) : null,
                             ),
                             alignment: Alignment.center,
-                            child: Text(
-                              ex.initials,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: ex.logoUrl != null
+                                ? Image.network(
+                                    ex.logoUrl!,
+                                    width: 44,
+                                    height: 44,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Text(
+                                      ex.initials,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    ex.initials,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                           title: Text(
                             ex.name,
