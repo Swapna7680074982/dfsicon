@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/sessions_provider.dart';
 import '../session_details/session_details_screen.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class SessionsTab extends StatefulWidget {
   const SessionsTab({super.key});
@@ -25,23 +27,28 @@ class _SessionsTabState extends State<SessionsTab> {
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final filteredSessions = sessionsProvider.filteredSessions;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2,
+          automaticallyImplyLeading: false,
+          title: const Text(
+            'Sessions',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: false,
+        ),
+        body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
-              const Text(
-                'Sessions',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -297,7 +304,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                       const Icon(Icons.access_time, size: 14, color: AppColors.textLight),
                                       const SizedBox(width: 4),
                                       Text(
-                                        session.time.split(' – ').first,
+                                        TimeFormatter.formatString('March 15, 2026', timeStr: session.time),
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,

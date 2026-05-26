@@ -8,6 +8,7 @@ import '../exhibitor/exhibitors_list_screen.dart';
 import '../sightseeing/sightseeing_list_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../help_desk/help_desk_screen.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
@@ -28,6 +29,8 @@ class _ExploreTabState extends State<ExploreTab> {
   Future<void> _fetchSponsors() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final explore = Provider.of<ExploreProvider>(context, listen: false);
+    // Skip fetch if data was already pre-fetched (e.g., from dashboard initState)
+    if (explore.exhibitors.isNotEmpty) return;
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     final String summitId = homeProvider.summits.isNotEmpty
         ? homeProvider.summits.first['summit_id']?.toString() ?? ''
@@ -39,27 +42,36 @@ class _ExploreTabState extends State<ExploreTab> {
   Widget build(BuildContext context) {
     final expProvider = Provider.of<ExploreProvider>(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Explore',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2,
+          automaticallyImplyLeading: false,
+          title: const Text(
+            'Explore',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
+          centerTitle: false,
         ),
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          await auth.refreshSessionToken();
+          await _fetchSponsors();
+        },
+        color: AppColors.primary,
+        backgroundColor: Colors.white,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Container(
               color: Colors.white,
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
@@ -144,7 +156,48 @@ class _ExploreTabState extends State<ExploreTab> {
                 ],
               ),
             ),
-            GridView.builder(
+            expProvider.isLoading
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 0.9,
+                      ),
+                      itemCount: 4,
+                      itemBuilder: (context, _) => Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFDDE4F0), width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 40, height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDDE4F0),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Container(width: 100, height: 14, decoration: BoxDecoration(color: const Color(0xFFDDE4F0), borderRadius: BorderRadius.circular(8))),
+                            const SizedBox(height: 6),
+                            Container(width: 70, height: 11, decoration: BoxDecoration(color: const Color(0xFFDDE4F0), borderRadius: BorderRadius.circular(8))),
+                            const SizedBox(height: 8),
+                            Container(width: 80, height: 11, decoration: BoxDecoration(color: const Color(0xFFDDE4F0), borderRadius: BorderRadius.circular(8))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -267,8 +320,9 @@ class _ExploreTabState extends State<ExploreTab> {
           ],
         ),
       ),
-    );
-  }
+    ),),
+  );
+}
 
   Widget _buildCategoryCard(
     BuildContext context, {

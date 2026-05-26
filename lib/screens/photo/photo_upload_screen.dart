@@ -6,6 +6,7 @@ import '../../providers/photo_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/dashed_circle_avatar.dart';
+import '../../main.dart';
 
 class PhotoUploadScreen extends StatelessWidget {
   const PhotoUploadScreen({super.key});
@@ -82,6 +83,7 @@ class PhotoUploadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    MyApp.resetRedirectFlag();
     final photoProvider = Provider.of<PhotoProvider>(context);
 
     return Scaffold(

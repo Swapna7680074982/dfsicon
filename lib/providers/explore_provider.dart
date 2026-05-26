@@ -64,7 +64,47 @@ class ExploreProvider with ChangeNotifier {
 
   List<Exhibitor> _exhibitors = const [];
 
-  final List<SightseeingPlace> _places = const [];
+  final List<SightseeingPlace> _places = const [
+    SightseeingPlace(
+      id: '1',
+      name: 'Grand City Museum',
+      distance: '1.2 km',
+      duration: '2-3 hours',
+      imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600',
+      description: 'Explore world-class art collections, interactive historical exhibits, and scientific marvels in this architectural masterpiece. Perfect for delegates looking to experience culture.',
+      highlights: [
+        'Renaissance Masterpieces',
+        'Interactive Science Lab',
+        'Historical Artifacts Gallery',
+      ],
+    ),
+    SightseeingPlace(
+      id: '2',
+      name: 'Skyline Observation Deck',
+      distance: '2.4 km',
+      duration: '1-2 hours',
+      imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600',
+      description: 'Enjoy breathtaking 360-degree panoramic views of the entire city skyline from the 88th floor. Ideal for photography enthusiasts and evening visits.',
+      highlights: [
+        'High-speed Glass Elevator',
+        'Breathtaking Sunset Views',
+        'Sky-high Coffee Lounge',
+      ],
+    ),
+    SightseeingPlace(
+      id: '3',
+      name: 'Botanical Glasshouse Gardens',
+      distance: '3.5 km',
+      duration: '1.5-2 hours',
+      imageUrl: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600',
+      description: 'Stroll through massive, climate-controlled glass dome structures showcasing thousands of exotic plant species and orchids from across the globe.',
+      highlights: [
+        'Exotic Orchid House',
+        'Indoor Mist Waterfall',
+        'Japanese Zen Garden Walk',
+      ],
+    ),
+  ];
 
   List<Exhibitor> get exhibitors => _exhibitors;
   List<SightseeingPlace> get places => _places;
@@ -191,7 +231,7 @@ class ExploreProvider with ChangeNotifier {
   String _getInitials(String name) {
     if (name.isEmpty) return 'EX';
     final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length > 1) {
+    if   (parts.length > 1) {
       return (parts[0].isNotEmpty && parts[1].isNotEmpty)
           ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
           : parts[0][0].toUpperCase();

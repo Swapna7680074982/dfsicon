@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/explore_provider.dart';
+import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
 import 'network_tab.dart';
@@ -25,10 +27,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    MyApp.resetRedirectFlag();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final homeProvider = Provider.of<HomeProvider>(context, listen: false);
-      homeProvider.fetchSummits(auth.accessToken);
+      final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
+      await homeProvider.fetchSummits(auth.accessToken);
+      // Pre-fetch exhibitors immediately after summits load so data is ready
+      // when the user opens Explore or Exhibitors screens
+      final String summitId = homeProvider.summits.isNotEmpty
+          ? homeProvider.summits.first['summit_id']?.toString() ?? ''
+          : '';
+      if (summitId.isNotEmpty) {
+        exploreProvider.fetchSponsors(summitId, auth.accessToken);
+      }
     });
   }
 

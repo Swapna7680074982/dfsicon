@@ -6,6 +6,8 @@ import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/event_qr_modal.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class SessionDetailsScreen extends StatefulWidget {
   final SessionItem session;
@@ -239,25 +241,26 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
         .isAdded;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Session Details',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
           ),
+          title: const Text(
+            'Session Details',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
@@ -366,7 +369,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 const Icon(Icons.access_time, size: 14, color: AppColors.textLight),
                 const SizedBox(width: 6),
                 Text(
-                  '${widget.session.time.split(' – ').first} – 10:00 AM · Mar 31',
+                  TimeFormatter.formatString('March 31, 2026', timeStr: widget.session.time),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -920,7 +923,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
           ],
         ),
       ),
-    );
+    ),);
   }
 
   Widget _buildOverlappingAvatar(String initials, Color bg, double leftOffset, {Color textColor = Colors.white}) {

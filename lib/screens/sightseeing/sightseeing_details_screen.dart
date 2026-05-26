@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class SightseeingDetailsScreen extends StatelessWidget {
   final SightseeingPlace place;
@@ -9,24 +10,25 @@ class SightseeingDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          place.name,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            place.name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
       body: Column(
         children: [
           Expanded(
@@ -80,7 +82,7 @@ class SightseeingDetailsScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white.withAlpha(240),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: AppColors.tileBorder, width: 1),
                       ),
@@ -99,7 +101,7 @@ class SightseeingDetailsScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white.withAlpha(240),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: AppColors.tileBorder, width: 1),
                       ),
@@ -162,7 +164,7 @@ class SightseeingDetailsScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(220),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(4),
@@ -205,7 +207,7 @@ class SightseeingDetailsScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),);
   }
 
   Widget _buildBadge(IconData icon, String text) {

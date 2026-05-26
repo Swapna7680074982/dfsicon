@@ -5,11 +5,12 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/abstract_provider.dart';
-import '../../providers/home_provider.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_abstract/create_abstract_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class SpeakerHomeTab extends StatefulWidget {
   final VoidCallback onNavigateToSessions;
@@ -56,14 +57,22 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
     final authProvider = Provider.of<AuthProvider>(context);
     final photoProvider = Provider.of<PhotoProvider>(context);
     final abstractProvider = Provider.of<AbstractProvider>(context);
-    final homeProvider = Provider.of<HomeProvider>(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            final auth = Provider.of<AuthProvider>(context, listen: false);
+            await auth.refreshSessionToken();
+            await _fetchAbstracts();
+          },
+          color: AppColors.primary,
+          backgroundColor: Colors.white,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: double.infinity,
@@ -508,8 +517,8 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              '${abstractProvider.myAbstracts.first['summit_title'] ?? 'Test Summit'} · ${abstractProvider.myAbstracts.first['submitted_at'] ?? ''}',
+                             Text(
+                              '${abstractProvider.myAbstracts.first['summit_title'] ?? 'Test Summit'} · ${TimeFormatter.formatString(abstractProvider.myAbstracts.first['submitted_at']?.toString() ?? '')}',
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textLight,
@@ -533,7 +542,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
           ],
         ),
       ),
-    );
+    ),),);
   }
 
   Widget _buildStatusBadge(String status) {
@@ -638,9 +647,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
             ],
           ),
           const SizedBox(height: 18),
-          _buildSessionDetailItem(Icons.calendar_month_outlined, date),
-          const SizedBox(height: 10),
-          _buildSessionDetailItem(Icons.access_time_outlined, time),
+          _buildSessionDetailItem(Icons.calendar_month_outlined, TimeFormatter.formatString(date, timeStr: time)),
           const SizedBox(height: 10),
           _buildSessionDetailItem(Icons.location_on_outlined, location),
         ],

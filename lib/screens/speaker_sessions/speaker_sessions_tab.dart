@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../constants/colors.dart';
 import 'speaker_session_detail_screen.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class SpeakerSessionsTab extends StatefulWidget {
   const SpeakerSessionsTab({super.key});
@@ -51,22 +53,23 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       return title.contains(query) || tag.contains(query);
     }).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'My Sessions',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2,
+          automaticallyImplyLeading: false,
+          title: const Text(
+            'My Sessions',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
+          centerTitle: false,
         ),
-        centerTitle: false,
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -183,7 +186,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           ),
         ],
       ),
-    );
+    ),);
   }
 
   Widget _buildSessionCard(BuildContext context, Map<String, String> s) {
@@ -229,9 +232,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             ),
           ),
           const SizedBox(height: 18),
-          _buildSessionDetailItem(Icons.calendar_month_outlined, s['date']!),
-          const SizedBox(height: 10),
-          _buildSessionDetailItem(Icons.access_time_outlined, s['time']!),
+          _buildSessionDetailItem(Icons.calendar_month_outlined, TimeFormatter.formatString(s['date']!, timeStr: s['time']!)),
           const SizedBox(height: 10),
           _buildSessionDetailItem(Icons.location_on_outlined, s['location']!),
           const SizedBox(height: 16),

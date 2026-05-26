@@ -61,6 +61,7 @@ class HomeExhibitor {
   final String title;
   final String subtitle;
   final String booth;
+  final String? imageUrl;
 
   HomeExhibitor({
     required this.initials,
@@ -68,6 +69,7 @@ class HomeExhibitor {
     required this.title,
     required this.subtitle,
     required this.booth,
+    this.imageUrl,
   });
 }
 
@@ -235,6 +237,7 @@ class HomeProvider with ChangeNotifier {
       title: 'MedCore Health',
       subtitle: 'Health IT & EMR',
       booth: 'Booth A-12',
+      imageUrl: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?w=200&fit=crop',
     ),
     HomeExhibitor(
       initials: 'HB',
@@ -242,6 +245,7 @@ class HomeProvider with ChangeNotifier {
       title: 'HealthBridge',
       subtitle: 'Interoperability',
       booth: 'Booth B-05',
+      imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=200&fit=crop',
     ),
     HomeExhibitor(
       initials: 'BS',
@@ -249,6 +253,7 @@ class HomeProvider with ChangeNotifier {
       title: 'BioSync Analytics',
       subtitle: 'Clinical Data & Research',
       booth: 'Booth C-08',
+      imageUrl: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=200&fit=crop',
     ),
   ];
 
@@ -332,6 +337,15 @@ class HomeProvider with ChangeNotifier {
               final String companyName = item['company_name']?.toString() ?? '';
               final String category = item['sponsor_category']?.toString() ?? 'Standard';
               
+              String? logoUrl;
+              final media = item['media'];
+              if (media != null) {
+                final logos = media['logo'] as List<dynamic>?;
+                if (logos != null && logos.isNotEmpty) {
+                  logoUrl = logos.first['media_url']?.toString();
+                }
+              }
+
               final String initials = _getInitials(companyName);
               final Color bg = _getCategoryColor(category);
 
@@ -342,6 +356,7 @@ class HomeProvider with ChangeNotifier {
                   title: companyName,
                   subtitle: category,
                   booth: 'Booth $sponsorId',
+                  imageUrl: logoUrl,
                 ),
               );
             }

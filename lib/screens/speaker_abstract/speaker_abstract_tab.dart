@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import 'abstract_detail_screen.dart';
 import 'create_abstract_screen.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class SpeakerAbstractTab extends StatefulWidget {
   const SpeakerAbstractTab({super.key});
@@ -104,22 +106,23 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
       return matchesSearch && matchesDate;
     }).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Abstracts',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2,
+          automaticallyImplyLeading: false,
+          title: const Text(
+            'Abstracts',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
+          centerTitle: false,
         ),
-        centerTitle: false,
-      ),
       body: Stack(
         children: [
           Column(
@@ -247,7 +250,11 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                         child: CircularProgressIndicator(color: AppColors.primary),
                       )
                     : RefreshIndicator(
-                        onRefresh: _fetchAbstracts,
+                        onRefresh: () async {
+                          final auth = Provider.of<AuthProvider>(context, listen: false);
+                          await auth.refreshSessionToken();
+                          await _fetchAbstracts();
+                        },
                         color: AppColors.primary,
                         child: filtered.isEmpty
                             ? ListView(
@@ -341,7 +348,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
           ),
         ],
       ),
-    );
+    ),);
   }
 
   Widget _buildAbstractItemCard(BuildContext context, Map<String, dynamic> abs) {
@@ -479,7 +486,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "$displayTopic · $displayDate",
+                    "$displayTopic · ${TimeFormatter.formatString(displayDate)}",
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textLight,

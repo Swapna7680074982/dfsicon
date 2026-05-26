@@ -11,6 +11,8 @@ import '../../widgets/event_qr_modal.dart';
 import '../profile/profile_screen.dart';
 import '../sightseeing/sightseeing_list_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class HomeTab extends StatelessWidget {
   final VoidCallback onNavigateToSessions;
@@ -250,6 +252,7 @@ class HomeTab extends StatelessWidget {
     required String title,
     required String subtitle,
     required String booth,
+    String? imageUrl,
   }) {
     return Container(
       width: 140,
@@ -267,18 +270,52 @@ class HomeTab extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color,
+              color: imageUrl != null ? Colors.white : color,
               borderRadius: BorderRadius.circular(12),
+              border: imageUrl != null ? Border.all(color: AppColors.tileBorder, width: 1) : null,
             ),
+            clipBehavior: Clip.antiAlias,
             alignment: Alignment.center,
-            child: Text(
-              initials,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: color,
+                      alignment: Alignment.center,
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                : Text(
+                    initials,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -428,6 +465,226 @@ class HomeTab extends StatelessWidget {
     );
   }
 
+  Widget _buildShimmerBox({double? width, double? height, double radius = 12}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFFDDE4F0),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
+  Widget _buildLoadingPlaceholder() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Event card skeleton
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(240),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildShimmerBox(width: 100, height: 20, radius: 30),
+              const SizedBox(height: 16),
+              _buildShimmerBox(width: 200, height: 28),
+              const SizedBox(height: 8),
+              _buildShimmerBox(width: 150, height: 16),
+              const SizedBox(height: 24),
+              _buildShimmerBox(width: double.infinity, height: 48, radius: 16),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Stats row skeleton
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+                ),
+                child: Column(
+                  children: [
+                    _buildShimmerBox(width: 44, height: 44, radius: 22),
+                    const SizedBox(height: 10),
+                    _buildShimmerBox(width: 40, height: 18),
+                    const SizedBox(height: 6),
+                    _buildShimmerBox(width: 60, height: 12),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+                ),
+                child: Column(
+                  children: [
+                    _buildShimmerBox(width: 44, height: 44, radius: 22),
+                    const SizedBox(height: 10),
+                    _buildShimmerBox(width: 40, height: 18),
+                    const SizedBox(height: 6),
+                    _buildShimmerBox(width: 60, height: 12),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+                ),
+                child: Column(
+                  children: [
+                    _buildShimmerBox(width: 44, height: 44, radius: 22),
+                    const SizedBox(height: 10),
+                    _buildShimmerBox(width: 40, height: 18),
+                    const SizedBox(height: 6),
+                    _buildShimmerBox(width: 60, height: 12),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+        // Sessions heading skeleton
+        _buildShimmerBox(width: 100, height: 22),
+        const SizedBox(height: 12),
+        // Sessions cards skeleton
+        SizedBox(
+          height: 234,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 3,
+            itemBuilder: (context, _) => Container(
+              width: 210,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildShimmerBox(width: double.infinity, height: 110, radius: 0),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildShimmerBox(width: 160, height: 14),
+                        const SizedBox(height: 6),
+                        _buildShimmerBox(width: 120, height: 12),
+                        const SizedBox(height: 12),
+                        _buildShimmerBox(width: 100, height: 12),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        // Exhibitors heading skeleton
+        _buildShimmerBox(width: 140, height: 22),
+        const SizedBox(height: 14),
+        // Exhibitors skeleton
+        SizedBox(
+          height: 160,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 3,
+            itemBuilder: (context, _) => Container(
+              width: 130,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerBox(width: 60, height: 60, radius: 14),
+                    const SizedBox(height: 10),
+                    _buildShimmerBox(width: 90, height: 14),
+                    const SizedBox(height: 6),
+                    _buildShimmerBox(width: 70, height: 11),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        // Sightseeing heading skeleton
+        _buildShimmerBox(width: 120, height: 22),
+        const SizedBox(height: 12),
+        // Sightseeing skeleton
+        SizedBox(
+          height: 176,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 3,
+            itemBuilder: (context, _) => Container(
+              width: 180,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildShimmerBox(width: double.infinity, height: 100, radius: 0),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildShimmerBox(width: 130, height: 14),
+                        const SizedBox(height: 6),
+                        _buildShimmerBox(width: 90, height: 11),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
   String _getInitials(String name) {
     if (name.isEmpty) return 'DL';
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -439,142 +696,166 @@ class HomeTab extends StatelessWidget {
     return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'DL';
   }
 
+
   @override
   Widget build(BuildContext context) {
     final photoProvider = Provider.of<PhotoProvider>(context);
     final homeProvider = Provider.of<HomeProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Welcome back',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        authProvider.userName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await authProvider.refreshSessionToken();
+              await homeProvider.fetchSummits(authProvider.accessToken);
+            },
+            color: AppColors.primary,
+            backgroundColor: Colors.white,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF4F46E5)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
                   ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(12),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.primary.withAlpha(20),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
+                  child: Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.notifications_none,
-                            color: AppColors.primary,
-                            size: 22,
+                          const Text(
+                            'Welcome back',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
                           ),
-                          Positioned(
-                            top: 10,
-                            right: 11,
-                            child: Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
+                          const SizedBox(height: 4),
+                          Text(
+                            authProvider.userName,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                      );
-                    },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary,
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: photoProvider.hasPhoto
-                          ? Image.file(
-                              File(photoProvider.imagePath!),
-                              fit: BoxFit.cover,
-                            )
-                          : Center(
-                              child: Text(
-                                _getInitials(authProvider.userName),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(25),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withAlpha(40),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(
+                                Icons.notifications_none,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              Positioned(
+                                top: 10,
+                                right: 11,
+                                child: Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               ),
-                            ),
-                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                          );
+                        },
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: photoProvider.hasPhoto
+                              ? Image.file(
+                                  File(photoProvider.imagePath!),
+                                  fit: BoxFit.cover,
+                                )
+                              : Center(
+                                  child: Text(
+                                    _getInitials(authProvider.userName),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 28),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: homeProvider.isLoading
+                      ? _buildLoadingPlaceholder()
+                      : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24.0),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF2B1F7D),
-                      Color(0xFF4632B5),
-                    ],
-                  ),
+                  color: Colors.white.withAlpha(240),
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.primary.withAlpha(24), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withAlpha(30),
-                      blurRadius: 16,
+                      color: AppColors.primary.withAlpha(12),
+                      blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
                   ],
@@ -585,20 +866,20 @@ class HomeTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(30),
+                        color: AppColors.primary.withAlpha(16),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.location_on, color: Colors.white, size: 12),
+                          const Icon(Icons.location_on, color: AppColors.primary, size: 12),
                           const SizedBox(width: 4),
                           Text(
                             homeProvider.eventInfo.location,
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: AppColors.primary,
                             ),
                           ),
                         ],
@@ -610,17 +891,17 @@ class HomeTab extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.primary,
                         letterSpacing: 0.2,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      homeProvider.eventInfo.date,
+                      TimeFormatter.formatString(homeProvider.eventInfo.date),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white70,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -634,18 +915,19 @@ class HomeTab extends StatelessWidget {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.qr_code_2_outlined, color: AppColors.primary, size: 18),
+                      icon: const Icon(Icons.qr_code_2_outlined, color: Colors.white, size: 18),
                       label: const Text(
                         'My QR Code',
                         style: TextStyle(
-                          color: AppColors.primary,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        elevation: 0,
+                        backgroundColor: AppColors.primary,
+                        elevation: 2,
+                        shadowColor: AppColors.primary.withAlpha(60),
                         padding: const EdgeInsets.symmetric(vertical: 14.0),
                         minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(
@@ -780,6 +1062,7 @@ class HomeTab extends StatelessWidget {
                       title: e.title,
                       subtitle: e.subtitle,
                       booth: e.booth,
+                      imageUrl: e.imageUrl,
                     );
                   },
                 ),
@@ -846,11 +1129,15 @@ class HomeTab extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
             ],
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+),
+),
+),
+);
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class ExhibitorDetailsScreen extends StatelessWidget {
   final Exhibitor exhibitor;
@@ -10,24 +11,25 @@ class ExhibitorDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          exhibitor.name,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            exhibitor.name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(20.0),
@@ -37,7 +39,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(240),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
                 boxShadow: [
@@ -142,7 +144,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(240),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
               ),
@@ -164,7 +166,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(240),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
               ),
@@ -265,7 +267,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(240),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
               ),
@@ -308,7 +310,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(240),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
               ),
@@ -340,7 +342,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),);
   }
 
   Widget _buildContactRow({required IconData icon, required String text}) {

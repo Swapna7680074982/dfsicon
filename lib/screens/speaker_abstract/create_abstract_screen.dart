@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class CreateAbstractScreen extends StatefulWidget {
   final bool isUpdate;
@@ -112,24 +113,25 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
     final abstractProvider = Provider.of<AbstractProvider>(context);
     final isSubmitting = widget.isUpdate ? abstractProvider.isResubmitting : abstractProvider.isSubmitting;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.isUpdate ? 'Update Abstract' : 'New Abstract',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            widget.isUpdate ? 'Update Abstract' : 'New Abstract',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(24),
@@ -636,7 +638,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
           ],
         ),
       ),
-    );
+    ),);
   }
 
   IconData _getFileIcon(String? fileName) {

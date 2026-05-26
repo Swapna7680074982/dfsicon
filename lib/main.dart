@@ -28,12 +28,11 @@ class MyApp extends StatelessWidget {
     if (_isRedirectingToLogin) return;
     _isRedirectingToLogin = true;
 
-    // Reset the flag after a short delay to allow transition to complete
-    Future.delayed(const Duration(seconds: 1), () {
-      _isRedirectingToLogin = false;
-    });
-
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+  }
+
+  static void resetRedirectFlag() {
+    _isRedirectingToLogin = false;
   }
 
   const MyApp({super.key});
@@ -64,6 +63,17 @@ class MyApp extends StatelessWidget {
             surface: AppColors.background,
           ),
           fontFamily: 'Roboto',
+          appBarTheme: const AppBarTheme(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            iconTheme: IconThemeData(color: Colors.white),
+            titleTextStyle: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           textTheme: const TextTheme(
             headlineMedium: TextStyle(
               fontWeight: FontWeight.bold,

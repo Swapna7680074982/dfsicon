@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import '../../constants/colors.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class HelpDeskScreen extends StatelessWidget {
   const HelpDeskScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Help Desk',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Help Desk',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(20.0),
@@ -34,7 +36,7 @@ class HelpDeskScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(235),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
                 boxShadow: [
@@ -94,7 +96,7 @@ class HelpDeskScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withAlpha(235),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
                 boxShadow: [
@@ -164,7 +166,7 @@ class HelpDeskScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),);
   }
 }
 
@@ -211,7 +213,7 @@ class _FaqAccordionListState extends State<FaqAccordionList> {
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withAlpha(235),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.tileBorder, width: 1),
           ),

@@ -6,6 +6,7 @@ import '../chat/chat_detail_screen.dart';
 import '../chat/group_chat_screen.dart';
 import '../chat/create_group_screen.dart';
 import '../network/connection_requests_screen.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class NetworkTab extends StatefulWidget {
   const NetworkTab({super.key});
@@ -39,53 +40,54 @@ class _NetworkTabState extends State<NetworkTab> {
           (c.description.isNotEmpty && c.description.toLowerCase().contains(_searchQuery.toLowerCase()));
     }).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Networking',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            if (!isChats)
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
-                  );
-                },
-                icon: const Icon(Icons.add, size: 18, color: Colors.white),
-                label: const Text(
-                  'New Group',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2,
+          automaticallyImplyLeading: false,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Networking',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-          ],
+              if (!isChats)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 18, color: AppColors.primary),
+                  label: const Text(
+                    'New Group',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  ),
+                ),
+            ],
+          ),
+          centerTitle: false,
         ),
-        centerTitle: false,
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -598,6 +600,6 @@ class _NetworkTabState extends State<NetworkTab> {
           ),
         ],
       ),
-    );
+    ),);
   }
 }

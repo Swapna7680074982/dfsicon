@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../main.dart';
 import '../../widgets/event_qr_modal.dart';
-import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
 import '../help_desk/help_desk_screen.dart';
 

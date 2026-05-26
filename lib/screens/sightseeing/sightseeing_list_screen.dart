@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
 import 'sightseeing_details_screen.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class SightseeingListScreen extends StatefulWidget {
   const SightseeingListScreen({super.key});
@@ -30,29 +31,30 @@ class _SightseeingListScreenState extends State<SightseeingListScreen> {
           p.description.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Sightseeing',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Sightseeing',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        body: Column(
+          children: [
+            Container(
+              color: Colors.white.withAlpha(180),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
@@ -126,7 +128,7 @@ class _SightseeingListScreenState extends State<SightseeingListScreen> {
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Colors.white.withAlpha(235),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(color: AppColors.tileBorder, width: 1),
                             boxShadow: [
@@ -206,7 +208,7 @@ class _SightseeingListScreenState extends State<SightseeingListScreen> {
           ),
         ],
       ),
-    );
+    ),);
   }
 
   Widget _buildBadge(IconData icon, String text) {

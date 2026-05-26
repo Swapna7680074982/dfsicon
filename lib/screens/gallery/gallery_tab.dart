@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/gallery_provider.dart';
 import 'gallery_detail_screen.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class GalleryTab extends StatefulWidget {
   final bool isStandalone;
@@ -106,9 +107,10 @@ class _GalleryTabState extends State<GalleryTab> {
     final galProvider = Provider.of<GalleryProvider>(context);
     final isSessions = _selectedSegment == 0;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildAppBar(galProvider),
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: _buildAppBar(galProvider),
       body: Stack(
         children: [
           Column(
@@ -186,7 +188,7 @@ class _GalleryTabState extends State<GalleryTab> {
           if (_isPeopleSelectMode && !isSessions) _buildPeopleBottomBar(galProvider),
         ],
       ),
-    );
+    ),);
   }
 
   // --- AppBar Handler ---
@@ -194,18 +196,18 @@ class _GalleryTabState extends State<GalleryTab> {
     if (_isPeopleSelectMode && _selectedSegment == 1) {
       final allSelected = _selectedPeople.length == galProvider.people.length;
       return AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1.0,
+        backgroundColor: AppColors.primary,
+        elevation: 2.0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
+          icon: const Icon(Icons.close, color: Colors.white),
           onPressed: _exitPeopleSelectMode,
         ),
         title: Text(
           '${_selectedPeople.length} Selected',
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: Colors.white,
           ),
         ),
         actions: [
@@ -220,7 +222,7 @@ class _GalleryTabState extends State<GalleryTab> {
             child: Text(
               allSelected ? 'Deselect All' : 'Select All',
               style: const TextStyle(
-                color: AppColors.primary,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -232,21 +234,21 @@ class _GalleryTabState extends State<GalleryTab> {
     }
 
     return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0.5,
+      backgroundColor: AppColors.primary,
+      elevation: 2.0,
       automaticallyImplyLeading: widget.isStandalone,
       leading: widget.isStandalone
           ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
               onPressed: () => Navigator.pop(context),
             )
           : null,
       title: Text(
         'Gallery',
         style: TextStyle(
-          fontSize: widget.isStandalone ? 18 : 26,
+          fontSize: widget.isStandalone ? 20 : 28,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: Colors.white,
         ),
       ),
       centerTitle: false,
@@ -254,7 +256,7 @@ class _GalleryTabState extends State<GalleryTab> {
           ? [
               // Button to enter Multi-Select Mode in People tab
               IconButton(
-                icon: const Icon(Icons.library_add_check_outlined, color: AppColors.textPrimary, size: 22),
+                icon: const Icon(Icons.library_add_check_outlined, color: Colors.white, size: 22),
                 tooltip: 'Select Multiple People',
                 onPressed: () {
                   setState(() {

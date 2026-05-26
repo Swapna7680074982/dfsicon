@@ -6,6 +6,8 @@ import '../../constants/api_urls.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import 'create_abstract_screen.dart';
+import '../../widgets/water_droplets_background.dart';
+import '../../utils/time_formatter.dart';
 
 class AbstractDetailScreen extends StatefulWidget {
   final String abstractId;
@@ -79,24 +81,25 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
 
     final String displayVersion = "ID: ${widget.abstractId}";
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          title.length > 20 ? '${title.substring(0, 18)}...' : title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 2.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            title.length > 20 ? '${title.substring(0, 18)}...' : title,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
       body: Stack(
         children: [
           if (isLoading)
@@ -217,7 +220,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Submitted: $date',
+                                'Submitted: ${TimeFormatter.formatString(date)}',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: AppColors.textLight,
@@ -509,6 +512,6 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
             ),
         ],
       ),
-    );
+    ),);
   }
 }

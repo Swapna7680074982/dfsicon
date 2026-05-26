@@ -5,6 +5,7 @@ import '../../providers/explore_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import 'exhibitor_details_screen.dart';
+import '../../widgets/water_droplets_background.dart';
 
 class ExhibitorsListScreen extends StatefulWidget {
   const ExhibitorsListScreen({super.key});
@@ -28,6 +29,8 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
   Future<void> _fetchSponsors() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final explore = Provider.of<ExploreProvider>(context, listen: false);
+    // Skip fetch if data was already pre-fetched (e.g., from dashboard initState)
+    if (explore.exhibitors.isNotEmpty) return;
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     final String summitId = homeProvider.summits.isNotEmpty
         ? homeProvider.summits.first['summit_id']?.toString() ?? ''
@@ -52,29 +55,30 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
           ex.boothCode.toLowerCase().contains(query);
     }).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Exhibitors',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return WaterDropletsBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 0.0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Exhibitors',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        body: Column(
+          children: [
+            Container(
+              color: Colors.white.withAlpha(180),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
@@ -109,37 +113,81 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
             ),
           ),
           Expanded(
-            child: filteredExhibitors.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                await auth.refreshSessionToken();
+                await _fetchSponsors();
+              },
+              color: AppColors.primary,
+              backgroundColor: Colors.white,
+              child: expProvider.isLoading
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        const Icon(
-                          Icons.business_center_outlined,
-                          size: 48,
-                          color: AppColors.textLight,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No exhibitors match "$_searchQuery"',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                  strokeWidth: 3,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Loading exhibitors...',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
-                    ),
-                  )
-                : ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
+                    )
+                  : filteredExhibitors.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.business_center_outlined,
+                                  size: 48,
+                                  color: AppColors.textLight,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No exhibitors match "$_searchQuery"',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                      padding: const EdgeInsets.all(20),
                     itemCount: filteredExhibitors.length,
                     itemBuilder: (context, index) {
                       final ex = filteredExhibitors[index];
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Colors.white.withAlpha(235),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: AppColors.tileBorder, width: 1),
                         ),
@@ -214,9 +262,10 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                       );
                     },
                   ),
+            ),
           ),
         ],
       ),
-    );
+    ),);
   }
 }
