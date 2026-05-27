@@ -17,10 +17,7 @@ import '../../utils/time_formatter.dart';
 class HomeTab extends StatelessWidget {
   final VoidCallback onNavigateToSessions;
 
-  const HomeTab({
-    super.key,
-    required this.onNavigateToSessions,
-  });
+  const HomeTab({super.key, required this.onNavigateToSessions});
 
   Widget _buildStatCard({
     required IconData icon,
@@ -114,7 +111,10 @@ class HomeTab extends StatelessWidget {
                       return Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(int.parse(gradientStart)), Color(int.parse(gradientEnd))],
+                            colors: [
+                              Color(int.parse(gradientStart)),
+                              Color(int.parse(gradientEnd)),
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -123,7 +123,10 @@ class HomeTab extends StatelessWidget {
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           ),
                         ),
                       );
@@ -132,7 +135,10 @@ class HomeTab extends StatelessWidget {
                       return Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(int.parse(gradientStart)), Color(int.parse(gradientEnd))],
+                            colors: [
+                              Color(int.parse(gradientStart)),
+                              Color(int.parse(gradientEnd)),
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -222,7 +228,11 @@ class HomeTab extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.access_time, size: 12, color: AppColors.textLight),
+                    const Icon(
+                      Icons.access_time,
+                      size: 12,
+                      color: AppColors.textLight,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -272,7 +282,9 @@ class HomeTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: imageUrl != null ? Colors.white : color,
               borderRadius: BorderRadius.circular(12),
-              border: imageUrl != null ? Border.all(color: AppColors.tileBorder, width: 1) : null,
+              border: imageUrl != null
+                  ? Border.all(color: AppColors.tileBorder, width: 1)
+                  : null,
             ),
             clipBehavior: Clip.antiAlias,
             alignment: Alignment.center,
@@ -290,7 +302,9 @@ class HomeTab extends StatelessWidget {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 1.5,
-                            valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                            valueColor: AlwaysStoppedAnimation(
+                              AppColors.primary,
+                            ),
                           ),
                         ),
                       );
@@ -341,7 +355,11 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 12,
+                color: AppColors.textLight,
+              ),
               const SizedBox(width: 4),
               Text(
                 booth,
@@ -390,7 +408,10 @@ class HomeTab extends StatelessWidget {
                 return Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(int.parse(colorStart)), Color(int.parse(colorEnd))],
+                      colors: [
+                        Color(int.parse(colorStart)),
+                        Color(int.parse(colorEnd)),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -399,7 +420,10 @@ class HomeTab extends StatelessWidget {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
                 );
@@ -408,7 +432,10 @@ class HomeTab extends StatelessWidget {
                 return Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(int.parse(colorStart)), Color(int.parse(colorEnd))],
+                      colors: [
+                        Color(int.parse(colorStart)),
+                        Color(int.parse(colorEnd)),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -442,18 +469,32 @@ class HomeTab extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 12,
+                      color: AppColors.textLight,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       distance,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    const Text('•', style: TextStyle(color: AppColors.textLight)),
+                    const Text(
+                      '•',
+                      style: TextStyle(color: AppColors.textLight),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       cost,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -508,11 +549,17 @@ class HomeTab extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFDDE4F0),
+                    width: 1.5,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -528,11 +575,17 @@ class HomeTab extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFDDE4F0),
+                    width: 1.5,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -548,11 +601,17 @@ class HomeTab extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFDDE4F0),
+                    width: 1.5,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -589,7 +648,11 @@ class HomeTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildShimmerBox(width: double.infinity, height: 110, radius: 0),
+                  _buildShimmerBox(
+                    width: double.infinity,
+                    height: 110,
+                    radius: 0,
+                  ),
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -663,7 +726,11 @@ class HomeTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildShimmerBox(width: double.infinity, height: 100, radius: 0),
+                  _buildShimmerBox(
+                    width: double.infinity,
+                    height: 100,
+                    radius: 0,
+                  ),
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -684,7 +751,6 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-
   String _getInitials(String name) {
     if (name.isEmpty) return 'DL';
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -695,7 +761,6 @@ class HomeTab extends StatelessWidget {
     }
     return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'DL';
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -715,429 +780,486 @@ class HomeTab extends StatelessWidget {
             color: AppColors.primary,
             backgroundColor: Colors.white,
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primary, Color(0xFF4F46E5)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primary, Color(0xFF4F46E5)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
+                      ),
                     ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(32),
-                      bottomRight: Radius.circular(32),
+                    padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
+                    child: Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Welcome back',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              authProvider.userName,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const NotificationsScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(25),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withAlpha(40),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_none,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                Positioned(
+                                  top: 10,
+                                  right: 11,
+                                  child: Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: photoProvider.hasPhoto
+                                ? Image.file(
+                                    File(photoProvider.imagePath!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Center(
+                                    child: Text(
+                                      _getInitials(authProvider.userName),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
-                  child: Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Welcome back',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            authProvider.userName,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NotificationsScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(25),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withAlpha(40),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: homeProvider.isLoading
+                        ? _buildLoadingPlaceholder()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(
-                                Icons.notifications_none,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              Positioned(
-                                top: 10,
-                                right: 11,
-                                child: Container(
-                                  width: 7,
-                                  height: 7,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF10B981),
-                                    shape: BoxShape.circle,
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(24.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withAlpha(240),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: AppColors.primary.withAlpha(24),
+                                    width: 1.5,
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withAlpha(12),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withAlpha(16),
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.location_on,
+                                            color: AppColors.primary,
+                                            size: 12,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            homeProvider.eventInfo.location,
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      homeProvider.eventInfo.name,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      TimeFormatter.formatString(
+                                        homeProvider.eventInfo.date,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => EventQrModal(
+                                            userName: authProvider.userName,
+                                            eventName:
+                                                homeProvider.eventInfo.name,
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.qr_code_2_outlined,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'My QR Code',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        elevation: 2,
+                                        shadowColor: AppColors.primary
+                                            .withAlpha(60),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14.0,
+                                        ),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          48,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildStatCard(
+                                    icon: homeProvider.stats[0].icon,
+                                    iconColor: homeProvider.stats[0].iconColor,
+                                    iconBgColor:
+                                        homeProvider.stats[0].iconBgColor,
+                                    value: homeProvider.stats[0].value,
+                                    label: homeProvider.stats[0].label,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildStatCard(
+                                    icon: homeProvider.stats[1].icon,
+                                    iconColor: homeProvider.stats[1].iconColor,
+                                    iconBgColor:
+                                        homeProvider.stats[1].iconBgColor,
+                                    value: homeProvider.stats[1].value,
+                                    label: homeProvider.stats[1].label,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildStatCard(
+                                    icon: homeProvider.stats[2].icon,
+                                    iconColor: homeProvider.stats[2].iconColor,
+                                    iconBgColor:
+                                        homeProvider.stats[2].iconBgColor,
+                                    value: homeProvider.stats[2].value,
+                                    label: homeProvider.stats[2].label,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 28),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Sessions',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: onNavigateToSessions,
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: Row(
+                                      children: const [
+                                        Text(
+                                          'View All',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 234,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount:
+                                      homeProvider.featuredSessions.length,
+                                  itemBuilder: (context, index) {
+                                    final s =
+                                        homeProvider.featuredSessions[index];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        final sessProv =
+                                            Provider.of<SessionsProvider>(
+                                              context,
+                                              listen: false,
+                                            );
+                                        final matchingSession = sessProv
+                                            .sessions
+                                            .firstWhere(
+                                              (item) => item.title == s.title,
+                                              orElse: () =>
+                                                  sessProv.sessions[index],
+                                            );
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SessionDetailsScreen(
+                                                  session: matchingSession,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      child: _buildSessionCard(
+                                        title: s.title,
+                                        speaker: s.speaker,
+                                        speakerInitials: s.speakerInitials,
+                                        speakerBg: s.speakerBg,
+                                        time: s.time,
+                                        hall: s.hall,
+                                        gradientStart: s.gradientStart,
+                                        gradientEnd: s.gradientEnd,
+                                        imageUrl: s.imageUrl,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                              const Text(
+                                'Sponsors & Exhibitors',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                height: 160,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: homeProvider.exhibitors.length,
+                                  itemBuilder: (context, index) {
+                                    final e = homeProvider.exhibitors[index];
+                                    return _buildExhibitorCard(
+                                      initials: e.initials,
+                                      color: e.color,
+                                      title: e.title,
+                                      subtitle: e.subtitle,
+                                      booth: e.booth,
+                                      imageUrl: e.imageUrl,
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Sightseeing',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SightseeingListScreen(),
+                                        ),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: Row(
+                                      children: const [
+                                        Text(
+                                          'View All',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 176,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: homeProvider.sightseeSpots.length,
+                                  itemBuilder: (context, index) {
+                                    final s = homeProvider.sightseeSpots[index];
+                                    return _buildSightseeCard(
+                                      title: s.title,
+                                      distance: s.distance,
+                                      cost: s.cost,
+                                      colorStart: s.colorStart,
+                                      colorEnd: s.colorEnd,
+                                      icon: s.icon,
+                                      imageUrl: s.imageUrl,
+                                    );
+                                  },
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                          );
-                        },
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: photoProvider.hasPhoto
-                              ? Image.file(
-                                  File(photoProvider.imagePath!),
-                                  fit: BoxFit.cover,
-                                )
-                              : Center(
-                                  child: Text(
-                                    _getInitials(authProvider.userName),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: homeProvider.isLoading
-                      ? _buildLoadingPlaceholder()
-                      : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(240),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.primary.withAlpha(24), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(12),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(16),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.location_on, color: AppColors.primary, size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            homeProvider.eventInfo.location,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      homeProvider.eventInfo.name,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      TimeFormatter.formatString(homeProvider.eventInfo.date),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => EventQrModal(
-                            userName: authProvider.userName,
-                            eventName: homeProvider.eventInfo.name,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.qr_code_2_outlined, color: Colors.white, size: 18),
-                      label: const Text(
-                        'My QR Code',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        elevation: 2,
-                        shadowColor: AppColors.primary.withAlpha(60),
-                        padding: const EdgeInsets.symmetric(vertical: 14.0),
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatCard(
-                    icon: homeProvider.stats[0].icon,
-                    iconColor: homeProvider.stats[0].iconColor,
-                    iconBgColor: homeProvider.stats[0].iconBgColor,
-                    value: homeProvider.stats[0].value,
-                    label: homeProvider.stats[0].label,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatCard(
-                    icon: homeProvider.stats[1].icon,
-                    iconColor: homeProvider.stats[1].iconColor,
-                    iconBgColor: homeProvider.stats[1].iconBgColor,
-                    value: homeProvider.stats[1].value,
-                    label: homeProvider.stats[1].label,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatCard(
-                    icon: homeProvider.stats[2].icon,
-                    iconColor: homeProvider.stats[2].iconColor,
-                    iconBgColor: homeProvider.stats[2].iconBgColor,
-                    value: homeProvider.stats[2].value,
-                    label: homeProvider.stats[2].label,
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Sessions',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onNavigateToSessions,
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                    ),
-                    child: Row(
-                      children: const [
-                        Text(
-                          'View All',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 234,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: homeProvider.featuredSessions.length,
-                  itemBuilder: (context, index) {
-                    final s = homeProvider.featuredSessions[index];
-                    return GestureDetector(
-                      onTap: () {
-                        final sessProv = Provider.of<SessionsProvider>(context, listen: false);
-                        final matchingSession = sessProv.sessions.firstWhere(
-                          (item) => item.title == s.title,
-                          orElse: () => sessProv.sessions[index],
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SessionDetailsScreen(session: matchingSession),
-                          ),
-                        );
-                      },
-                      child: _buildSessionCard(
-                        title: s.title,
-                        speaker: s.speaker,
-                        speakerInitials: s.speakerInitials,
-                        speakerBg: s.speakerBg,
-                        time: s.time,
-                        hall: s.hall,
-                        gradientStart: s.gradientStart,
-                        gradientEnd: s.gradientEnd,
-                        imageUrl: s.imageUrl,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Sponsors & Exhibitors',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 160,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: homeProvider.exhibitors.length,
-                  itemBuilder: (context, index) {
-                    final e = homeProvider.exhibitors[index];
-                    return _buildExhibitorCard(
-                      initials: e.initials,
-                      color: e.color,
-                      title: e.title,
-                      subtitle: e.subtitle,
-                      booth: e.booth,
-                      imageUrl: e.imageUrl,
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 28),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Sightseeing',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SightseeingListScreen(),
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                    ),
-                    child: Row(
-                      children: const [
-                        Text(
-                          'View All',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 176,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: homeProvider.sightseeSpots.length,
-                  itemBuilder: (context, index) {
-                    final s = homeProvider.sightseeSpots[index];
-                    return _buildSightseeCard(
-                      title: s.title,
-                      distance: s.distance,
-                      cost: s.cost,
-                      colorStart: s.colorStart,
-                      colorEnd: s.colorEnd,
-                      icon: s.icon,
-                      imageUrl: s.imageUrl,
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ],
-    ),
-  ),
-),
-),
-),
-);
+      ),
+    );
   }
 }
