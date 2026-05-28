@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dfsicon/constants/api_urls.dart';
+import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -85,24 +84,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     
     try {
-      final url = Uri.parse(ApiUrls.sendOtp);
-      final headers = {'Content-Type': 'application/json'};
-      final requestBody = json.encode({
-        "credentials": {
-          "mobile": _phoneNumber
-        },
-        "meta": _defaultMeta
-      });
-
-      CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: requestBody,
+      final response = await ApiService.sendOtp(
+        phoneNumber: _phoneNumber,
+        meta: _defaultMeta,
       );
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       _isSendingOtp = false;
       if (response.statusCode == 200) {
@@ -157,25 +142,11 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.verifyOtp);
-      final headers = {'Content-Type': 'application/json'};
-      final requestBody = json.encode({
-        "credentials": {
-          "mobile": _phoneNumber,
-          "otp": _otpCode
-        },
-        "meta": _defaultMeta
-      });
-
-      CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: requestBody,
+      final response = await ApiService.verifyOtp(
+        phoneNumber: _phoneNumber,
+        otpCode: _otpCode,
+        meta: _defaultMeta,
       );
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -207,27 +178,10 @@ class AuthProvider with ChangeNotifier {
   Future<bool> refreshSessionToken() async {
     if (_refreshToken.isEmpty) return false;
     try {
-      final url = Uri.parse(ApiUrls.refreshToken);
-      final headers = {'Content-Type': 'application/json'};
-      final requestBody = json.encode({
-        "refresh_token": _refreshToken,
-        "device_id": _defaultMeta["device_id"],
-        "device_name": _defaultMeta["device_name"],
-        "device_type": _defaultMeta["device_type"],
-        "app_version": _defaultMeta["app_version"],
-        "latitude": _defaultMeta["latitude"],
-        "longitude": _defaultMeta["longitude"],
-      });
-
-      CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: requestBody,
+      final response = await ApiService.refreshSessionToken(
+        refreshToken: _refreshToken,
+        meta: _defaultMeta,
       );
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -267,23 +221,10 @@ class AuthProvider with ChangeNotifier {
 
     try {
       if (savedRefreshToken.isNotEmpty) {
-        final url = Uri.parse(ApiUrls.logout);
-        final headers = {'Content-Type': 'application/json'};
-        final requestBody = json.encode({
-          "refresh_token": savedRefreshToken,
-          "latitude": _defaultMeta["latitude"],
-          "longitude": _defaultMeta["longitude"]
-        });
-
-        CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
-
-        final response = await http.post(
-          url,
-          headers: headers,
-          body: requestBody,
+        await ApiService.logout(
+          refreshToken: savedRefreshToken,
+          meta: _defaultMeta,
         );
-
-        CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
       }
       return true;
     } catch (e, stack) {

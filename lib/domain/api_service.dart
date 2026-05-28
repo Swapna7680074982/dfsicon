@@ -1,0 +1,381 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:dfsicon/constants/api_urls.dart';
+import 'package:dfsicon/utils/custom_logger.dart';
+
+class ApiService {
+  ApiService._();
+
+  static const Map<String, String> defaultMeta = {
+    "device_id": "ANDROID_123",
+    "device_name": "Samsung S24",
+    "device_type": "Android",
+    "app_version": "1.0.0",
+    "latitude": "",
+    "longitude": "",
+    "fcmToken": ""
+  };
+
+  // ==========================================
+  // Authentication / Login API Calls
+  // ==========================================
+
+  static Future<http.Response> sendOtp({
+    required String phoneNumber,
+    Map<String, String> meta = defaultMeta,
+  }) async {
+    final url = Uri.parse(ApiUrls.sendOtp);
+    final headers = {'Content-Type': 'application/json'};
+    final requestBody = json.encode({
+      "credentials": {
+        "mobile": phoneNumber
+      },
+      "meta": meta
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> verifyOtp({
+    required String phoneNumber,
+    required String otpCode,
+    Map<String, String> meta = defaultMeta,
+  }) async {
+    final url = Uri.parse(ApiUrls.verifyOtp);
+    final headers = {'Content-Type': 'application/json'};
+    final requestBody = json.encode({
+      "credentials": {
+        "mobile": phoneNumber,
+        "otp": otpCode
+      },
+      "meta": meta
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> refreshSessionToken({
+    required String refreshToken,
+    Map<String, String> meta = defaultMeta,
+  }) async {
+    final url = Uri.parse(ApiUrls.refreshToken);
+    final headers = {'Content-Type': 'application/json'};
+    final requestBody = json.encode({
+      "refresh_token": refreshToken,
+      "device_id": meta["device_id"],
+      "device_name": meta["device_name"],
+      "device_type": meta["device_type"],
+      "app_version": meta["app_version"],
+      "latitude": meta["latitude"],
+      "longitude": meta["longitude"],
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> logout({
+    required String refreshToken,
+    Map<String, String> meta = defaultMeta,
+  }) async {
+    final url = Uri.parse(ApiUrls.logout);
+    final headers = {'Content-Type': 'application/json'};
+    final requestBody = json.encode({
+      "refresh_token": refreshToken,
+      "latitude": meta["latitude"],
+      "longitude": meta["longitude"]
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // ==========================================
+  // Abstract API Calls
+  // ==========================================
+
+  static Future<http.Response> fetchMyAbstracts({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myAbstracts);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchAbstractDetails({
+    required String abstractId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.abstractDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final body = json.encode({
+      'abstract_id': abstractId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchSummits({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.getSummits);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> submitAbstract({
+    required String summitId,
+    required String title,
+    required String description,
+    required String keywords,
+    required String presentationType,
+    required File file,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.submitAbstract);
+    final request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $accessToken';
+    request.fields['summit_id'] = summitId;
+    request.fields['abstract_title'] = title;
+    request.fields['abstract_description'] = description;
+    request.fields['keywords'] = keywords;
+    request.fields['presentation_type'] = presentationType;
+
+    final fileExtension = file.path.split('.').last.toLowerCase();
+    final mimeType = _getMimeTypeForExtension(fileExtension);
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'abstract_file',
+        file.path,
+        contentType: MediaType.parse(mimeType),
+      ),
+    );
+
+    CustomLogger.logRequest(
+      'POST (Multipart)',
+      url.toString(),
+      headers: request.headers,
+      body: 'Fields: ${request.fields}, File Path: ${file.path}',
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> resubmitAbstract({
+    required String abstractId,
+    required String title,
+    required String description,
+    required String keywords,
+    required File file,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.resubmitAbstract);
+    final request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $accessToken';
+    request.fields['abstract_id'] = abstractId;
+    request.fields['abstract_title'] = title;
+    request.fields['abstract_description'] = description;
+    request.fields['keywords'] = keywords;
+
+    final fileExtension = file.path.split('.').last.toLowerCase();
+    final mimeType = _getMimeTypeForExtension(fileExtension);
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'abstract_file',
+        file.path,
+        contentType: MediaType.parse(mimeType),
+      ),
+    );
+
+    CustomLogger.logRequest(
+      'POST (Multipart)',
+      url.toString(),
+      headers: request.headers,
+      body: 'Fields: ${request.fields}, File Path: ${file.path}',
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // ==========================================
+  // Photo Upload API Call
+  // ==========================================
+
+  static Future<http.Response> uploadPhoto({
+    required String imagePath,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.uploadProfilePicture);
+    final request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $accessToken';
+    final fileExtension = imagePath.split('.').last.toLowerCase();
+    
+    String mimeType = 'image/jpeg';
+    if (fileExtension == 'png') {
+      mimeType = 'image/png';
+    } else if (fileExtension == 'webp') {
+      mimeType = 'image/webp';
+    } else if (fileExtension == 'gif') {
+      mimeType = 'image/gif';
+    }
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'profile_picture',
+        imagePath,
+        contentType: MediaType.parse(mimeType),
+      ),
+    );
+
+    CustomLogger.logRequest(
+      'POST (Multipart)',
+      url.toString(),
+      headers: request.headers,
+      body: 'File path: $imagePath',
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // ==========================================
+  // Sponsors API Call
+  // ==========================================
+
+  static Future<http.Response> fetchSponsors({
+    required String summitId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.getSponsors);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final body = json.encode({
+      "summit_id": summitId
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Helper
+  static String _getMimeTypeForExtension(String fileExtension) {
+    String mimeType = 'application/octet-stream';
+    if (fileExtension == 'pdf') {
+      mimeType = 'application/pdf';
+    } else if (fileExtension == 'doc') {
+      mimeType = 'application/msword';
+    } else if (fileExtension == 'docx') {
+      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    } else if (fileExtension == 'png') {
+      mimeType = 'image/png';
+    } else if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
+      mimeType = 'image/jpeg';
+    } else if (fileExtension == 'ppt') {
+      mimeType = 'application/vnd.ms-powerpoint';
+    } else if (fileExtension == 'pptx') {
+      mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    } else if (fileExtension == 'xls') {
+      mimeType = 'application/vnd.ms-excel';
+    } else if (fileExtension == 'xlsx') {
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    } else if (fileExtension == 'txt') {
+      mimeType = 'text/plain';
+    }
+    return mimeType;
+  }
+}

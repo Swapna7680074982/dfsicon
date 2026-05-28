@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dfsicon/main.dart';
-import 'package:dfsicon/constants/api_urls.dart';
+import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 
 class PhotoProvider extends ChangeNotifier {
@@ -52,33 +50,10 @@ class PhotoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.uploadProfilePicture);
-      final request = http.MultipartRequest('POST', url);
-      request.headers['Authorization'] = 'Bearer $accessToken';
-      final fileExtension = _imagePath!.split('.').last.toLowerCase();
-      String mimeType = 'image/jpeg';
-      if (fileExtension == 'png') {
-        mimeType = 'image/png';
-      } else if (fileExtension == 'webp') {
-        mimeType = 'image/webp';
-      } else if (fileExtension == 'gif') {
-        mimeType = 'image/gif';
-      }
-
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'profile_picture',
-          _imagePath!,
-          contentType: MediaType.parse(mimeType),
-        ),
+      final response = await ApiService.uploadPhoto(
+        imagePath: _imagePath!,
+        accessToken: accessToken,
       );
-
-      CustomLogger.logRequest('POST (Multipart)', url.toString(), headers: request.headers, body: 'File path: $_imagePath');
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       _isUploading = false;
       if (response.statusCode == 401) {

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../constants/api_urls.dart';
+import '../domain/api_service.dart';
 
 class HomeEventInfo {
   final String name;
@@ -141,13 +140,7 @@ class HomeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.getSummits);
-      final headers = {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      };
-
-      final response = await http.get(url, headers: headers);
+      final response = await ApiService.fetchSummits(accessToken: accessToken);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true && data['data'] != null && (data['data'] as List).isNotEmpty) {
@@ -308,20 +301,9 @@ class HomeProvider with ChangeNotifier {
 
   Future<void> fetchSponsors(String summitId, String accessToken) async {
     try {
-      final url = Uri.parse(ApiUrls.getSponsors);
-      final headers = {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      };
-      
-      final body = json.encode({
-        "summit_id": summitId
-      });
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body,
+      final response = await ApiService.fetchSponsors(
+        summitId: summitId,
+        accessToken: accessToken,
       );
 
       if (response.statusCode == 200) {

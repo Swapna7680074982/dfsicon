@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dfsicon/main.dart';
-import 'package:dfsicon/constants/api_urls.dart';
+import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 
 class AbstractProvider with ChangeNotifier {
@@ -45,20 +43,7 @@ class AbstractProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.myAbstracts);
-      final headers = {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      };
-
-      CustomLogger.logRequest('POST', url.toString(), headers: headers);
-
-      final response = await http.post(
-        url,
-        headers: headers,
-      );
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+      final response = await ApiService.fetchMyAbstracts(accessToken: accessToken);
 
       _isLoadingList = false;
       if (response.statusCode == 401) {
@@ -96,24 +81,10 @@ class AbstractProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.abstractDetails);
-      final headers = {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      };
-      final body = json.encode({
-        'abstract_id': abstractId,
-      });
-
-      CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body,
+      final response = await ApiService.fetchAbstractDetails(
+        abstractId: abstractId,
+        accessToken: accessToken,
       );
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       _isLoadingDetails = false;
       if (response.statusCode == 401) {
@@ -150,20 +121,7 @@ class AbstractProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.getSummits);
-      final headers = {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      };
-
-      CustomLogger.logRequest('GET', url.toString(), headers: headers);
-
-      final response = await http.get(
-        url,
-        headers: headers,
-      );
-
-      CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+      final response = await ApiService.fetchSummits(accessToken: accessToken);
 
       _isLoadingSummits = false;
       if (response.statusCode == 401) {
@@ -209,58 +167,15 @@ class AbstractProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.submitAbstract);
-      final request = http.MultipartRequest('POST', url);
-      request.headers['Authorization'] = 'Bearer $accessToken';
-      request.fields['summit_id'] = summitId;
-      request.fields['abstract_title'] = title;
-      request.fields['abstract_description'] = description;
-      request.fields['keywords'] = keywords;
-      request.fields['presentation_type'] = presentationType;
-      
-      final fileExtension = file.path.split('.').last.toLowerCase();
-      String mimeType = 'application/octet-stream';
-      if (fileExtension == 'pdf') {
-        mimeType = 'application/pdf';
-      } else if (fileExtension == 'doc') {
-        mimeType = 'application/msword';
-      } else if (fileExtension == 'docx') {
-        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      } else if (fileExtension == 'png') {
-        mimeType = 'image/png';
-      } else if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
-        mimeType = 'image/jpeg';
-      } else if (fileExtension == 'ppt') {
-        mimeType = 'application/vnd.ms-powerpoint';
-      } else if (fileExtension == 'pptx') {
-        mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-      } else if (fileExtension == 'xls') {
-        mimeType = 'application/vnd.ms-excel';
-      } else if (fileExtension == 'xlsx') {
-        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      } else if (fileExtension == 'txt') {
-        mimeType = 'text/plain';
-      }
-
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'abstract_file',
-          file.path,
-          contentType: MediaType.parse(mimeType),
-        ),
+      final response = await ApiService.submitAbstract(
+        summitId: summitId,
+        title: title,
+        description: description,
+        keywords: keywords,
+        presentationType: presentationType,
+        file: file,
+        accessToken: accessToken,
       );
-
-      CustomLogger.logRequest(
-        'POST (Multipart)',
-        url.toString(),
-        headers: request.headers,
-        body: 'Fields: ${request.fields}, File Path: ${file.path}',
-      );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       _isSubmitting = false;
       if (response.statusCode == 401) {
@@ -309,57 +224,14 @@ class AbstractProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.resubmitAbstract);
-      final request = http.MultipartRequest('POST', url);
-      request.headers['Authorization'] = 'Bearer $accessToken';
-      request.fields['abstract_id'] = abstractId;
-      request.fields['abstract_title'] = title;
-      request.fields['abstract_description'] = description;
-      request.fields['keywords'] = keywords;
-      
-      final fileExtension = file.path.split('.').last.toLowerCase();
-      String mimeType = 'application/octet-stream';
-      if (fileExtension == 'pdf') {
-        mimeType = 'application/pdf';
-      } else if (fileExtension == 'doc') {
-        mimeType = 'application/msword';
-      } else if (fileExtension == 'docx') {
-        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      } else if (fileExtension == 'png') {
-        mimeType = 'image/png';
-      } else if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
-        mimeType = 'image/jpeg';
-      } else if (fileExtension == 'ppt') {
-        mimeType = 'application/vnd.ms-powerpoint';
-      } else if (fileExtension == 'pptx') {
-        mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-      } else if (fileExtension == 'xls') {
-        mimeType = 'application/vnd.ms-excel';
-      } else if (fileExtension == 'xlsx') {
-        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      } else if (fileExtension == 'txt') {
-        mimeType = 'text/plain';
-      }
-
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'abstract_file',
-          file.path,
-          contentType: MediaType.parse(mimeType),
-        ),
+      final response = await ApiService.resubmitAbstract(
+        abstractId: abstractId,
+        title: title,
+        description: description,
+        keywords: keywords,
+        file: file,
+        accessToken: accessToken,
       );
-
-      CustomLogger.logRequest(
-        'POST (Multipart)',
-        url.toString(),
-        headers: request.headers,
-        body: 'Fields: ${request.fields}, File Path: ${file.path}',
-      );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       _isResubmitting = false;
       if (response.statusCode == 401) {

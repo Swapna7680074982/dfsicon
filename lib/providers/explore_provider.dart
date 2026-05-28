@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:dfsicon/constants/api_urls.dart';
+import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 
 class Exhibitor {
@@ -126,25 +125,10 @@ class ExploreProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse(ApiUrls.getSponsors);
-      final headers = {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      };
-      
-      final body = json.encode({
-        "summit_id": summitId
-      });
-
-      CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body,
+      final response = await ApiService.fetchSponsors(
+        summitId: summitId,
+        accessToken: accessToken,
       );
-
-      CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
 
       _isLoading = false;
       if (response.statusCode == 200) {
