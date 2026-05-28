@@ -93,10 +93,6 @@ class SessionsProvider extends ChangeNotifier {
   List<SessionItem> _sessions = [];
   List<SessionItem> _mySessions = []; // Speaker-specific confirmed sessions
 
-  Future<bool>? _activeVenueFuture;
-  Future<bool>? _activeSessionsFuture;
-  Future<bool>? _activeMySessionsFuture;
-
   String get searchQuery => _searchQuery;
   bool get showOnlyBookmarked => _showOnlyBookmarked;
   bool get isLoading => _isLoading;
@@ -178,16 +174,8 @@ class SessionsProvider extends ChangeNotifier {
     return json.decode(trimmed);
   }
 
-  Future<bool> fetchVenueAndHalls(String summitId, String accessToken) {
-    if (accessToken.isEmpty || summitId.isEmpty) return Future.value(false);
-    if (_activeVenueFuture != null) {
-      return _activeVenueFuture!;
-    }
-    _activeVenueFuture = _fetchVenueAndHallsInternal(summitId, accessToken);
-    return _activeVenueFuture!;
-  }
-
-  Future<bool> _fetchVenueAndHallsInternal(String summitId, String accessToken) async {
+  Future<bool> fetchVenueAndHalls(String summitId, String accessToken) async {
+    if (accessToken.isEmpty || summitId.isEmpty) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -198,7 +186,6 @@ class SessionsProvider extends ChangeNotifier {
         accessToken: accessToken,
       );
       _isLoading = false;
-      _activeVenueFuture = null;
 
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
@@ -243,23 +230,14 @@ class SessionsProvider extends ChangeNotifier {
     } catch (e, stack) {
       CustomLogger.logError('Fetch venue and halls failed', e, stack);
       _isLoading = false;
-      _activeVenueFuture = null;
       _errorMessage = e.toString();
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> fetchConfirmedSessions(String accessToken) {
-    if (accessToken.isEmpty) return Future.value(false);
-    if (_activeSessionsFuture != null) {
-      return _activeSessionsFuture!;
-    }
-    _activeSessionsFuture = _fetchConfirmedSessionsInternal(accessToken);
-    return _activeSessionsFuture!;
-  }
-
-  Future<bool> _fetchConfirmedSessionsInternal(String accessToken) async {
+  Future<bool> fetchConfirmedSessions(String accessToken) async {
+    if (accessToken.isEmpty) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -267,7 +245,6 @@ class SessionsProvider extends ChangeNotifier {
     try {
       final response = await ApiService.fetchConfirmedSessions(accessToken: accessToken);
       _isLoading = false;
-      _activeSessionsFuture = null;
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
         return false;
@@ -292,7 +269,6 @@ class SessionsProvider extends ChangeNotifier {
     } catch (e, stack) {
       CustomLogger.logError('Fetch confirmed sessions failed', e, stack);
       _isLoading = false;
-      _activeSessionsFuture = null;
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -302,16 +278,8 @@ class SessionsProvider extends ChangeNotifier {
   // ==========================================
   // Fetch Speaker Confirmed Sessions
   // ==========================================
-  Future<bool> fetchMyConfirmedSessions(String accessToken) {
-    if (accessToken.isEmpty) return Future.value(false);
-    if (_activeMySessionsFuture != null) {
-      return _activeMySessionsFuture!;
-    }
-    _activeMySessionsFuture = _fetchMyConfirmedSessionsInternal(accessToken);
-    return _activeMySessionsFuture!;
-  }
-
-  Future<bool> _fetchMyConfirmedSessionsInternal(String accessToken) async {
+  Future<bool> fetchMyConfirmedSessions(String accessToken) async {
+    if (accessToken.isEmpty) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -319,7 +287,6 @@ class SessionsProvider extends ChangeNotifier {
     try {
       final response = await ApiService.fetchMyConfirmedSessions(accessToken: accessToken);
       _isLoading = false;
-      _activeMySessionsFuture = null;
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
         return false;
@@ -344,7 +311,6 @@ class SessionsProvider extends ChangeNotifier {
     } catch (e, stack) {
       CustomLogger.logError('Fetch speaker confirmed sessions failed', e, stack);
       _isLoading = false;
-      _activeMySessionsFuture = null;
       _errorMessage = e.toString();
       notifyListeners();
       return false;

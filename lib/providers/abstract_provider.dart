@@ -20,7 +20,6 @@ class AbstractProvider with ChangeNotifier {
   bool _isLoadingSummits = false;
 
   String? _errorMessage;
-  Future<bool>? _activeMyAbstractsFuture;
 
   // Getters
   List<Map<String, dynamic>> get myAbstracts => _myAbstracts;
@@ -38,16 +37,8 @@ class AbstractProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // API Call: Fetch my abstracts
-  Future<bool> fetchMyAbstracts(String accessToken) {
-    if (accessToken.isEmpty) return Future.value(false);
-    if (_activeMyAbstractsFuture != null) {
-      return _activeMyAbstractsFuture!;
-    }
-    _activeMyAbstractsFuture = _fetchMyAbstractsInternal(accessToken);
-    return _activeMyAbstractsFuture!;
-  }
-
-  Future<bool> _fetchMyAbstractsInternal(String accessToken) async {
+  Future<bool> fetchMyAbstracts(String accessToken) async {
+    if (accessToken.isEmpty) return false;
     _isLoadingList = true;
     notifyListeners();
 
@@ -55,7 +46,6 @@ class AbstractProvider with ChangeNotifier {
       final response = await ApiService.fetchMyAbstracts(accessToken: accessToken);
 
       _isLoadingList = false;
-      _activeMyAbstractsFuture = null;
       if (response.statusCode == 401) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('access_token');
@@ -78,7 +68,6 @@ class AbstractProvider with ChangeNotifier {
     } catch (e, stack) {
       CustomLogger.logError('Fetch my abstracts failed', e, stack);
       _isLoadingList = false;
-      _activeMyAbstractsFuture = null;
       notifyListeners();
       return false;
     }
