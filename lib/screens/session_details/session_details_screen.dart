@@ -6,7 +6,6 @@ import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/event_qr_modal.dart';
-import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
 class SessionDetailsScreen extends StatefulWidget {
@@ -229,6 +228,22 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     );
   }
 
+  String _getThumbnailUrl(String? path) {
+    if (path == null || path.isEmpty) {
+      return 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop';
+    }
+    if (path.startsWith('http')) {
+      return path;
+    }
+    String cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessProvider = Provider.of<SessionsProvider>(context);
@@ -241,9 +256,37 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
         .isAdded;
 
-    return WaterDropletsBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    final halls = sessProvider.halls.isNotEmpty
+        ? sessProvider.halls
+        : [
+            HallItem(hallId: '1', hallName: 'Hall 1', hallCapacity: '0'),
+            HallItem(hallId: '2', hallName: 'Hall 2', hallCapacity: '0'),
+            HallItem(hallId: '3', hallName: 'Hall 3', hallCapacity: '0'),
+            HallItem(hallId: '4', hallName: 'Hall 4', hallCapacity: '0'),
+          ];
+
+    final sessionLocation = widget.session.location.toLowerCase();
+
+    bool checkHighlight(String hallName) {
+      final nameLower = hallName.toLowerCase();
+      if (sessionLocation.contains(nameLower)) return true;
+      if (nameLower == 'hall 1' && (sessionLocation.contains('hall a') || sessionLocation.contains('room a'))) return true;
+      if (nameLower == 'hall 2' && (sessionLocation.contains('hall b') || sessionLocation.contains('room b'))) return true;
+      if (nameLower == 'hall 3' && (sessionLocation.contains('hall c') || sessionLocation.contains('room c'))) return true;
+      if (nameLower == 'hall 4' && (sessionLocation.contains('hall d') || sessionLocation.contains('room d'))) return true;
+      return false;
+    }
+
+    String highlightedText = 'No Hall highlighted';
+    for (var hall in halls) {
+      if (checkHighlight(hall.hallName)) {
+        highlightedText = '${hall.hallName} highlighted';
+        break;
+      }
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: AppColors.primary,
           elevation: 2.0,
@@ -266,94 +309,110 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: Colors.black12,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop',
-                    fit: BoxFit.cover,
-                  ),
-                  Center(
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: const BoxDecoration(
-                        color: Colors.white38,
-                        shape: BoxShape.circle,
+            GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    title: const Text(
+                      'Session Recording',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    content: const Text(
+                      'It will be uploaded after session recording is done.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'OK',
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 32,
+                    ],
+                  ),
+                );
+              },
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  color: Colors.black12,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      _getThumbnailUrl(widget.session.thumbnail),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Image.network(
+                        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop',
+                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.circle, color: Colors.white, size: 8),
-                          SizedBox(width: 4),
-                          Text(
-                            'LIVE',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        '48:22 remaining',
-                        style: TextStyle(
-                          fontSize: 10,
+                    Center(
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: const BoxDecoration(
+                          color: Colors.white38,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.play_arrow,
                           color: Colors.white,
-                          fontWeight: FontWeight.w500,
+                          size: 32,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '60 min',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    (widget.session.keywords != null && widget.session.keywords!.isNotEmpty)
+                        ? widget.session.keywords!.split(',').first.trim()
+                        : 'Health Tech',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Confirmed',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
             Text(
               widget.session.title,
               style: const TextStyle(
@@ -367,24 +426,32 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             Row(
               children: [
                 const Icon(Icons.access_time, size: 14, color: AppColors.textLight),
-                const SizedBox(width: 6),
-                Text(
-                  TimeFormatter.formatString('March 31, 2026', timeStr: widget.session.time),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    TimeFormatter.formatString(widget.session.date, timeStr: widget.session.time),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
                 const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
-                const SizedBox(width: 6),
-                Text(
-                  widget.session.location,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.session.location,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -529,7 +596,9 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Explore how artificial intelligence is revolutionizing diagnostic accuracy, reducing misdiagnosis rates, and enabling clinicians to make faster, evidence-based decisions. Real-world case studies from leading health systems and a look at the regulatory landscape ahead.',
+              widget.session.description != null && widget.session.description!.isNotEmpty
+                  ? widget.session.description!
+                  : 'Explore how artificial intelligence is revolutionizing diagnostic accuracy, reducing misdiagnosis rates, and enabling clinicians to make faster, evidence-based decisions. Real-world case studies from leading health systems and a look at the regulatory landscape ahead.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
@@ -715,97 +784,51 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'Session Location',
+              'Convention Center Map',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
+            Text(
+              highlightedText,
+              style: const TextStyle(fontSize: 12, color: AppColors.textLight),
+            ),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.tileBorder, width: 1),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Convention Center',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Floor Plan',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.circle, color: AppColors.primary, size: 8),
-                            SizedBox(width: 4),
-                            Text(
-                              'Hall A',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade100, width: 1),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: CustomPaint(
-                      painter: FloorPlanPainter(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Center(
-                    child: Text(
-                      'Hall A · Convention Center',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textLight,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 2.2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: halls.length,
+                itemBuilder: (context, index) {
+                  final hall = halls[index];
+                  final isHighlighted = checkHighlight(hall.hallName);
+                  String subtitle = 'Venue Hall';
+                  if (hall.hallName.toLowerCase().contains('1') || hall.hallName.toLowerCase().contains('a')) {
+                    subtitle = 'Auditorium';
+                  } else if (hall.hallName.toLowerCase().contains('2') || hall.hallName.toLowerCase().contains('b')) {
+                    subtitle = 'Conference';
+                  } else if (hall.hallName.toLowerCase().contains('3') || hall.hallName.toLowerCase().contains('c')) {
+                    subtitle = 'Workshop';
+                  } else if (hall.hallName.toLowerCase().contains('4') || hall.hallName.toLowerCase().contains('d')) {
+                    subtitle = 'Breakout';
+                  }
+                  return _buildMapHall(hall.hallName, subtitle, isHighlighted);
+                },
               ),
             ),
             const SizedBox(height: 28),
@@ -923,7 +946,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
           ],
         ),
       ),
-    ),);
+    );
   }
 
   Widget _buildOverlappingAvatar(String initials, Color bg, double leftOffset, {Color textColor = Colors.white}) {
@@ -949,106 +972,72 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
       ),
     );
   }
-}
 
-class FloorPlanPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paintLine = Paint()
-      ..color = Colors.grey.shade300
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final fillHallA = Paint()
-      ..color = const Color(0xFFEEF2FF)
-      ..style = PaintingStyle.fill;
-
-    final borderHallA = Paint()
-      ..color = const Color(0xFF6366F1)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    final fillOther = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
-
-    final hallARect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 16, (size.width - 48) * 0.45, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(hallARect, fillHallA);
-    canvas.drawRRect(hallARect, borderHallA);
-
-    final hallBRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.45, 16, (size.width - 48) * 0.55, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(hallBRect, fillOther);
-    canvas.drawRRect(hallBRect, paintLine);
-
-    final roomCRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 88, (size.width - 48) * 0.3, 40),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(roomCRect, fillOther);
-    canvas.drawRRect(roomCRect, paintLine);
-
-    final lobbyRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.3, 88, (size.width - 48) * 0.7, 40),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(lobbyRect, fillOther);
-    canvas.drawRRect(lobbyRect, paintLine);
-
-    final roomDRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 140, (size.width - 48) * 0.33, 30),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(roomDRect, fillOther);
-    canvas.drawRRect(roomDRect, paintLine);
-
-    final exhibitRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.33, 140, (size.width - 48) * 0.67, 30),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(exhibitRect, fillOther);
-    canvas.drawRRect(exhibitRect, paintLine);
-
-    _drawCenterText(canvas, textPainter, 'Hall A', Offset(16 + (size.width - 48) * 0.225, 46), isHighlighted: true);
-    _drawCenterText(canvas, textPainter, 'Hall B', Offset(24 + (size.width - 48) * 0.725, 46));
-    _drawCenterText(canvas, textPainter, 'Room C', Offset(16 + (size.width - 48) * 0.15, 108));
-    _drawCenterText(canvas, textPainter, 'Lobby', Offset(24 + (size.width - 48) * 0.65, 108));
-    _drawCenterText(canvas, textPainter, 'Room D', Offset(16 + (size.width - 48) * 0.165, 155));
-    _drawCenterText(canvas, textPainter, 'Exhibition Hall', Offset(24 + (size.width - 48) * 0.665, 155));
-
-    final dotPaint = Paint()
-      ..color = const Color(0xFF2B1F7D)
-      ..style = PaintingStyle.fill;
-    final outerDotPaint = Paint()
-      ..color = const Color(0xFF2B1F7D).withAlpha(40)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(16 + (size.width - 48) * 0.225, 62), 10, outerDotPaint);
-    canvas.drawCircle(Offset(16 + (size.width - 48) * 0.225, 62), 4, dotPaint);
-  }
-
-  void _drawCenterText(Canvas canvas, TextPainter tp, String text, Offset center, {bool isHighlighted = false}) {
-    tp.text = TextSpan(
-      text: text,
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
-        color: isHighlighted ? const Color(0xFF2B1F7D) : AppColors.textSecondary,
+  Widget _buildMapHall(String name, String subtitle, bool isHighlighted) {
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isHighlighted ? const Color(0xFFEEECF9) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHighlighted ? AppColors.primary : Colors.grey.shade200,
+          width: isHighlighted ? 2 : 1,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isHighlighted ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isHighlighted ? AppColors.primary : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isHighlighted)
+            Positioned(
+              top: 6,
+              left: 8,
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'You',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
-    tp.layout();
-    tp.paint(canvas, Offset(center.dx - tp.width / 2, center.dy - tp.height / 2));
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+

@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/explore_provider.dart';
+import '../../providers/sessions_provider.dart';
 import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
@@ -32,14 +33,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final homeProvider = Provider.of<HomeProvider>(context, listen: false);
       final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
+      final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
+      
+      // Load summits first
       await homeProvider.fetchSummits(auth.accessToken);
+      
       // Pre-fetch exhibitors immediately after summits load so data is ready
       // when the user opens Explore or Exhibitors screens
       final String summitId = homeProvider.summits.isNotEmpty
-          ? homeProvider.summits.first['summit_id']?.toString() ?? ''
-          : '';
-      if (summitId.isNotEmpty) {
-        exploreProvider.fetchSponsors(summitId, auth.accessToken);
+          ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+          : '1';
+      exploreProvider.fetchSponsors(summitId, auth.accessToken);
+      sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
+
+      // Pre-fetch confirmed sessions for immediate Home Tab rendering
+      if (auth.isSpeaker) {
+        sessionsProvider.fetchMyConfirmedSessions(auth.accessToken);
+      } else {
+        sessionsProvider.fetchConfirmedSessions(auth.accessToken);
       }
     });
   }

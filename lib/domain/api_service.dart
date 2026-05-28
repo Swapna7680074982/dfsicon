@@ -195,6 +195,46 @@ class ApiService {
     return response;
   }
 
+  static Future<http.Response> fetchConfirmedSessions({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.getConfirmedSessions);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchMyConfirmedSessions({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myConfirmedSessions);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   static Future<http.Response> submitAbstract({
     required String summitId,
     required String title,
@@ -202,6 +242,7 @@ class ApiService {
     required String keywords,
     required String presentationType,
     required File file,
+    File? thumbnail,
     required String accessToken,
   }) async {
     final url = Uri.parse(ApiUrls.submitAbstract);
@@ -224,11 +265,23 @@ class ApiService {
       ),
     );
 
+    if (thumbnail != null) {
+      final thumbExt = thumbnail.path.split('.').last.toLowerCase();
+      final thumbMime = _getMimeTypeForExtension(thumbExt);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'thumbnail',
+          thumbnail.path,
+          contentType: MediaType.parse(thumbMime),
+        ),
+      );
+    }
+
     CustomLogger.logRequest(
       'POST (Multipart)',
       url.toString(),
       headers: request.headers,
-      body: 'Fields: ${request.fields}, File Path: ${file.path}',
+      body: 'Fields: ${request.fields}, File Path: ${file.path}, Thumbnail Path: ${thumbnail?.path}',
     );
 
     final streamedResponse = await request.send();
@@ -244,6 +297,7 @@ class ApiService {
     required String description,
     required String keywords,
     required File file,
+    File? thumbnail,
     required String accessToken,
   }) async {
     final url = Uri.parse(ApiUrls.resubmitAbstract);
@@ -265,11 +319,23 @@ class ApiService {
       ),
     );
 
+    if (thumbnail != null) {
+      final thumbExt = thumbnail.path.split('.').last.toLowerCase();
+      final thumbMime = _getMimeTypeForExtension(thumbExt);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'thumbnail',
+          thumbnail.path,
+          contentType: MediaType.parse(thumbMime),
+        ),
+      );
+    }
+
     CustomLogger.logRequest(
       'POST (Multipart)',
       url.toString(),
       headers: request.headers,
-      body: 'Fields: ${request.fields}, File Path: ${file.path}',
+      body: 'Fields: ${request.fields}, File Path: ${file.path}, Thumbnail Path: ${thumbnail?.path}',
     );
 
     final streamedResponse = await request.send();
@@ -332,6 +398,31 @@ class ApiService {
     required String accessToken,
   }) async {
     final url = Uri.parse(ApiUrls.getSponsors);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final body = json.encode({
+      "summit_id": summitId
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchVenueAndHalls({
+    required String summitId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.getVenueAndHalls);
     final headers = {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',

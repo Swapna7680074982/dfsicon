@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
+import '../main.dart';
 
 class Exhibitor {
   final String id;
@@ -131,6 +132,10 @@ class ExploreProvider with ChangeNotifier {
       );
 
       _isLoading = false;
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {

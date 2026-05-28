@@ -1123,12 +1123,23 @@ class HomeTab extends StatelessWidget {
                                               context,
                                               listen: false,
                                             );
+                                        if (sessProv.sessions.isEmpty) {
+                                          sessProv.fetchConfirmedSessions(authProvider.accessToken);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Loading session details, please try again in a moment...'),
+                                              duration: Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         final matchingSession = sessProv
                                             .sessions
                                             .firstWhere(
                                               (item) => item.title == s.title,
                                               orElse: () =>
-                                                  sessProv.sessions[index],
+                                                  sessProv.sessions.first,
                                             );
                                         Navigator.push(
                                           context,

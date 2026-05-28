@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../domain/api_service.dart';
+import '../main.dart';
 
 class HomeEventInfo {
   final String name;
@@ -141,6 +142,10 @@ class HomeProvider with ChangeNotifier {
 
     try {
       final response = await ApiService.fetchSummits(accessToken: accessToken);
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return;
+      }
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true && data['data'] != null && (data['data'] as List).isNotEmpty) {
@@ -305,6 +310,11 @@ class HomeProvider with ChangeNotifier {
         summitId: summitId,
         accessToken: accessToken,
       );
+
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return;
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

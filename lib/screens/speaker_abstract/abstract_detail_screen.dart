@@ -65,10 +65,14 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
     Color badgeTextColor;
     IconData? badgeIcon;
 
-    if (status == 'Accepted') {
+    if (status == 'Confirmed') {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
+    } else if (status == 'Accepted') {
+      badgeBgColor = const Color(0xFFEFF6FF);
+      badgeTextColor = const Color(0xFF3B82F6);
+      badgeIcon = Icons.check_circle_outline;
     } else if (status == 'Submitted' || status == 'Under Review') {
       badgeBgColor = const Color(0xFFFEF3C7);
       badgeTextColor = const Color(0xFFF59E0B);

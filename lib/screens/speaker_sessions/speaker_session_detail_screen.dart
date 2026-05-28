@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/sessions_provider.dart';
 import '../gallery/gallery_tab.dart';
 
 class SpeakerSessionDetailScreen extends StatelessWidget {
@@ -11,6 +13,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
   final String coordinatorName;
   final String coordinatorPhone;
   final String coordinatorEmail;
+  final String? description;
 
   const SpeakerSessionDetailScreen({
     super.key,
@@ -22,10 +25,42 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
     required this.coordinatorName,
     required this.coordinatorPhone,
     required this.coordinatorEmail,
+    this.description,
   });
 
   @override
   Widget build(BuildContext context) {
+    final sessProvider = Provider.of<SessionsProvider>(context);
+
+    final halls = sessProvider.halls.isNotEmpty
+        ? sessProvider.halls
+        : [
+            HallItem(hallId: '1', hallName: 'Hall 1', hallCapacity: '0'),
+            HallItem(hallId: '2', hallName: 'Hall 2', hallCapacity: '0'),
+            HallItem(hallId: '3', hallName: 'Hall 3', hallCapacity: '0'),
+            HallItem(hallId: '4', hallName: 'Hall 4', hallCapacity: '0'),
+          ];
+
+    final sessionLocation = location.toLowerCase();
+
+    bool checkHighlight(String hallName) {
+      final nameLower = hallName.toLowerCase();
+      if (sessionLocation.contains(nameLower)) return true;
+      if (nameLower == 'hall 1' && (sessionLocation.contains('hall a') || sessionLocation.contains('room a'))) return true;
+      if (nameLower == 'hall 2' && (sessionLocation.contains('hall b') || sessionLocation.contains('room b'))) return true;
+      if (nameLower == 'hall 3' && (sessionLocation.contains('hall c') || sessionLocation.contains('room c'))) return true;
+      if (nameLower == 'hall 4' && (sessionLocation.contains('hall d') || sessionLocation.contains('room d'))) return true;
+      return false;
+    }
+
+    String highlightedText = 'No Hall highlighted';
+    for (var hall in halls) {
+      if (checkHighlight(hall.hallName)) {
+        highlightedText = '${hall.hallName} highlighted';
+        break;
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -128,7 +163,9 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Explore how artificial intelligence is revolutionizing diagnostic accuracy, reducing misdiagnosis rates, and enabling clinicians to make faster, evidence-based decisions. Real-world case studies from leading health systems and a look at the regulatory landscape ahead.',
+              (description != null && description!.trim().isNotEmpty)
+                  ? description!
+                  : 'Explore how artificial intelligence is revolutionizing diagnostic accuracy, reducing misdiagnosis rates, and enabling clinicians to make faster, evidence-based decisions. Real-world case studies from leading health systems and a look at the regulatory landscape ahead.',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
@@ -277,9 +314,9 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Hall A highlighted',
-              style: TextStyle(fontSize: 12, color: AppColors.textLight),
+            Text(
+              highlightedText,
+              style: const TextStyle(fontSize: 12, color: AppColors.textLight),
             ),
             const SizedBox(height: 12),
             Container(
@@ -289,179 +326,31 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.tileBorder, width: 1),
               ),
-              child: AspectRatio(
-                aspectRatio: 1.8,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEECF9),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.primary, width: 2),
-                              ),
-                              alignment: Alignment.center,
-                              child: Stack(
-                                children: [
-                                  Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: const [
-                                        Text(
-                                          'Hall A',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Auditorium',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 6,
-                                    left: 8,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 6,
-                                          height: 6,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.redAccent,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Text(
-                                          'You',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              alignment: Alignment.center,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text(
-                                    'Hall C',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Workshop',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              alignment: Alignment.center,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text(
-                                    'Hall B',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Conference',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              alignment: Alignment.center,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text(
-                                    'Hall D',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Breakout',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 2.2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
                 ),
+                itemCount: halls.length,
+                itemBuilder: (context, index) {
+                  final hall = halls[index];
+                  final isHighlighted = checkHighlight(hall.hallName);
+                  String subtitle = 'Venue Hall';
+                  if (hall.hallName.toLowerCase().contains('1') || hall.hallName.toLowerCase().contains('a')) {
+                    subtitle = 'Auditorium';
+                  } else if (hall.hallName.toLowerCase().contains('2') || hall.hallName.toLowerCase().contains('b')) {
+                    subtitle = 'Conference';
+                  } else if (hall.hallName.toLowerCase().contains('3') || hall.hallName.toLowerCase().contains('c')) {
+                    subtitle = 'Workshop';
+                  } else if (hall.hallName.toLowerCase().contains('4') || hall.hallName.toLowerCase().contains('d')) {
+                    subtitle = 'Breakout';
+                  }
+                  return _buildMapHall(hall.hallName, subtitle, isHighlighted);
+                },
               ),
             ),
             const SizedBox(height: 28),
@@ -521,15 +410,86 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: Colors.white70),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMapHall(String name, String subtitle, bool isHighlighted) {
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isHighlighted ? const Color(0xFFEEECF9) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHighlighted ? AppColors.primary : Colors.grey.shade200,
+          width: isHighlighted ? 2 : 1,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isHighlighted ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isHighlighted ? AppColors.primary : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isHighlighted)
+            Positioned(
+              top: 6,
+              left: 8,
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'You',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 

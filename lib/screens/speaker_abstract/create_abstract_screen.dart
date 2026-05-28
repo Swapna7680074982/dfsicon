@@ -46,6 +46,10 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
   String? _uploadedFileName;
   String? _uploadedFileSize;
 
+  File? _pickedThumbnail;
+  String? _uploadedThumbnailName;
+  String? _uploadedThumbnailSize;
+
   final List<String> _topics = [
     'AI & Machine Learning',
     'Digital Health',
@@ -502,6 +506,176 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                   ],
                 ),
               ),
+            const SizedBox(height: 24),
+            const Text(
+              'Thumbnail Image (Optional)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_uploadedThumbnailName == null)
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.image,
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      final path = result.files.single.path!;
+                      final file = File(path);
+                      final sizeInBytes = await file.length();
+                      final sizeInMb = sizeInBytes / (1024 * 1024);
+                      if (sizeInMb > 5.0) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Thumbnail size exceeds the 5MB limit!'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      setState(() {
+                        _pickedThumbnail = file;
+                        _uploadedThumbnailName = result.files.single.name;
+                        _uploadedThumbnailSize = '${sizeInMb.toStringAsFixed(1)} MB';
+                      });
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to pick thumbnail image: $e'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFC084FC),
+                      width: 1.2,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_outlined,
+                        color: AppColors.primary,
+                        size: 28,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Tap to select thumbnail image',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'PNG, JPG, JPEG (Max 5MB)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFC084FC), width: 1.2),
+                ),
+                child: Row(
+                  children: [
+                    if (_pickedThumbnail != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          _pickedThumbnail!,
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F3FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.image, color: AppColors.primary),
+                      ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _uploadedThumbnailName!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _uploadedThumbnailSize!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Color(0xFFEF4444),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _pickedThumbnail = null;
+                          _uploadedThumbnailName = null;
+                          _uploadedThumbnailSize = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -555,6 +729,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                             description: description,
                             keywords: keywords,
                             file: _pickedFile!,
+                            thumbnail: _pickedThumbnail,
                             accessToken: authProvider.accessToken,
                           );
 
@@ -584,6 +759,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                             keywords: keywords,
                             presentationType: _selectedPresentationType,
                             file: _pickedFile!,
+                            thumbnail: _pickedThumbnail,
                             accessToken: authProvider.accessToken,
                           );
 
