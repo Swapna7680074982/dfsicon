@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   final navigator = Navigator.of(context);
                   final bool success = await authProvider.verifyOtp();
                   if (success && mounted) {
-                    if (authProvider.profileImage != 'NA' && authProvider.profileImage.isNotEmpty) {
+                    if (authProvider.hasValidProfileImage) {
                       navigator.pushReplacementNamed('/dashboard');
                     } else {
                       navigator.pushNamed('/photo_upload');

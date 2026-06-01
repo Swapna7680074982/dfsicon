@@ -929,16 +929,31 @@ class HomeTab extends StatelessWidget {
                                     File(photoProvider.imagePath!),
                                     fit: BoxFit.cover,
                                   )
-                                : Center(
-                                    child: Text(
-                                      _getInitials(authProvider.userName),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
+                                : authProvider.hasValidProfileImage
+                                    ? Image.network(
+                                        authProvider.profileImage,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Center(
+                                          child: Text(
+                                            _getInitials(authProvider.userName),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          _getInitials(authProvider.userName),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
                           ),
                         ),
                       ],

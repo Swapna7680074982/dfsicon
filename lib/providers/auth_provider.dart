@@ -62,6 +62,17 @@ class AuthProvider with ChangeNotifier {
   String get designation => _profileData['designation'] ?? (isSpeaker ? 'Chief Speaker' : 'Sr. Consultant');
   String get profileImage => _profileData['profile_image'] ?? 'NA';
 
+  bool get hasValidProfileImage {
+    final img = profileImage.trim();
+    if (img == 'NA' || img.isEmpty) return false;
+    if (img == 'https://services.heterohcl.com/dfs-icon/' || 
+        img == 'https://services.heterohcl.com/dfs-icon' ||
+        img == 'https://services.heterohcl.com/dfs-icon/NA') {
+      return false;
+    }
+    return true;
+  }
+
   bool get isPhoneValid => _phoneNumber.length >= 10;
   bool get isOtpComplete => _otpCode.length == 6;
 

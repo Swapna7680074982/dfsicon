@@ -219,7 +219,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 File(photoProvider.imagePath!),
                                 fit: BoxFit.cover,
                               )
-                            : (authProvider.profileImage != 'NA' && authProvider.profileImage.isNotEmpty)
+                            : authProvider.hasValidProfileImage
                                 ? Image.network(
                                     authProvider.profileImage,
                                     fit: BoxFit.cover,

@@ -33,7 +33,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       final bool isLoggedIn = await authProvider.tryAutoLogin();
       if (!mounted) return;
       if (isLoggedIn) {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+        if (authProvider.hasValidProfileImage) {
+          Navigator.of(context).pushReplacementNamed('/dashboard');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/photo_upload');
+        }
       } else {
         Navigator.of(context).pushReplacementNamed('/login');
       }
