@@ -60,7 +60,20 @@ class AuthProvider with ChangeNotifier {
   String get hospitalClinicName => _profileData['hospital_clinic_name'] ?? (isSpeaker ? 'National Pathology Institute' : 'Medcare Hospitals');
   String get medicalRegistrationNumber => _profileData['medical_registration_number'] ?? '123456';
   String get designation => _profileData['designation'] ?? (isSpeaker ? 'Chief Speaker' : 'Sr. Consultant');
-  String get profileImage => _profileData['profile_image'] ?? 'NA';
+  String get profileImage {
+    final img = (_profileData['profile_image'] ?? 'NA').toString().trim();
+    if (img == 'NA' || img.isEmpty) return 'NA';
+    if (img.startsWith('http')) {
+      return img;
+    }
+    String cleanPath = img;
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
 
   bool get hasValidProfileImage {
     final img = profileImage.trim();
