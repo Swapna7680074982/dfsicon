@@ -40,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           : '1';
       exploreProvider.fetchSponsors(summitId, auth.accessToken);
       sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
+      sessionsProvider.fetchConfirmedSessions(auth.accessToken);
     });
   }
 

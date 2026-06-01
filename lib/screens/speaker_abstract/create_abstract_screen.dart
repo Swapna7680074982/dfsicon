@@ -6,6 +6,7 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../../widgets/water_droplets_background.dart';
+import '../../constants/api_urls.dart';
 
 class CreateAbstractScreen extends StatefulWidget {
   final bool isUpdate;
@@ -16,6 +17,9 @@ class CreateAbstractScreen extends StatefulWidget {
   final String? initialFileName;
   final String? initialFileSize;
   final String? initialKeywords;
+  final String? initialThumbnail;
+  final String? initialThumbnailName;
+  final String? initialThumbnailSize;
 
   const CreateAbstractScreen({
     super.key,
@@ -27,6 +31,9 @@ class CreateAbstractScreen extends StatefulWidget {
     this.initialFileName,
     this.initialFileSize,
     this.initialKeywords,
+    this.initialThumbnail,
+    this.initialThumbnailName,
+    this.initialThumbnailSize,
   });
 
   @override
@@ -67,6 +74,8 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
     _selectedTopic = widget.initialTopic;
     _uploadedFileName = widget.initialFileName;
     _uploadedFileSize = widget.initialFileSize;
+    _uploadedThumbnailName = widget.initialThumbnailName;
+    _uploadedThumbnailSize = widget.initialThumbnailSize;
     _descController.addListener(_updateWordCount);
     _updateWordCount();
 
@@ -621,6 +630,26 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           fit: BoxFit.cover,
                         ),
                       )
+                    else if (widget.initialThumbnail != null && widget.initialThumbnail!.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _getAbsoluteThumbnailUrl(widget.initialThumbnail!),
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F3FF),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.image, color: AppColors.primary),
+                          ),
+                        ),
+                      )
                     else
                       Container(
                         width: 44,
@@ -832,6 +861,26 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
       return Icons.image_outlined;
     }
     return Icons.insert_drive_file_outlined;
+  }
+
+  String _getAbsoluteThumbnailUrl(String path) {
+    if (path.startsWith('http')) {
+      return path.replaceAll('/./', '/');
+    }
+    String cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    
+    String finalUrl;
+    if (cleanPath.contains('dfs-icon')) {
+      finalUrl = '${ApiUrls.domain}/$cleanPath';
+    } else {
+      finalUrl = '${ApiUrls.domain}/dfs-icon/$cleanPath';
+    }
+    return finalUrl.replaceAll('/./', '/');
   }
 
   Widget _buildPresentationTypeCard(String label, String value) {

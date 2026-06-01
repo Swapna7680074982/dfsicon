@@ -19,6 +19,39 @@ class HomeTab extends StatelessWidget {
 
   const HomeTab({super.key, required this.onNavigateToSessions});
 
+  static const List<List<String>> _gradientPairs = [
+    ['0xFF4F46E5', '0xFF818CF8'], // Indigo
+    ['0xFFDB2777', '0xFFF472B6'], // Pink
+    ['0xFF059669', '0xFF34D399'], // Emerald
+    ['0xFFD97706', '0xFFFBBF24'], // Amber
+    ['0xFFDC2626', '0xFFFCA5A5'], // Red
+    ['0xFF7C3AED', '0xFFA78BFA'], // Purple
+  ];
+
+  static const List<String> _fallbackImages = [
+    'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1516841273335-e39b37888115?w=400&fit=crop',
+    'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&fit=crop',
+    'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=400&fit=crop',
+  ];
+
+  String _getThumbnailUrl(String? path) {
+    if (path == null || path.isEmpty) {
+      return '';
+    }
+    if (path.startsWith('http')) {
+      return path;
+    }
+    String cleanPath = path;
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required Color iconColor,
@@ -767,6 +800,7 @@ class HomeTab extends StatelessWidget {
     final photoProvider = Provider.of<PhotoProvider>(context);
     final homeProvider = Provider.of<HomeProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final sessionsProvider = Provider.of<SessionsProvider>(context);
 
     return WaterDropletsBackground(
       child: Scaffold(
@@ -774,8 +808,10 @@ class HomeTab extends StatelessWidget {
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: () async {
+              final sessionsProv = Provider.of<SessionsProvider>(context, listen: false);
               await authProvider.refreshSessionToken();
               await homeProvider.fetchSummits(authProvider.accessToken);
+              await sessionsProv.fetchConfirmedSessions(authProvider.accessToken);
             },
             color: AppColors.primary,
             backgroundColor: Colors.white,
@@ -1107,65 +1143,127 @@ class HomeTab extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              SizedBox(
-                                height: 234,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount:
-                                      homeProvider.featuredSessions.length,
-                                  itemBuilder: (context, index) {
-                                    final s =
-                                        homeProvider.featuredSessions[index];
-                                    return GestureDetector(
-                                      onTap: () {
-                                        final sessProv =
-                                            Provider.of<SessionsProvider>(
-                                              context,
-                                              listen: false,
-                                            );
-                                        if (sessProv.sessions.isEmpty) {
-                                          sessProv.fetchConfirmedSessions(authProvider.accessToken);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Loading session details, please try again in a moment...'),
-                                              duration: Duration(seconds: 2),
-                                              behavior: SnackBarBehavior.floating,
+                              const SizedBox(height: 12),
+                              if (sessionsProvider.isLoading &&
+                                  sessionsProvider.sessions.isEmpty)
+                                SizedBox(
+                                  height: 234,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: 3,
+                                    itemBuilder: (context, _) => Container(
+                                      width: 210,
+                                      margin: const EdgeInsets.only(right: 16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: const Color(0xFFDDE4F0),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _buildShimmerBox(
+                                            width: double.infinity,
+                                            height: 110,
+                                            radius: 0,
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                _buildShimmerBox(
+                                                  width: 160,
+                                                  height: 14,
+                                                ),
+                                                const SizedBox(height: 6),
+                                                _buildShimmerBox(
+                                                  width: 120,
+                                                  height: 12,
+                                                ),
+                                                const SizedBox(height: 12),
+                                                _buildShimmerBox(
+                                                  width: 100,
+                                                  height: 12,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else if (sessionsProvider.sessions.isEmpty)
+                                const Center(
+                                  child: Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: 24.0),
+                                    child: Text(
+                                      'No confirmed sessions available',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                SizedBox(
+                                  height: 234,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: sessionsProvider.sessions.length > 5
+                                        ? 5
+                                        : sessionsProvider.sessions.length,
+                                    itemBuilder: (context, index) {
+                                      final s =
+                                          sessionsProvider.sessions[index];
+                                      final colorIndex = index % _gradientPairs.length;
+                                      final gradientStart =
+                                          _gradientPairs[colorIndex][0];
+                                      final gradientEnd =
+                                          _gradientPairs[colorIndex][1];
+                                      final imageUrl = (s.thumbnail != null &&
+                                              s.thumbnail!.isNotEmpty)
+                                          ? _getThumbnailUrl(s.thumbnail!)
+                                          : _fallbackImages[index %
+                                              _fallbackImages.length];
+
+                                      return GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SessionDetailsScreen(
+                                                session: s,
+                                              ),
                                             ),
                                           );
-                                          return;
-                                        }
-                                        final matchingSession = sessProv
-                                            .sessions
-                                            .firstWhere(
-                                              (item) => item.title == s.title,
-                                              orElse: () =>
-                                                  sessProv.sessions.first,
-                                            );
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                SessionDetailsScreen(
-                                                  session: matchingSession,
-                                                ),
-                                          ),
-                                        );
-                                      },
-                                      child: _buildSessionCard(
-                                        title: s.title,
-                                        speaker: s.speaker,
-                                        speakerInitials: s.speakerInitials,
-                                        speakerBg: s.speakerBg,
-                                        time: s.time,
-                                        hall: s.hall,
-                                        gradientStart: s.gradientStart,
-                                        gradientEnd: s.gradientEnd,
-                                        imageUrl: s.imageUrl,
-                                      ),
-                                    );
-                                  },
+                                        },
+                                        child: _buildSessionCard(
+                                          title: s.title,
+                                          speaker: s.speakerName,
+                                          speakerInitials: s.speakerInitials,
+                                          speakerBg: s.speakerBg,
+                                          time: s.time,
+                                          hall: s.location,
+                                          gradientStart: gradientStart,
+                                          gradientEnd: gradientEnd,
+                                          imageUrl: imageUrl,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
                               const SizedBox(height: 28),
                               const Text(
                                 'Sponsors & Exhibitors',

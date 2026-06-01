@@ -60,6 +60,16 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
     final String? fileUrl = details != null ? (details['file_path'] ?? details['abstract_file'])?.toString() : null;
     final String? feedback = details != null ? details['reviewer_feedback']?.toString() : null;
     final bool hasFeedback = feedback != null && feedback.trim().isNotEmpty;
+    final String? rawThumbnail = details != null 
+        ? (details['thumbnail'] ?? 
+           details['thumbnail_path'] ?? 
+           details['thumbnail_image'] ?? 
+           details['thumbnail_file'] ?? 
+           details['image_path'])?.toString()
+        : null;
+    final String? thumbnailUrl = (rawThumbnail != null && rawThumbnail.trim().isNotEmpty && rawThumbnail.trim() != 'NA' && rawThumbnail.trim() != 'null') 
+        ? rawThumbnail.trim() 
+        : null;
 
     Color badgeBgColor;
     Color badgeTextColor;
@@ -404,6 +414,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                                         finalFileUrl = '${ApiUrls.domain}/$finalFileUrl';
                                       }
                                     }
+                                    finalFileUrl = finalFileUrl.replaceAll('/./', '/');
                                     
                                     final Uri uri = Uri.parse(finalFileUrl);
                                     try {
@@ -488,6 +499,9 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                           initialFileName: fileUrl?.split('/').last ?? 'Abstract_Draft.pdf',
                           initialFileSize: 'Click to select revised draft',
                           initialKeywords: keywords,
+                          initialThumbnail: thumbnailUrl,
+                          initialThumbnailName: thumbnailUrl?.split('/').last ?? 'thumbnail.jpg',
+                          initialThumbnailSize: 'Previously uploaded',
                         ),
                       ),
                     ).then((updated) {
