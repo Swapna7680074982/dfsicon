@@ -106,7 +106,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Welcome back',
+                                'WELCOME BACK',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.white70,
@@ -114,9 +114,9 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                authProvider.userName,
+                                authProvider.userName.toUpperCase(),
                                 style: const TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
@@ -240,7 +240,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${mySessions.length} Sessions Confirmed',
+                              '${mySessions.length} SESSIONS CONFIRMED',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -258,20 +258,20 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'My Sessions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                        const Text(
+                          'MY SESSIONS',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
                       GestureDetector(
                         onTap: widget.onNavigateToSessions,
                         child: Row(
                           children: const [
                             Text(
-                              'View All',
+                              'VIEW ALL',
                               style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -337,10 +337,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         );
                       },
                       child: _buildSessionCard(
-                        title: mySessions[i].title,
+                        title: mySessions[i].title.toUpperCase(),
                         date: mySessions[i].date,
                         time: mySessions[i].time,
-                        location: mySessions[i].location,
+                        location: mySessions[i].location.toUpperCase(),
                       ),
                     ),
                   ]
@@ -351,7 +351,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Abstract Submission',
+                        'ABSTRACT SUBMISSION',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -373,7 +373,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         child: Row(
                           children: const [
                             Text(
-                              'Create New',
+                              'CREATE NEW',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -421,7 +421,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         ),
                         const SizedBox(height: 16),
                         const Text(
-                          'No Abstracts Submitted Yet',
+                          'NO ABSTRACTS SUBMITTED YET',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -462,7 +462,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16.0),
                               child: Text(
-                                'Submit Abstract',
+                                'SUBMIT ABSTRACT',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 13,
@@ -556,7 +556,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  (abstractProvider.myAbstracts.first['abstract_title'] ?? '').toString(),
+                                  (abstractProvider.myAbstracts.first['abstract_title'] ?? '').toString().toUpperCase(),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -567,7 +567,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${abstractProvider.myAbstracts.first['summit_title'] ?? 'Test Summit'} · ${TimeFormatter.formatString(abstractProvider.myAbstracts.first['submitted_at']?.toString() ?? '')}',
+                                  '${(abstractProvider.myAbstracts.first['summit_title'] ?? 'Test Summit').toString().toUpperCase()} · ${TimeFormatter.formatString(abstractProvider.myAbstracts.first['submitted_at']?.toString() ?? '')}',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textLight,
@@ -634,7 +634,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
           ),
           const SizedBox(width: 2),
           Text(
-            status,
+            status.toUpperCase(),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,

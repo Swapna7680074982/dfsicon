@@ -88,7 +88,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            widget.title,
+            widget.title.toUpperCase(),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -98,7 +98,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
         ),
         body: const Center(
           child: Text(
-            'No photos available',
+            'NO PHOTOS AVAILABLE',
             style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
@@ -140,7 +140,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
           onPressed: _exitSelectMode,
         ),
         title: Text(
-          '${_selectedPhotos.length} Selected',
+          '${_selectedPhotos.length} SELECTED',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -151,7 +151,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
           TextButton(
             onPressed: allSelected ? _deselectAllPhotos : _selectAllPhotos,
             child: Text(
-              allSelected ? 'Deselect All' : 'Select All',
+              allSelected ? 'DESELECT ALL' : 'SELECT ALL',
               style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
@@ -172,7 +172,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        widget.title,
+        widget.title.toUpperCase(),
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
@@ -402,7 +402,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
             },
             icon: const Icon(Icons.download, color: Colors.white),
             label: const Text(
-              'Download Active Photo',
+              'DOWNLOAD ACTIVE PHOTO',
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             style: ElevatedButton.styleFrom(
@@ -505,7 +505,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '$count Photo${count == 1 ? '' : 's'}',
+                        '$count PHOTO${count == 1 ? '' : 'S'}',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -516,7 +516,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        hasSelection ? 'Ready to download' : 'Select photos',
+                        hasSelection ? 'READY TO DOWNLOAD' : 'SELECT PHOTOS',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -533,7 +533,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                 TextButton(
                   onPressed: _exitSelectMode,
                   child: const Text(
-                    'Cancel',
+                    'CANCEL',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.bold,
@@ -547,7 +547,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                   onPressed: hasSelection ? _startDownloadFlow : null,
                   icon: const Icon(Icons.download, size: 18),
                   label: const Text(
-                    'Download',
+                    'DOWNLOAD',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -813,7 +813,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            'Downloading to Gallery...',
+                            'DOWNLOADING TO GALLERY...',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 18,
@@ -866,7 +866,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                           ),
                           const SizedBox(height: 24),
                           const Text(
-                            'Downloads Completed!',
+                            'DOWNLOADS COMPLETED!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 20,
@@ -921,7 +921,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                                   },
                                   icon: const Icon(Icons.photo_library_outlined, size: 18),
                                   label: const Text(
-                                    'View Gallery',
+                                    'VIEW GALLERY',
                                     style: TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                   style: OutlinedButton.styleFrom(
@@ -951,7 +951,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                                     elevation: 0,
                                   ),
                                   child: const Text(
-                                    'Done',
+                                    'DONE',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
@@ -985,7 +985,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
             SizedBox(width: 8),
             Text(
-              'Permission Required',
+              'PERMISSION REQUIRED',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],

@@ -6,7 +6,9 @@ import '../../providers/photo_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/explore_provider.dart';
 import '../session_details/session_details_screen.dart';
+import '../exhibitor/exhibitor_details_screen.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../profile/profile_screen.dart';
 import '../sightseeing/sightseeing_list_screen.dart';
@@ -90,7 +92,7 @@ class HomeTab extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              label,
+              label.toUpperCase(),
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -213,7 +215,7 @@ class HomeTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  title.toUpperCase(),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -235,7 +237,7 @@ class HomeTab extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        speakerInitials,
+                        speakerInitials.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -246,7 +248,7 @@ class HomeTab extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        speaker,
+                        speaker.toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -269,7 +271,7 @@ class HomeTab extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '$time • $hall',
+                        '${time.toUpperCase()} • ${hall.toUpperCase()}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -346,7 +348,7 @@ class HomeTab extends StatelessWidget {
                       color: color,
                       alignment: Alignment.center,
                       child: Text(
-                        initials,
+                        initials.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -356,7 +358,7 @@ class HomeTab extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    initials,
+                    initials.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -366,7 +368,7 @@ class HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            title,
+            title.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -377,7 +379,7 @@ class HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            subtitle,
+            subtitle.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -395,7 +397,7 @@ class HomeTab extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                booth,
+                booth.toUpperCase(),
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -490,7 +492,7 @@ class HomeTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  title.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -509,7 +511,7 @@ class HomeTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      distance,
+                      distance.toUpperCase(),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -522,7 +524,7 @@ class HomeTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      cost,
+                      cost.toUpperCase(),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -665,7 +667,7 @@ class HomeTab extends StatelessWidget {
         const SizedBox(height: 12),
         // Sessions cards skeleton
         SizedBox(
-          height: 234,
+          height: 260,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 3,
@@ -795,6 +797,78 @@ class HomeTab extends StatelessWidget {
     return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'DL';
   }
 
+  void _onExhibitorClick(BuildContext context, HomeExhibitor homeExhibitor) async {
+    final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+
+    if (exploreProvider.exhibitors.isEmpty) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+
+      final String summitId = homeProvider.summits.isNotEmpty
+          ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+          : '1';
+      await exploreProvider.fetchSponsors(summitId, authProvider.accessToken);
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+
+    final sponsorId = homeExhibitor.booth.replaceAll(RegExp(r'[^\d]'), '').trim();
+
+    Exhibitor? matchedExhibitor;
+    try {
+      matchedExhibitor = exploreProvider.exhibitors.firstWhere(
+        (ex) => ex.id == sponsorId || ex.name.toLowerCase() == homeExhibitor.title.toLowerCase(),
+      );
+    } catch (_) {}
+
+    if (matchedExhibitor != null) {
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ExhibitorDetailsScreen(exhibitor: matchedExhibitor!),
+          ),
+        );
+      }
+    } else {
+      final fallbackEx = Exhibitor(
+        id: sponsorId.isEmpty ? 'mc' : sponsorId,
+        name: homeExhibitor.title,
+        category: homeExhibitor.subtitle,
+        boothCode: homeExhibitor.booth,
+        boothZone: homeExhibitor.subtitle.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall',
+        initials: homeExhibitor.initials,
+        bg: homeExhibitor.color,
+        description: 'Exhibitor & Sponsor',
+        products: const [
+          'Healthcare Infrastructure',
+          'Clinical Operations Management',
+          'Vibrant Medical Technologies',
+        ],
+        website: 'heterohcl.com',
+        email: 'sponsors@heterohcl.com',
+        logoUrl: homeExhibitor.imageUrl,
+      );
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ExhibitorDetailsScreen(exhibitor: fallbackEx),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final photoProvider = Provider.of<PhotoProvider>(context);
@@ -842,7 +916,7 @@ class HomeTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Welcome back',
+                              'WELCOME BACK',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
@@ -850,9 +924,9 @@ class HomeTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              authProvider.userName,
+                              authProvider.userName.toUpperCase(),
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -1006,7 +1080,7 @@ class HomeTab extends StatelessWidget {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            homeProvider.eventInfo.location,
+                                            homeProvider.eventInfo.location.toUpperCase(),
                                             style: const TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w600,
@@ -1018,7 +1092,7 @@ class HomeTab extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      homeProvider.eventInfo.name,
+                                      homeProvider.eventInfo.name.toUpperCase(),
                                       style: const TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -1030,7 +1104,7 @@ class HomeTab extends StatelessWidget {
                                     Text(
                                       TimeFormatter.formatString(
                                         homeProvider.eventInfo.date,
-                                      ),
+                                      ).toUpperCase(),
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
@@ -1055,7 +1129,7 @@ class HomeTab extends StatelessWidget {
                                         size: 18,
                                       ),
                                       label: const Text(
-                                        'My QR Code',
+                                        'MY QR CODE',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -1123,7 +1197,7 @@ class HomeTab extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Sessions',
+                                    'SESSIONS',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -1139,7 +1213,7 @@ class HomeTab extends StatelessWidget {
                                     child: Row(
                                       children: const [
                                         Text(
-                                          'View All',
+                                          'VIEW ALL',
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
@@ -1162,7 +1236,7 @@ class HomeTab extends StatelessWidget {
                               if (sessionsProvider.isLoading &&
                                   sessionsProvider.sessions.isEmpty)
                                 SizedBox(
-                                  height: 234,
+                                  height: 260,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: 3,
@@ -1232,7 +1306,7 @@ class HomeTab extends StatelessWidget {
                                 )
                               else
                                 SizedBox(
-                                  height: 234,
+                                  height: 260,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: sessionsProvider.sessions.length > 5
@@ -1281,7 +1355,7 @@ class HomeTab extends StatelessWidget {
                                 ),
                               const SizedBox(height: 28),
                               const Text(
-                                'Sponsors & Exhibitors',
+                                'SPONSORS & EXHIBITORS',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -1296,13 +1370,18 @@ class HomeTab extends StatelessWidget {
                                   itemCount: homeProvider.exhibitors.length,
                                   itemBuilder: (context, index) {
                                     final e = homeProvider.exhibitors[index];
-                                    return _buildExhibitorCard(
-                                      initials: e.initials,
-                                      color: e.color,
-                                      title: e.title,
-                                      subtitle: e.subtitle,
-                                      booth: e.booth,
-                                      imageUrl: e.imageUrl,
+                                    return GestureDetector(
+                                      onTap: () {
+                                        _onExhibitorClick(context, e);
+                                      },
+                                      child: _buildExhibitorCard(
+                                        initials: e.initials,
+                                        color: e.color,
+                                        title: e.title,
+                                        subtitle: e.subtitle,
+                                        booth: e.booth,
+                                        imageUrl: e.imageUrl,
+                                      ),
                                     );
                                   },
                                 ),
@@ -1313,7 +1392,7 @@ class HomeTab extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Sightseeing',
+                                    'SIGHTSEEING',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -1337,7 +1416,7 @@ class HomeTab extends StatelessWidget {
                                     child: Row(
                                       children: const [
                                         Text(
-                                          'View All',
+                                          'VIEW ALL',
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,

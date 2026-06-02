@@ -21,7 +21,7 @@ class SightseeingDetailsScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            place.name,
+            place.name.toUpperCase(),
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -109,7 +109,7 @@ class SightseeingDetailsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Highlights',
+                            'HIGHLIGHTS',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -180,14 +180,14 @@ class SightseeingDetailsScreen extends StatelessWidget {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Launching Maps for ${place.name}...'),
+                        content: Text('LAUNCHING MAPS FOR ${place.name.toUpperCase()}...'),
                         duration: const Duration(seconds: 2),
                       ),
                     );
                   },
                   icon: const Icon(Icons.near_me_outlined, size: 18),
                   label: const Text(
-                    'Open in Maps',
+                    'OPEN IN MAPS',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

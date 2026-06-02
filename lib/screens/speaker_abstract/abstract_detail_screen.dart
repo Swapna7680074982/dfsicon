@@ -106,7 +106,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            title.length > 20 ? '${title.substring(0, 18)}...' : title,
+            (title.length > 20 ? '${title.substring(0, 18)}...' : title).toUpperCase(),
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -195,7 +195,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                                         ),
                                         const SizedBox(width: 2),
                                         Text(
-                                          status,
+                                          status.toUpperCase(),
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
@@ -209,7 +209,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                title,
+                                title.toUpperCase(),
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
@@ -224,7 +224,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  topic,
+                                  topic.toUpperCase(),
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -234,7 +234,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Submitted: ${TimeFormatter.formatString(date)}',
+                                'SUBMITTED: ${TimeFormatter.formatString(date)}',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: AppColors.textLight,
@@ -259,7 +259,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Description',
+                          'DESCRIPTION',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -292,7 +292,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Keywords',
+                            'KEYWORDS',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -341,7 +341,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Supporting Document',
+                            'SUPPORTING DOCUMENT',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -453,7 +453,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Reviewer Feedback',
+                            'REVIEWER FEEDBACK',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -518,7 +518,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                     elevation: 4,
                   ),
                   child: const Text(
-                    'Resubmit Revised Abstract',
+                    'RESUBMIT REVISED ABSTRACT',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

@@ -137,9 +137,9 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            widget.isUpdate ? 'Update Abstract' : 'New Abstract',
+            (widget.isUpdate ? 'Update Abstract' : 'New Abstract').toUpperCase(),
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -318,7 +318,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Supporting Document',
+              'SUPPORTING DOCUMENT',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -399,7 +399,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                       ),
                       SizedBox(height: 10),
                       Text(
-                        'Tap to upload',
+                        'TAP TO UPLOAD',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -517,7 +517,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
               ),
             const SizedBox(height: 24),
             const Text(
-              'Thumbnail Image (Optional)',
+              'THUMBNAIL IMAGE (OPTIONAL)',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -590,7 +590,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                       ),
                       SizedBox(height: 6),
                       Text(
-                        'Tap to select thumbnail image',
+                        'TAP TO SELECT THUMBNAIL IMAGE',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -830,7 +830,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                         ),
                       )
                     : Text(
-                        widget.isUpdate ? 'Update Abstract' : 'Submit Abstract',
+                        (widget.isUpdate ? 'Update Abstract' : 'Submit Abstract').toUpperCase(),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -904,7 +904,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
           ),
           alignment: Alignment.center,
           child: Text(
-            label,
+            label.toUpperCase(),
             style: TextStyle(
               fontSize: 14,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -920,7 +920,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
     return Row(
       children: [
         Text(
-          label,
+          label.toUpperCase(),
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,

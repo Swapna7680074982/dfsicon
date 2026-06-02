@@ -71,7 +71,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Session Details',
+          'SESSION DETAILS',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -108,7 +108,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          tag,
+                          tag.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -124,7 +124,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
-                          'Confirmed',
+                          'CONFIRMED',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -136,7 +136,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    title,
+                    title.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -148,13 +148,13 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   _buildWhiteBannerDetail(Icons.access_time, time),
                   const SizedBox(height: 10),
-                  _buildWhiteBannerDetail(Icons.location_on_outlined, location),
+                  _buildWhiteBannerDetail(Icons.location_on_outlined, location.toUpperCase()),
                 ],
               ),
             ),
             const SizedBox(height: 28),
             const Text(
-              'About this Session',
+              'ABOUT THIS SESSION',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -174,7 +174,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             const Text(
-              'Session Coordinator',
+              'SESSION COORDINATOR',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -209,7 +209,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              coordinatorName,
+                              coordinatorName.toUpperCase(),
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -218,7 +218,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             const Text(
-                              'Session Coordinator',
+                              'SESSION COORDINATOR',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
@@ -245,7 +245,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Participants',
+                      'PARTICIPANTS',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -255,7 +255,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                     Row(
                       children: const [
                         Text(
-                          '248 attending',
+                          '248 ATTENDING',
                           style: TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
@@ -306,7 +306,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             const Text(
-              'Convention Center Map',
+              'CONVENTION CENTER MAP',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -358,7 +358,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Gallery',
+                  'GALLERY',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -375,7 +375,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                     );
                   },
                   child: const Text(
-                    'View All',
+                    'VIEW ALL',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -430,10 +430,10 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isHighlighted ? const Color(0xFFEEECF9) : Colors.white,
+        color: isHighlighted ? const Color(0xFFE8F5E9) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isHighlighted ? AppColors.primary : Colors.grey.shade200,
+          color: isHighlighted ? Colors.green.shade600 : Colors.grey.shade300,
           width: isHighlighted ? 2 : 1,
         ),
       ),
@@ -449,14 +449,14 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: isHighlighted ? AppColors.primary : AppColors.textPrimary,
+                    color: isHighlighted ? Colors.green.shade800 : Colors.grey.shade400,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 10,
-                    color: isHighlighted ? AppColors.primary : AppColors.textSecondary,
+                    color: isHighlighted ? Colors.green.shade700 : Colors.grey.shade400,
                   ),
                 ),
               ],
@@ -482,7 +482,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Colors.green,
                     ),
                   ),
                 ],
@@ -589,7 +589,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Participants',
+                    'PARTICIPANTS',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -611,7 +611,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                '248 attending this session',
+                '248 ATTENDING THIS SESSION',
                 style: TextStyle(fontSize: 12, color: AppColors.textLight),
               ),
               const SizedBox(height: 20),
@@ -666,7 +666,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  name.toUpperCase(),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -675,7 +675,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  subtitle,
+                  subtitle.toUpperCase(),
                   style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
@@ -694,7 +694,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                       Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
                       SizedBox(width: 4),
                       Text(
-                        'Connected',
+                        'CONNECTED',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -708,7 +708,7 @@ class SpeakerSessionDetailScreen extends StatelessWidget {
                   onPressed: () {},
                   icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
                   label: const Text(
-                    'Connect',
+                    'CONNECT',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,

@@ -87,8 +87,8 @@ class _GalleryTabState extends State<GalleryTab> {
   }
 
   String _getFilteredTitle(List<PersonGallery> selected) {
-    if (selected.isEmpty) return 'Filtered Photos';
-    if (selected.length == 1) return selected.first.name;
+    if (selected.isEmpty) return 'FILTERED PHOTOS';
+    if (selected.length == 1) return selected.first.name.toUpperCase();
     
     // Clean names to first names for a compact, neat display
     final firstNames = selected.map((p) {
@@ -97,9 +97,9 @@ class _GalleryTabState extends State<GalleryTab> {
     }).toList();
 
     if (selected.length == 2) {
-      return '${firstNames[0]} & ${firstNames[1]}';
+      return '${firstNames[0]} & ${firstNames[1]}'.toUpperCase();
     }
-    return '${firstNames[0]}, ${firstNames[1]} & ${selected.length - 2} more';
+    return '${firstNames[0]}, ${firstNames[1]} & ${selected.length - 2} MORE'.toUpperCase();
   }
 
   @override
@@ -136,7 +136,7 @@ class _GalleryTabState extends State<GalleryTab> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'Sessions',
+                          'SESSIONS',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -159,7 +159,7 @@ class _GalleryTabState extends State<GalleryTab> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'People',
+                          'PEOPLE',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -203,7 +203,7 @@ class _GalleryTabState extends State<GalleryTab> {
           onPressed: _exitPeopleSelectMode,
         ),
         title: Text(
-          '${_selectedPeople.length} Selected',
+          '${_selectedPeople.length} SELECTED',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -220,7 +220,7 @@ class _GalleryTabState extends State<GalleryTab> {
               }
             },
             child: Text(
-              allSelected ? 'Deselect All' : 'Select All',
+              allSelected ? 'DESELECT ALL' : 'SELECT ALL',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -244,9 +244,9 @@ class _GalleryTabState extends State<GalleryTab> {
             )
           : null,
       title: Text(
-        'Gallery',
-        style: TextStyle(
-          fontSize: widget.isStandalone ? 20 : 28,
+        'GALLERY',
+        style: const TextStyle(
+          fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
@@ -333,7 +333,7 @@ class _GalleryTabState extends State<GalleryTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        s.title,
+                        s.title.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -483,7 +483,7 @@ class _GalleryTabState extends State<GalleryTab> {
               ),
               const SizedBox(height: 10),
               Text(
-                p.name,
+                p.name.toUpperCase(),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -543,7 +543,7 @@ class _GalleryTabState extends State<GalleryTab> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '$count Person${count == 1 ? '' : 's'} Selected',
+                        '$count PERSON${count == 1 ? '' : 'S'} SELECTED',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -585,7 +585,7 @@ class _GalleryTabState extends State<GalleryTab> {
                   onPressed: count >= 2 ? _filterPhotosBySelectedPeople : null,
                   icon: const Icon(Icons.filter_alt, size: 16),
                   label: const Text(
-                    'Find Photos',
+                    'FIND PHOTOS',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -642,7 +642,7 @@ class _GalleryTabState extends State<GalleryTab> {
                 Icon(Icons.face_retouching_natural_outlined, color: AppColors.primary, size: 28),
                 const SizedBox(width: 10),
                 const Text(
-                  'No Common Photos',
+                  'NO COMMON PHOTOS',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ],
@@ -656,7 +656,7 @@ class _GalleryTabState extends State<GalleryTab> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
-                  'Adjust Selection',
+                  'ADJUST SELECTION',
                   style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -664,7 +664,7 @@ class _GalleryTabState extends State<GalleryTab> {
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                   final unionPhotos = _getUnionPhotos(list);
-                  final unionTitle = 'All Photos: ${list.length} People';
+                  final unionTitle = 'ALL PHOTOS: ${list.length} PEOPLE';
                   
                   Navigator.push(
                     context,
@@ -684,7 +684,7 @@ class _GalleryTabState extends State<GalleryTab> {
                   elevation: 0,
                 ),
                 child: const Text(
-                  'View All Jointly',
+                  'VIEW ALL JOINTLY',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

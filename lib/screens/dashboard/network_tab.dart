@@ -51,9 +51,9 @@ class _NetworkTabState extends State<NetworkTab> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Networking',
+                'NETWORKING',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -68,7 +68,7 @@ class _NetworkTabState extends State<NetworkTab> {
                   },
                   icon: const Icon(Icons.add, size: 18, color: AppColors.primary),
                   label: const Text(
-                    'New Group',
+                    'NEW GROUP',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -130,7 +130,7 @@ class _NetworkTabState extends State<NetworkTab> {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              'Chats',
+                              'CHATS',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -165,7 +165,7 @@ class _NetworkTabState extends State<NetworkTab> {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              'Groups',
+                              'GROUPS',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -200,7 +200,7 @@ class _NetworkTabState extends State<NetworkTab> {
                           },
                           decoration: InputDecoration(
                             border: InputBorder.none,
-                            hintText: isChats ? 'Search conversations...' : 'Search groups...',
+                            hintText: isChats ? 'SEARCH CONVERSATIONS...' : 'SEARCH GROUPS...',
                             hintStyle: const TextStyle(
                               color: AppColors.textLight,
                               fontSize: 14,
@@ -227,7 +227,7 @@ class _NetworkTabState extends State<NetworkTab> {
                         Row(
                           children: [
                             const Text(
-                              'Connection Requests',
+                              'CONNECTION REQUESTS',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -262,7 +262,7 @@ class _NetworkTabState extends State<NetworkTab> {
                             );
                           },
                           child: const Text(
-                            'View All',
+                            'VIEW ALL',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -293,7 +293,7 @@ class _NetworkTabState extends State<NetworkTab> {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              req.initials,
+                              req.initials.toUpperCase(),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -309,7 +309,7 @@ class _NetworkTabState extends State<NetworkTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  req.name,
+                                  req.name.toUpperCase(),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -318,7 +318,7 @@ class _NetworkTabState extends State<NetworkTab> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  req.title,
+                                  req.title.toUpperCase(),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -357,7 +357,7 @@ class _NetworkTabState extends State<NetworkTab> {
                                 Icon(Icons.person_add_alt_1_outlined, size: 14),
                                 SizedBox(width: 4),
                                 Text(
-                                  'Accept',
+                                  'ACCEPT',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -382,7 +382,7 @@ class _NetworkTabState extends State<NetworkTab> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
                   child: Text(
-                    isChats ? 'Conversations' : 'Groups',
+                    isChats ? 'CONVERSATIONS' : 'GROUPS',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -471,7 +471,7 @@ class _NetworkTabState extends State<NetworkTab> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          conv.name,
+                                          conv.name.toUpperCase(),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
@@ -573,7 +573,7 @@ class _NetworkTabState extends State<NetworkTab> {
                                                 Icon(Icons.chat_bubble_outline, size: 12),
                                                 SizedBox(width: 4),
                                                 Text(
-                                                  'Open Chat',
+                                                  'OPEN CHAT',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,

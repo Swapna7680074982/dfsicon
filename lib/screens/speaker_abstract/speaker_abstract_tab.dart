@@ -114,9 +114,9 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'Abstracts',
+            'ABSTRACTS',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -149,7 +149,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                           },
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            hintText: 'Search Abstract',
+                            hintText: 'SEARCH ABSTRACT',
                             hintStyle: TextStyle(
                               fontSize: 14,
                               color: AppColors.textLight,
@@ -216,7 +216,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                     alignment: Alignment.centerLeft,
                     child: Chip(
                       label: Text(
-                        'Date: ${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}',
+                        'DATE: ${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
                       backgroundColor: const Color(0xFFF5F3FF),
@@ -236,7 +236,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
               const Padding(
                 padding: EdgeInsets.fromLTRB(24, 20, 24, 16),
                 child: Text(
-                  'Submitted Abstracts',
+                  'SUBMITTED ABSTRACTS',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -328,7 +328,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Text(
-                        'Create New Abstract',
+                        'CREATE NEW ABSTRACT',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -465,7 +465,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                             ),
                             const SizedBox(width: 2),
                             Text(
-                              status,
+                              status.toUpperCase(),
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -479,7 +479,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    (abs['abstract_title'] ?? '').toString(),
+                    (abs['abstract_title'] ?? '').toString().toUpperCase(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -490,7 +490,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "$displayTopic · ${TimeFormatter.formatString(displayDate)}",
+                    "${displayTopic.toUpperCase()} · ${TimeFormatter.formatString(displayDate)}",
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textLight,

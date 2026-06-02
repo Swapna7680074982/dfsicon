@@ -57,9 +57,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'My Sessions',
+            'MY SESSIONS',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -90,7 +90,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                         },
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          hintText: 'Search sessions',
+                          hintText: 'SEARCH SESSIONS',
                           hintStyle: TextStyle(
                             fontSize: 14,
                             color: AppColors.textLight,
@@ -154,7 +154,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             const Padding(
               padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
               child: Text(
-                'Scheduled Sessions',
+                'SCHEDULED SESSIONS',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -228,7 +228,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
               const Icon(Icons.local_offer_outlined, size: 14, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
-                tag,
+                tag.toUpperCase(),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -239,17 +239,17 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           ),
           const SizedBox(height: 10),
           Text(
-            s.title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+                s.title.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
           const SizedBox(height: 18),
           _buildSessionDetailItem(Icons.calendar_month_outlined, '${s.time} (${s.date})'),
           const SizedBox(height: 10),
-          _buildSessionDetailItem(Icons.location_on_outlined, s.location),
+          _buildSessionDetailItem(Icons.location_on_outlined, s.location.toUpperCase()),
           const SizedBox(height: 16),
           const Divider(height: 1, color: AppColors.tileBorder),
           const SizedBox(height: 14),
@@ -261,7 +261,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                   const Icon(Icons.person_outline, size: 14, color: AppColors.textLight),
                   const SizedBox(width: 6),
                   Text(
-                    'Coord: Mr. Arjun Mehta',
+                    'COORD: MR. ARJUN MEHTA',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -292,7 +292,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                 child: Row(
                   children: const [
                     Text(
-                      'Details',
+                      'DETAILS',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

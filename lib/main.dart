@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
             elevation: 0,
             iconTheme: IconThemeData(color: Colors.white),
             titleTextStyle: TextStyle(
-              fontSize: 26,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -84,6 +84,15 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
+        builder: (context, child) {
+          final mediaQueryData = MediaQuery.of(context);
+          return MediaQuery(
+            data: mediaQueryData.copyWith(
+              textScaler: const TextScaler.linear(1.15),
+            ),
+            child: child!,
+          );
+        },
         initialRoute: '/',
         routes: {
           '/': (context) => const SplashScreen(),

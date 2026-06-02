@@ -49,9 +49,9 @@ class _SessionsTabState extends State<SessionsTab> {
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'Sessions',
+            'SESSIONS',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -95,7 +95,7 @@ class _SessionsTabState extends State<SessionsTab> {
                               ),
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
-                                hintText: 'Search sessions or speakers...',
+                                hintText: 'SEARCH SESSIONS OR SPEAKERS...',
                                 hintStyle: TextStyle(
                                   color: AppColors.textLight,
                                   fontWeight: FontWeight.w400,
@@ -142,14 +142,14 @@ class _SessionsTabState extends State<SessionsTab> {
                 child: Row(
                   children: [
                     _buildFilterChip(
-                      label: 'All Sessions',
+                      label: 'ALL SESSIONS',
                       isSelected: !sessionsProvider.showOnlyBookmarked,
                       count: sessionsProvider.sessions.length,
                       onTap: () => sessionsProvider.setShowOnlyBookmarked(false),
                     ),
                     const SizedBox(width: 8),
                     _buildFilterChip(
-                      label: 'Bookmarked',
+                      label: 'BOOKMARKED',
                       isSelected: sessionsProvider.showOnlyBookmarked,
                       count: sessionsProvider.sessions.where((s) => s.isBookmarked).length,
                       icon: Icons.bookmark,
@@ -252,7 +252,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                           children: [
                                             Expanded(
                                               child: Text(
-                                                session.title,
+                                                session.title.toUpperCase(),
                                                 style: const TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
@@ -290,7 +290,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                               ),
                                               alignment: Alignment.center,
                                               child: Text(
-                                                session.speakerInitials,
+                                                session.speakerInitials.toUpperCase(),
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.bold,
@@ -304,7 +304,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
-                                                    session.speakerName,
+                                                    session.speakerName.toUpperCase(),
                                                     style: const TextStyle(
                                                       fontSize: 15,
                                                       fontWeight: FontWeight.bold,
@@ -313,7 +313,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(
-                                                    session.speakerTitle,
+                                                    session.speakerTitle.toUpperCase(),
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: const TextStyle(
@@ -334,7 +334,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
-                                                '${session.time} (${session.date})',
+                                                '${session.time} (${session.date})'.toUpperCase(),
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   color: AppColors.textSecondary,
@@ -351,7 +351,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
-                                                session.location,
+                                                session.location.toUpperCase(),
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   color: AppColors.textSecondary,
@@ -368,7 +368,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             const Text(
-                                              'Add to Schedule',
+                                              'ADD TO SCHEDULE',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
@@ -404,7 +404,7 @@ class _SessionsTabState extends State<SessionsTab> {
                                                       const SizedBox(width: 4),
                                                     ],
                                                     Text(
-                                                      session.isAdded ? 'Added' : '+ Add',
+                                                      session.isAdded ? 'ADDED' : '+ ADD',
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.bold,

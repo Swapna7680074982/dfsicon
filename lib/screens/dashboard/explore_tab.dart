@@ -50,9 +50,9 @@ class _ExploreTabState extends State<ExploreTab> {
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'Explore',
+            'EXPLORE',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -79,7 +79,7 @@ class _ExploreTabState extends State<ExploreTab> {
                 children: [
                   _buildCategoryCard(
                     context,
-                    title: 'Exhibitors',
+                    title: 'EXHIBITORS',
                     subtitle: '120+ companies & startups',
                     icon: Icons.business,
                     iconBg: const Color(0xFFEEECF9),
@@ -94,7 +94,7 @@ class _ExploreTabState extends State<ExploreTab> {
                   const SizedBox(height: 16),
                   _buildCategoryCard(
                     context,
-                    title: 'Sightseeing',
+                    title: 'SIGHTSEEING',
                     subtitle: 'Explore the city nearby',
                     icon: Icons.map_outlined,
                     iconBg: const Color(0xFFECFDF5),
@@ -109,7 +109,7 @@ class _ExploreTabState extends State<ExploreTab> {
                   const SizedBox(height: 16),
                   _buildCategoryCard(
                     context,
-                    title: 'Help Desk',
+                    title: 'HELP DESK',
                     subtitle: 'Support, FAQs & contacts',
                     icon: Icons.help_outline,
                     iconBg: const Color(0xFFFDF2F8),
@@ -130,7 +130,7 @@ class _ExploreTabState extends State<ExploreTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Featured Exhibitors',
+                    'FEATURED EXHIBITORS',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -145,7 +145,7 @@ class _ExploreTabState extends State<ExploreTab> {
                       );
                     },
                     child: const Text(
-                      'View All',
+                      'VIEW ALL',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -262,7 +262,7 @@ class _ExploreTabState extends State<ExploreTab> {
                                   ),
                                 )
                               : Text(
-                                  ex.initials,
+                                  ex.initials.toUpperCase(),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -272,7 +272,7 @@ class _ExploreTabState extends State<ExploreTab> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          ex.name,
+                          ex.name.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -281,7 +281,7 @@ class _ExploreTabState extends State<ExploreTab> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          ex.category,
+                          ex.category.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -298,7 +298,7 @@ class _ExploreTabState extends State<ExploreTab> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                ex.boothCode,
+                                ex.boothCode.toUpperCase(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -371,7 +371,7 @@ class _ExploreTabState extends State<ExploreTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    title.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

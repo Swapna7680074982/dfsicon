@@ -22,9 +22,9 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            exhibitor.name,
+            exhibitor.name.toUpperCase(),
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -69,30 +69,30 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                             height: 50,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Text(
-                              exhibitor.initials,
+                              exhibitor.initials.toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              exhibitor.initials.toUpperCase(),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
-                          )
-                        : Text(
-                            exhibitor.initials,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
+                    ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          exhibitor.name,
+                          exhibitor.name.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -101,7 +101,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          exhibitor.category,
+                          exhibitor.category.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
@@ -130,7 +130,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    '${exhibitor.boothCode}  •  ${exhibitor.boothZone}',
+                    '${exhibitor.boothCode.toUpperCase()}  •  ${exhibitor.boothZone.toUpperCase()}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -174,7 +174,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Products & Services',
+                    'PRODUCTS & SERVICES',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -245,7 +245,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                       },
                       icon: const Icon(Icons.download, size: 18),
                       label: const Text(
-                        'Download Brochure',
+                        'DOWNLOAD BROCHURE',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -275,7 +275,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Booth Location',
+                    'BOOTH LOCATION',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -284,7 +284,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Convention Center / Floor Plan / ${exhibitor.boothCode}',
+                    'Convention Center / Floor Plan / ${exhibitor.boothCode}'.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -318,7 +318,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Contact',
+                    'CONTACT',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,

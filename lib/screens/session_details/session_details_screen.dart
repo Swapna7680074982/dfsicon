@@ -295,7 +295,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
-            'Session Details',
+            'SESSION DETAILS',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -414,7 +414,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              widget.session.title,
+              widget.session.title.toUpperCase(),
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -429,7 +429,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    TimeFormatter.formatString(widget.session.date, timeStr: widget.session.time),
+                    TimeFormatter.formatString(widget.session.date, timeStr: widget.session.time).toUpperCase(),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -446,7 +446,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.session.location,
+                    widget.session.location.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -587,7 +587,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'About this Session',
+              'ABOUT THIS SESSION',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -607,7 +607,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'Speaker',
+              'SPEAKER',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -633,7 +633,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      widget.session.speakerInitials,
+                      widget.session.speakerInitials.toUpperCase(),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -647,7 +647,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.session.speakerName,
+                          widget.session.speakerName.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -656,7 +656,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          widget.session.speakerTitle,
+                          widget.session.speakerTitle.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -722,7 +722,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Participants',
+                  'PARTICIPANTS',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -769,7 +769,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                         Icon(Icons.people_outline, size: 16, color: AppColors.textSecondary),
                         SizedBox(width: 6),
                         Text(
-                          'View Participants',
+                          'VIEW PARTICIPANTS',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -784,7 +784,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'Convention Center Map',
+              'CONVENTION CENTER MAP',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -977,10 +977,10 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     return Container(
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isHighlighted ? const Color(0xFFEEECF9) : Colors.white,
+        color: isHighlighted ? const Color(0xFFE8F5E9) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isHighlighted ? AppColors.primary : Colors.grey.shade200,
+          color: isHighlighted ? Colors.green.shade600 : Colors.grey.shade300,
           width: isHighlighted ? 2 : 1,
         ),
       ),
@@ -996,14 +996,14 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: isHighlighted ? AppColors.primary : AppColors.textPrimary,
+                    color: isHighlighted ? Colors.green.shade800 : Colors.grey.shade400,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 10,
-                    color: isHighlighted ? AppColors.primary : AppColors.textSecondary,
+                    color: isHighlighted ? Colors.green.shade700 : Colors.grey.shade400,
                   ),
                 ),
               ],
@@ -1029,7 +1029,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Colors.green,
                     ),
                   ),
                 ],
