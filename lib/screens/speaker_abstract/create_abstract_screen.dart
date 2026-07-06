@@ -459,7 +459,8 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 3),
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
                                 _uploadedFileSize!,
@@ -470,13 +471,13 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                width: 3,
-                                height: 3,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.textLight,
-                                  shape: BoxShape.circle,
+                                  width: 3,
+                                  height: 3,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.textLight,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
                               const SizedBox(width: 8),
                               const Icon(
                                 Icons.check_circle_outline,
