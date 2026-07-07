@@ -462,7 +462,16 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      sessProvider.toggleBookmark(widget.session.id);
+                      final success = sessProvider.toggleBookmark(widget.session.id);
+                      if (!success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Only one session can be bookmarked at a time! Please un-bookmark the current session first.'),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
                     },
                     child: Container(
                       height: 48,

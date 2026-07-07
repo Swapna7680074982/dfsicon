@@ -114,7 +114,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'ABSTRACTS',
+            'TOPICS',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -149,7 +149,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                           },
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            hintText: 'SEARCH ABSTRACT',
+                            hintText: 'SEARCH TOPIC',
                             hintStyle: TextStyle(
                               fontSize: 14,
                               color: AppColors.textLight,
@@ -236,7 +236,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
               const Padding(
                 padding: EdgeInsets.fromLTRB(24, 20, 24, 16),
                 child: Text(
-                  'SUBMITTED ABSTRACTS',
+                  'SUBMITTED TOPICS',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -263,7 +263,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                                   SizedBox(height: 100),
                                   Center(
                                     child: Text(
-                                      'No abstracts found',
+                                      'No topics found',
                                       style: TextStyle(color: AppColors.textLight),
                                     ),
                                   ),
@@ -328,7 +328,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Text(
-                        'CREATE NEW ABSTRACT',
+                        'CREATE NEW TOPIC',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

@@ -125,12 +125,21 @@ class SessionsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleBookmark(int sessionId) {
+  bool toggleBookmark(int sessionId) {
     final index = _sessions.indexWhere((s) => s.id == sessionId);
     if (index != -1) {
+      final isCurrentlyBookmarked = _sessions[index].isBookmarked;
+      if (!isCurrentlyBookmarked) {
+        final hasBookmarked = _sessions.any((s) => s.isBookmarked);
+        if (hasBookmarked) {
+          return false;
+        }
+      }
       _sessions[index].isBookmarked = !_sessions[index].isBookmarked;
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   void toggleAdded(int sessionId) {

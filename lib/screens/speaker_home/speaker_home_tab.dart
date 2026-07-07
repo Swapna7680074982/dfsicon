@@ -351,7 +351,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'ABSTRACT SUBMISSION',
+                        'TOPIC SUBMISSION',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -421,7 +421,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         ),
                         const SizedBox(height: 16),
                         const Text(
-                          'NO ABSTRACTS SUBMITTED YET',
+                          'NO TOPICS SUBMITTED YET',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -430,7 +430,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Submit your research paper abstracts here.',
+                          'Submit your research paper topics here.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
@@ -462,7 +462,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16.0),
                               child: Text(
-                                'SUBMIT ABSTRACT',
+                                'SUBMIT TOPIC',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 13,

@@ -264,7 +264,16 @@ class _SessionsTabState extends State<SessionsTab> {
                                             const SizedBox(width: 12),
                                             GestureDetector(
                                               onTap: () {
-                                                sessionsProvider.toggleBookmark(session.id);
+                                                final success = sessionsProvider.toggleBookmark(session.id);
+                                                if (!success && context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Only one session can be bookmarked at a time! Please un-bookmark the current session first.'),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      backgroundColor: Colors.redAccent,
+                                                    ),
+                                                  );
+                                                }
                                               },
                                               child: Icon(
                                                 session.isBookmarked

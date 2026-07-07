@@ -496,7 +496,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                           initialTitle: title,
                           initialTopic: topic,
                           initialDescription: description,
-                          initialFileName: fileUrl?.split('/').last ?? 'Abstract_Draft.pdf',
+                          initialFileName: fileUrl?.split('/').last ?? 'Topic_Draft.pdf',
                           initialFileSize: 'Click to select revised draft',
                           initialKeywords: keywords,
                           initialThumbnail: thumbnailUrl,
@@ -518,7 +518,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                     elevation: 4,
                   ),
                   child: const Text(
-                    'RESUBMIT REVISED ABSTRACT',
+                    'RESUBMIT REVISED TOPIC',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

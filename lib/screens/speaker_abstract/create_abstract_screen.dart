@@ -137,7 +137,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            (widget.isUpdate ? 'Update Abstract' : 'New Abstract').toUpperCase(),
+            (widget.isUpdate ? 'Update Topic' : 'New Topic').toUpperCase(),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -151,7 +151,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildFieldLabel('Abstract Title'),
+            _buildFieldLabel('Topic Title'),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
@@ -164,7 +164,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                 style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Enter your abstract title...',
+                  hintText: 'Enter your topic title...',
                   hintStyle: TextStyle(color: AppColors.textLight, fontSize: 14),
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -275,7 +275,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                 style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'Provide a detailed description of your abstract...',
+                  hintText: 'Provide a detailed description of your topic...',
                   hintStyle: TextStyle(color: AppColors.textLight, fontSize: 14),
                   contentPadding: EdgeInsets.all(16),
                 ),
@@ -331,10 +331,24 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                 onTap: () async {
                   try {
                     final result = await FilePicker.platform.pickFiles(
-                      type: FileType.any,
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'ppt', 'pptx'],
                     );
                     if (result != null && result.files.single.path != null) {
                       final path = result.files.single.path!;
+                      final ext = path.split('.').last.toLowerCase();
+                      if (ext != 'pdf' && ext != 'ppt' && ext != 'pptx') {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Invalid file format! Only PDF and PPT/PPTX files are allowed.'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                        return;
+                      }
                       final file = File(path);
                       final sizeInBytes = await file.length();
                       final sizeInMb = sizeInBytes / (1024 * 1024);
@@ -408,7 +422,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                       ),
                       SizedBox(height: 6),
                       Text(
-                        'Any file format (Max 10MB)',
+                        'PDF, PPT only (Max 10MB)',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textLight,
@@ -745,7 +759,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           if (widget.abstractId == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Error: Abstract ID is missing!'),
+                                content: Text('Error: Topic ID is missing!'),
                                 behavior: SnackBarBehavior.floating,
                                 backgroundColor: Colors.redAccent,
                               ),
@@ -766,7 +780,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           if (success && mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Revised abstract updated successfully!'),
+                                content: Text('Revised topic updated successfully!'),
                                 behavior: SnackBarBehavior.floating,
                                 backgroundColor: AppColors.primary,
                               ),
@@ -775,7 +789,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           } else if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(abstractProvider.errorMessage ?? 'Failed to resubmit abstract. Please try again.'),
+                                content: Text(abstractProvider.errorMessage ?? 'Failed to resubmit topic. Please try again.'),
                                 behavior: SnackBarBehavior.floating,
                                 backgroundColor: Colors.redAccent,
                               ),
@@ -796,7 +810,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           if (abstractId != null && mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Abstract submitted successfully!'),
+                                content: Text('Topic submitted successfully!'),
                                 behavior: SnackBarBehavior.floating,
                                 backgroundColor: AppColors.primary,
                               ),
@@ -805,7 +819,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                           } else if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(abstractProvider.errorMessage ?? 'Failed to submit abstract. Please try again.'),
+                                content: Text(abstractProvider.errorMessage ?? 'Failed to submit topic. Please try again.'),
                                 behavior: SnackBarBehavior.floating,
                                 backgroundColor: Colors.redAccent,
                               ),
@@ -831,7 +845,7 @@ class _CreateAbstractScreenState extends State<CreateAbstractScreen> {
                         ),
                       )
                     : Text(
-                        (widget.isUpdate ? 'Update Abstract' : 'Submit Abstract').toUpperCase(),
+                        (widget.isUpdate ? 'Update Topic' : 'Submit Topic').toUpperCase(),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
