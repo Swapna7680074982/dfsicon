@@ -17,7 +17,7 @@ class SpeakerAbstractTab extends StatefulWidget {
 class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _selectedStatusFilter = 'Approved'; // 'Approved' or 'Confirmed'
+  String _selectedStatusFilter = 'All'; // 'All', 'Approved', or 'Confirmed'
   DateTime? _selectedDate;
 
   @override
@@ -80,7 +80,8 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
       final status = (abs['status'] ?? '').toString();
       
       final matchesSearch = title.contains(_searchQuery.toLowerCase());
-      final matchesStatus = status.toLowerCase() == _selectedStatusFilter.toLowerCase();
+      final matchesStatus = _selectedStatusFilter.toLowerCase() == 'all' ||
+          status.toLowerCase() == _selectedStatusFilter.toLowerCase();
       
       bool matchesDate = true;
       if (_selectedDate != null) {
@@ -213,12 +214,18 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 12),
                   // Segments/Choice Chips for Approved vs Confirmed
-                  Row(
-                    children: [
-                      _buildFilterChip('Approved', 'Approved', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'approved').length),
-                      const SizedBox(width: 12),
-                      _buildFilterChip('Confirmed', 'Confirmed', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'confirmed').length),
-                    ],
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        _buildFilterChip('All', 'All', abstractProvider.myTopics.length),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('Approved', 'Approved', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'approved').length),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('Confirmed', 'Confirmed', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'confirmed').length),
+                      ],
+                    ),
                   ),
                 ],
               ),

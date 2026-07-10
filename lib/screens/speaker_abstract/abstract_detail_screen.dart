@@ -128,9 +128,9 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            (title.length > 20 ? '${title.substring(0, 18)}...' : title),
+            (title.length > 20 ? '${title.substring(0, 25)}...' : title),
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -145,7 +145,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
             else
               SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -492,12 +492,12 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
               ),
             if (!isLoading)
               Positioned(
-                bottom: 24,
+                bottom: 50,
                 left: 20,
                 right: 20,
                 child: SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -533,11 +533,12 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                     child: const Text(
                       'EDIT TOPIC DETAILS',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
+
                   ),
                 ),
               ),
