@@ -4,7 +4,6 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import 'abstract_detail_screen.dart';
-import 'create_abstract_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -18,20 +17,21 @@ class SpeakerAbstractTab extends StatefulWidget {
 class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedStatusFilter = 'Approved'; // 'Approved' or 'Confirmed'
   DateTime? _selectedDate;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchAbstracts();
+      _fetchTopics(forceRefresh: false);
     });
   }
 
-  Future<void> _fetchAbstracts() async {
+  Future<void> _fetchTopics({bool forceRefresh = false}) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
-    await abstractProvider.fetchMyAbstracts(auth.accessToken);
+    await abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh);
   }
 
   @override
@@ -44,15 +44,12 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
     str = str.trim();
     if (str.isEmpty) return null;
     
-    // Try standard DateTime parsing first
     final parsed = DateTime.tryParse(str);
     if (parsed != null) return parsed;
     
-    // Custom robust parsing for different formats like dd-MM-yyyy or dd/MM/yyyy
     try {
       final parts = str.split(RegExp(r'[-/ ]'));
       if (parts.length >= 3) {
-        // dd-MM-yyyy or dd/MM/yyyy
         if (parts[0].length <= 2 && parts[2].length >= 4) {
           final day = int.tryParse(parts[0]);
           final month = int.tryParse(parts[1]);
@@ -61,7 +58,6 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
             return DateTime(year, month, day);
           }
         }
-        // yyyy-MM-dd
         if (parts[0].length == 4 && parts[2].length <= 2) {
           final year = int.tryParse(parts[0]);
           final month = int.tryParse(parts[1]);
@@ -79,23 +75,22 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   Widget build(BuildContext context) {
     final abstractProvider = Provider.of<AbstractProvider>(context);
 
-    final filtered = abstractProvider.myAbstracts.where((abs) {
-      final title = (abs['abstract_title'] ?? '').toString().toLowerCase();
-      final topic = (abs['summit_title'] ?? '').toString().toLowerCase();
-      final query = _searchQuery.toLowerCase();
+    final filtered = abstractProvider.myTopics.where((abs) {
+      final title = (abs['title'] ?? '').toString().toLowerCase();
+      final status = (abs['status'] ?? '').toString();
       
-      final matchesSearch = title.contains(query) || topic.contains(query);
+      final matchesSearch = title.contains(_searchQuery.toLowerCase());
+      final matchesStatus = status.toLowerCase() == _selectedStatusFilter.toLowerCase();
       
       bool matchesDate = true;
       if (_selectedDate != null) {
-        final dateStr = (abs['submitted_at'] ?? '').toString().trim();
+        final dateStr = (abs['created_on'] ?? '').toString().trim();
         final parsedDate = _parseDateTime(dateStr);
         if (parsedDate != null) {
           matchesDate = parsedDate.year == _selectedDate!.year &&
               parsedDate.month == _selectedDate!.month &&
               parsedDate.day == _selectedDate!.day;
         } else {
-          // Fallback if parsing completely fails but string contains parts of it
           final yyyymmdd = "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}";
           final ddmmyyyy = "${_selectedDate!.day.toString().padLeft(2, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.year}";
           final slashFormat = "${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}";
@@ -103,18 +98,26 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
         }
       }
       
-      return matchesSearch && matchesDate;
+      return matchesSearch && matchesStatus && matchesDate;
     }).toList();
 
     return WaterDropletsBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'TOPICS',
+            'My Topics',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -123,236 +126,234 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
           ),
           centerTitle: false,
         ),
-      body: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (val) {
-                            setState(() {
-                              _searchQuery = val;
-                            });
-                          },
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'SEARCH TOPIC',
-                            hintStyle: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textLight,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (val) {
+                              setState(() {
+                                _searchQuery = val;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'SEARCH TOPICS...',
+                              hintStyle: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textLight,
+                              ),
+                              prefixIcon: Icon(Icons.search, color: AppColors.textLight),
+                              contentPadding: EdgeInsets.symmetric(vertical: 12),
                             ),
-                            prefixIcon: Icon(Icons.search, color: AppColors.textLight),
-                            contentPadding: EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDate ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2030),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: const ColorScheme.light(
-                                  primary: AppColors.primary,
-                                  onPrimary: Colors.white,
-                                  onSurface: AppColors.textPrimary,
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            _selectedDate = picked;
-                          });
-                        }
-                      },
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _selectedDate != null ? AppColors.primary : Colors.grey.shade200,
-                            width: _selectedDate != null ? 1.5 : 1,
-                          ),
-                          color: _selectedDate != null ? const Color(0xFFF5F3FF) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.calendar_today_outlined,
-                          color: _selectedDate != null ? AppColors.primary : AppColors.textPrimary,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_selectedDate != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Chip(
-                      label: Text(
-                        'DATE: ${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                      ),
-                      backgroundColor: const Color(0xFFF5F3FF),
-                      deleteIcon: const Icon(Icons.close, size: 14, color: AppColors.primary),
-                      onDeleted: () {
-                        setState(() {
-                          _selectedDate = null;
-                        });
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: const BorderSide(color: Color(0xFFE0DBFC)),
-                      ),
-                    ),
-                  ),
-                ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(24, 20, 24, 16),
-                child: Text(
-                  'SUBMITTED TOPICS',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: abstractProvider.isLoadingList
-                    ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async {
-                          final auth = Provider.of<AuthProvider>(context, listen: false);
-                          await auth.refreshSessionToken();
-                          await _fetchAbstracts();
-                        },
-                        color: AppColors.primary,
-                        child: filtered.isEmpty
-                            ? ListView(
-                                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                                children: const [
-                                  SizedBox(height: 100),
-                                  Center(
-                                    child: Text(
-                                      'No topics found',
-                                      style: TextStyle(color: AppColors.textLight),
-                                    ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                            builder: (context, child) {
+                              return Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: const ColorScheme.light(
+                                    primary: AppColors.primary,
+                                    onPrimary: Colors.white,
+                                    onSurface: AppColors.textPrimary,
                                   ),
-                                ],
-                              )
-                            : ListView.builder(
-                                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                                padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                                itemCount: filtered.length,
-                                itemBuilder: (context, index) {
-                                  final abs = filtered[index];
-                                  return _buildAbstractItemCard(context, abs);
-                                },
-                              ),
-                      ),
-              ),
-            ],
-          ),
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                ).then((_) {
-                  _fetchAbstracts();
-                });
-              },
-              child: Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2B227D),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF2B227D).withAlpha(40),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(30),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Text(
-                        'CREATE NEW TOPIC',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                                ),
+                                child: child!,
+                              );
+                            },
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _selectedDate = picked;
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _selectedDate != null ? AppColors.primary : Colors.grey.shade200,
+                              width: _selectedDate != null ? 1.5 : 1,
+                            ),
+                            color: _selectedDate != null ? const Color(0xFFF5F3FF) : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.calendar_today_outlined,
+                            color: _selectedDate != null ? AppColors.primary : AppColors.textPrimary,
+                            size: 20,
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Segments/Choice Chips for Approved vs Confirmed
+                  Row(
+                    children: [
+                      _buildFilterChip('Approved', 'Approved', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'approved').length),
+                      const SizedBox(width: 12),
+                      _buildFilterChip('Confirmed', 'Confirmed', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'confirmed').length),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (_selectedDate != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Chip(
+                    label: Text(
+                      'DATE: ${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                     ),
-                    const Icon(
-                      Icons.arrow_forward_ios_outlined,
-                      color: Colors.white54,
-                      size: 14,
+                    backgroundColor: const Color(0xFFF5F3FF),
+                    deleteIcon: const Icon(Icons.close, size: 14, color: AppColors.primary),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedDate = null;
+                      });
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Color(0xFFE0DBFC)),
                     ),
-                  ],
+                  ),
+                ),
+              ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 16, 24, 12),
+              child: Text(
+                'MY TOPICS',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: abstractProvider.isLoadingTopicsList
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        await auth.refreshSessionToken();
+                        await _fetchTopics(forceRefresh: true);
+                      },
+                      color: AppColors.primary,
+                      child: filtered.isEmpty
+                          ? ListView(
+                              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                              children: [
+                                SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                                const Center(
+                                  child: Text(
+                                    'No topics found in this category',
+                                    style: TextStyle(color: AppColors.textLight),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final abs = filtered[index];
+                                return _buildAbstractItemCard(context, abs);
+                              },
+                            ),
+                    ),
+            ),
+          ],
+        ),
       ),
-    ),);
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value, int count) {
+    final isSelected = _selectedStatusFilter == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedStatusFilter = value;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withAlpha(20) : Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.tileBorder,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary.withAlpha(30) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count.toString(),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? AppColors.primary : AppColors.textLight,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildAbstractItemCard(BuildContext context, Map<String, dynamic> abs) {
-    final status = (abs['review_status'] ?? 'Submitted').toString();
+    final status = (abs['status'] ?? 'Approved').toString();
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
@@ -361,23 +362,15 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
-    } else if (status == 'Accepted') {
+    } else {
       badgeBgColor = const Color(0xFFEFF6FF);
       badgeTextColor = const Color(0xFF3B82F6);
       badgeIcon = Icons.check_circle_outline;
-    } else if (status == 'Submitted' || status == 'Under Review') {
-      badgeBgColor = const Color(0xFFFEF3C7);
-      badgeTextColor = const Color(0xFFF59E0B);
-      badgeIcon = Icons.access_time;
-    } else {
-      badgeBgColor = const Color(0xFFFEE2E2);
-      badgeTextColor = const Color(0xFFEF4444);
-      badgeIcon = Icons.cancel_outlined;
     }
 
-    final String displayVersion = "ID: ${abs['abstract_id']}";
-    final String displayDate = abs['submitted_at'] ?? '';
-    final String displayTopic = abs['summit_title'] ?? 'Test Summit';
+    final String displayVersion = "ID: ${abs['topic_id']}";
+    final String displayDate = abs['created_on'] ?? '';
+    final String displayCategory = abs['category_of_submission'] ?? 'Oral Presentation';
 
     return GestureDetector(
       onTap: () {
@@ -385,15 +378,15 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
           context,
           MaterialPageRoute(
             builder: (context) => AbstractDetailScreen(
-              abstractId: abs['abstract_id'].toString(),
-              initialTitle: (abs['abstract_title'] ?? '').toString(),
+              abstractId: abs['topic_id'].toString(),
+              initialTitle: (abs['title'] ?? '').toString(),
               initialStatus: status,
-              initialTopic: displayTopic,
+              initialTopic: displayCategory,
               initialDate: displayDate,
             ),
           ),
         ).then((_) {
-          _fetchAbstracts();
+          _fetchTopics();
         });
       },
       child: Container(
@@ -479,7 +472,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    (abs['abstract_title'] ?? '').toString().toUpperCase(),
+                    (abs['title'] ?? '').toString().toUpperCase(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -490,7 +483,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${displayTopic.toUpperCase()} · ${TimeFormatter.formatString(displayDate)}",
+                    "${displayCategory.toUpperCase()} · ${TimeFormatter.formatString(displayDate)}",
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textLight,

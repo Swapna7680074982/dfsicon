@@ -6,11 +6,13 @@ import '../../providers/auth_provider.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../../providers/sessions_provider.dart';
+import '../../providers/workshops_provider.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
-import '../speaker_abstract/create_abstract_screen.dart';
 import '../speaker_sessions/speaker_session_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
+import '../workshops/workshops_list_screen.dart';
+import '../workshops/workshop_details_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -33,17 +35,19 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchData();
+      _fetchData(forceRefresh: false);
     });
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool forceRefresh = false}) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
     final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
+    final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
     await Future.wait([
-      abstractProvider.fetchMyAbstracts(auth.accessToken),
-      sessionsProvider.fetchMyConfirmedSessions(auth.accessToken),
+      abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
+      sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+      workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
     ]);
   }
 
@@ -64,7 +68,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
     final photoProvider = Provider.of<PhotoProvider>(context);
     final abstractProvider = Provider.of<AbstractProvider>(context);
     final sessionsProvider = Provider.of<SessionsProvider>(context);
+    final workshopsProvider = Provider.of<WorkshopsProvider>(context);
     final mySessions = sessionsProvider.mySessions;
+    final myTopics = abstractProvider.myTopics;
+    final myWorkshops = workshopsProvider.workshops;
 
     return WaterDropletsBackground(
       child: Scaffold(
@@ -73,7 +80,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
           onRefresh: () async {
             final auth = Provider.of<AuthProvider>(context, listen: false);
             await auth.refreshSessionToken();
-            await _fetchData();
+            await _fetchData(forceRefresh: true);
           },
           color: AppColors.primary,
           backgroundColor: Colors.white,
@@ -86,7 +93,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF312E81), Color(0xFF4F46E5)],
+                      colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -106,7 +113,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'WELCOME BACK',
+                                'Welcome back',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.white70,
@@ -114,7 +121,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                authProvider.userName.toUpperCase(),
+                                authProvider.userName,
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -240,12 +247,12 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${mySessions.length} SESSIONS CONFIRMED',
+                              '${mySessions.length} sessions confirmed',
                               style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5),
                             ),
                           ],
                         ),
@@ -253,19 +260,21 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ],
                   ),
                 ),
+                
+                // 1. MY SESSIONS SECTION
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                        const Text(
-                          'MY SESSIONS',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                      const Text(
+                        'My Sessions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
+                      ),
                       GestureDetector(
                         onTap: widget.onNavigateToSessions,
                         child: Row(
@@ -337,21 +346,23 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         );
                       },
                       child: _buildSessionCard(
-                        title: mySessions[i].title.toUpperCase(),
+                        title: mySessions[i].title,
                         date: mySessions[i].date,
                         time: mySessions[i].time,
-                        location: mySessions[i].location.toUpperCase(),
+                        location: mySessions[i].location,
                       ),
                     ),
                   ]
                 ],
+
+                // 2. MY TOPICS SECTION
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'TOPIC SUBMISSION',
+                        'My Topics',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -359,21 +370,11 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                          ).then((success) {
-                            _fetchData();
-                            if (success == true) {
-                              widget.onNavigateToAbstracts();
-                            }
-                          });
-                        },
+                        onTap: widget.onNavigateToAbstracts,
                         child: Row(
                           children: const [
                             Text(
-                              'CREATE NEW',
+                              'VIEW ALL',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -382,8 +383,8 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             ),
                             SizedBox(width: 4),
                             Icon(
-                              Icons.add,
-                              size: 16,
+                              Icons.arrow_forward_ios_outlined,
+                              size: 12,
                               color: AppColors.primary,
                             ),
                           ],
@@ -392,14 +393,14 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ],
                   ),
                 ),
-                if (abstractProvider.isLoadingList)
+                if (abstractProvider.isLoadingTopicsList)
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24.0),
                       child: CircularProgressIndicator(color: AppColors.primary),
                     ),
                   )
-                else if (abstractProvider.myAbstracts.isEmpty)
+                else if (myTopics.isEmpty)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(24),
@@ -408,93 +409,30 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: AppColors.tileBorder, width: 1),
                     ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF3F4F6),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.description_outlined, color: AppColors.textLight, size: 24),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'NO TOPICS SUBMITTED YET',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Submit your research paper topics here.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textLight,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const CreateAbstractScreen()),
-                              ).then((success) {
-                                _fetchData();
-                                if (success == true) {
-                                  widget.onNavigateToAbstracts();
-                                }
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Text(
-                                'SUBMIT TOPIC',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      ],
+                    child: const Center(
+                      child: Text(
+                        'No topics submitted yet',
+                        style: TextStyle(color: AppColors.textLight, fontSize: 13),
+                      ),
                     ),
                   )
                 else ...[
                   GestureDetector(
                     onTap: () {
-                      final abs = abstractProvider.myAbstracts.first;
+                      final abs = myTopics.first;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => AbstractDetailScreen(
-                            abstractId: abs['abstract_id'].toString(),
-                            initialTitle: (abs['abstract_title'] ?? '').toString(),
-                            initialStatus: (abs['review_status'] ?? 'Submitted').toString(),
-                            initialTopic: (abs['summit_title'] ?? 'Test Summit').toString(),
-                            initialDate: (abs['submitted_at'] ?? '').toString(),
+                            abstractId: abs['topic_id'].toString(),
+                            initialTitle: (abs['title'] ?? '').toString(),
+                            initialStatus: (abs['status'] ?? 'Approved').toString(),
+                            initialTopic: (abs['category_of_submission'] ?? 'Oral Presentation').toString(),
+                            initialDate: (abs['created_on'] ?? '').toString(),
                           ),
                         ),
-                      ).then((success) {
+                      ).then((_) {
                         _fetchData();
-                        if (success == true) {
-                          widget.onNavigateToAbstracts();
-                        }
                       });
                     },
                     child: Container(
@@ -542,7 +480,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        'ID: ${abstractProvider.myAbstracts.first['abstract_id']}',
+                                        'ID: ${myTopics.first['topic_id']}',
                                         style: const TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
@@ -551,12 +489,12 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    _buildStatusBadge(abstractProvider.myAbstracts.first['review_status'] ?? 'Submitted'),
+                                    _buildStatusBadge(myTopics.first['status'] ?? 'Approved'),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  (abstractProvider.myAbstracts.first['abstract_title'] ?? '').toString().toUpperCase(),
+                                  (myTopics.first['title'] ?? '').toString(),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -567,7 +505,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${(abstractProvider.myAbstracts.first['summit_title'] ?? 'Test Summit').toString().toUpperCase()} · ${TimeFormatter.formatString(abstractProvider.myAbstracts.first['submitted_at']?.toString() ?? '')}',
+                                  '${(myTopics.first['category_of_submission'] ?? 'Oral Presentation').toString()} · ${TimeFormatter.formatString(myTopics.first['created_on']?.toString() ?? '')}',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textLight,
@@ -587,6 +525,194 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ),
                   ),
                 ],
+
+                // 3. MY WORKSHOPS SECTION
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'My Workshops',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WorkshopsListScreen(),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: const [
+                            Text(
+                              'VIEW ALL',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios_outlined,
+                              size: 12,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (workshopsProvider.isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    ),
+                  )
+                else if (myWorkshops.isEmpty)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppColors.tileBorder, width: 1),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'No workshops registered yet',
+                        style: TextStyle(color: AppColors.textLight, fontSize: 13),
+                      ),
+                    ),
+                  )
+                else ...[
+                  Builder(
+                    builder: (context) {
+                      final ws = myWorkshops.first;
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => WorkshopDetailsScreen(workshop: ws),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.tileBorder, width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(2),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.assignment_outlined,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withAlpha(16),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        ws.workshopType.toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: ws.status.toLowerCase() == 'active' ? const Color(0xFFECFDF5) : const Color(0xFFF3F4F6),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        ws.status.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: ws.status.toLowerCase() == 'active' ? const Color(0xFF10B981) : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  ws.workshopName.toUpperCase(),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'VENUE: ${ws.venueName.toUpperCase()} · ${ws.city.toUpperCase()}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textLight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Icon(
+                            Icons.arrow_forward_ios_outlined,
+                            size: 14,
+                            color: AppColors.textLight,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              ),
+            ],
                 const SizedBox(height: 36),
               ],
             ),
@@ -605,18 +731,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
-    } else if (status == 'Accepted') {
+    } else {
       badgeBgColor = const Color(0xFFEFF6FF);
       badgeTextColor = const Color(0xFF3B82F6);
       badgeIcon = Icons.check_circle_outline;
-    } else if (status == 'Submitted' || status == 'Under Review') {
-      badgeBgColor = const Color(0xFFFEF3C7);
-      badgeTextColor = const Color(0xFFF59E0B);
-      badgeIcon = Icons.access_time;
-    } else {
-      badgeBgColor = const Color(0xFFFEE2E2);
-      badgeTextColor = const Color(0xFFEF4444);
-      badgeIcon = Icons.cancel_outlined;
     }
 
     return Container(
@@ -634,7 +752,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
           ),
           const SizedBox(width: 2),
           Text(
-            status.toUpperCase(),
+            status,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,

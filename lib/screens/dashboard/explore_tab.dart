@@ -8,6 +8,7 @@ import '../exhibitor/exhibitors_list_screen.dart';
 import '../sightseeing/sightseeing_list_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../help_desk/help_desk_screen.dart';
+import '../workshops/workshops_list_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 
 class ExploreTab extends StatefulWidget {
@@ -46,11 +47,19 @@ class _ExploreTabState extends State<ExploreTab> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'EXPLORE',
+            'Explore',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -88,6 +97,21 @@ class _ExploreTabState extends State<ExploreTab> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ExhibitorsListScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCategoryCard(
+                    context,
+                    title: 'MY WORKSHOPS',
+                    subtitle: 'View your registered workshops',
+                    icon: Icons.assignment_outlined,
+                    iconBg: const Color(0xFFEEF2FF),
+                    iconColor: AppColors.primary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const WorkshopsListScreen()),
                       );
                     },
                   ),

@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/explore_provider.dart';
 import '../../providers/sessions_provider.dart';
+import '../../providers/workshops_provider.dart';
 import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
@@ -34,13 +35,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final homeProvider = Provider.of<HomeProvider>(context, listen: false);
       final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
       final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
-      await homeProvider.fetchSummits(auth.accessToken);
-      final String summitId = homeProvider.summits.isNotEmpty
-          ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
-          : '1';
-      exploreProvider.fetchSponsors(summitId, auth.accessToken);
-      sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
-      sessionsProvider.fetchConfirmedSessions(auth.accessToken);
+      final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
+      
+      if (auth.isSpeaker) {
+        // Speakers only need summits for profile/event name info.
+        // Other speaker data is fetched in their respective tabs.
+        await homeProvider.fetchSummits(auth.accessToken);
+      } else {
+        // Delegate flow
+        await homeProvider.fetchSummits(auth.accessToken);
+        final String summitId = homeProvider.summits.isNotEmpty
+            ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+            : '1';
+        exploreProvider.fetchSponsors(summitId, auth.accessToken);
+        sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
+        sessionsProvider.fetchConfirmedSessions(auth.accessToken);
+        workshopsProvider.fetchMyWorkshops(auth.accessToken);
+      }
     });
   }
 
@@ -104,7 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: EdgeInsets.only(bottom: 4.0),
                 child: Icon(Icons.description, size: 24),
               ),
-              label: 'Abstract',
+              label: 'Topics',
             ),
             BottomNavigationBarItem(
               icon: Padding(

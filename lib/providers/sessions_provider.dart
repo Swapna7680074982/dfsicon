@@ -245,10 +245,13 @@ class SessionsProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> fetchConfirmedSessions(String accessToken) async {
+  Future<bool> fetchConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
+    if (!forceRefresh && _sessions.isNotEmpty) return true;
+    if (_isLoading) return false; // Prevent concurrent loading
     _isLoading = true;
     _errorMessage = null;
+    _sessions = []; // Clear previous data
     notifyListeners();
 
     try {
@@ -287,10 +290,13 @@ class SessionsProvider extends ChangeNotifier {
   // ==========================================
   // Fetch Speaker Confirmed Sessions
   // ==========================================
-  Future<bool> fetchMyConfirmedSessions(String accessToken) async {
+  Future<bool> fetchMyConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
+    if (!forceRefresh && _mySessions.isNotEmpty) return true;
+    if (_isLoading) return false; // Prevent concurrent loading
     _isLoading = true;
     _errorMessage = null;
+    _mySessions = []; // Clear previous data
     notifyListeners();
 
     try {
@@ -351,9 +357,9 @@ class SessionsProvider extends ChangeNotifier {
   }
 
   SessionItem _mapJsonToSession(Map<String, dynamic> json, int index) {
-    final abstractId = json['abstract_id']?.toString() ?? '';
+    final abstractId = json['abstract_id']?.toString() ?? json['topic_id']?.toString() ?? '';
     final id = int.tryParse(abstractId) ?? index;
-    final title = json['abstract_title']?.toString() ?? 'Session';
+    final title = json['abstract_title']?.toString() ?? json['title']?.toString() ?? 'Session';
     final speakerName = json['speaker_name']?.toString() ?? 'TBA';
     final designation = json['designation']?.toString() ?? '';
     final clinicName = json['hospital_clinic_name']?.toString() ?? '';

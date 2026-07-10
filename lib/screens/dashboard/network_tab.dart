@@ -44,14 +44,22 @@ class _NetworkTabState extends State<NetworkTab> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 2,
           automaticallyImplyLeading: false,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'NETWORKING',
+                'Networking',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

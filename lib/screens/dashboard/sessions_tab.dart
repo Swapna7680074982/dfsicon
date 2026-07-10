@@ -20,14 +20,14 @@ class _SessionsTabState extends State<SessionsTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSessions();
+      _fetchSessions(forceRefresh: false);
     });
   }
 
-  Future<void> _fetchSessions() async {
+  Future<void> _fetchSessions({bool forceRefresh = false}) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
-    await sessions.fetchConfirmedSessions(auth.accessToken);
+    await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
   }
 
   @override
@@ -45,11 +45,19 @@ class _SessionsTabState extends State<SessionsTab> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'SESSIONS',
+            'Sessions',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -161,7 +169,7 @@ class _SessionsTabState extends State<SessionsTab> {
               const SizedBox(height: 16),
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: _fetchSessions,
+                  onRefresh: () => _fetchSessions(forceRefresh: true),
                   color: AppColors.primary,
                   backgroundColor: Colors.white,
                   child: sessionsProvider.isLoading

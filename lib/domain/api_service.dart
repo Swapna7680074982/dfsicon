@@ -443,6 +443,100 @@ class ApiService {
     return response;
   }
 
+  // ==========================================
+  // Workshops API Call
+  // ==========================================
+  static Future<http.Response> fetchMyWorkshops({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myWorkshops);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // ==========================================
+  // Speaker Topics API Calls
+  // ==========================================
+  static Future<http.Response> fetchSpeakerMyTopics({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.speakerMyTopics);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchSpeakerTopicDetails({
+    required String topicId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.speakerTopicDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final body = json.encode({
+      'topic_id': topicId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> updateSpeakerTopicDetails({
+    required Map<String, dynamic> body,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.speakerUpdateTopicDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode(body);
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // Helper
   static String _getMimeTypeForExtension(String fileExtension) {
     String mimeType = 'application/octet-stream';

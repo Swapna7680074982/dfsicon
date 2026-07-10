@@ -21,14 +21,14 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSessions();
+      _fetchSessions(forceRefresh: false);
     });
   }
 
-  Future<void> _fetchSessions() async {
+  Future<void> _fetchSessions({bool forceRefresh = false}) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
-    await sessions.fetchMyConfirmedSessions(auth.accessToken);
+    await sessions.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
   }
 
   @override
@@ -53,11 +53,19 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           elevation: 2,
           automaticallyImplyLeading: false,
           title: const Text(
-            'MY SESSIONS',
+            'My Sessions',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -154,7 +162,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             const Padding(
               padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
               child: Text(
-                'SCHEDULED SESSIONS',
+                'Scheduled Sessions',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -164,7 +172,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             ),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _fetchSessions,
+                onRefresh: () => _fetchSessions(forceRefresh: true),
                 color: AppColors.primary,
                 backgroundColor: Colors.white,
                 child: sessionsProvider.isLoading
@@ -228,7 +236,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
               const Icon(Icons.local_offer_outlined, size: 14, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
-                tag.toUpperCase(),
+                tag,
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -239,7 +247,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           ),
           const SizedBox(height: 10),
           Text(
-                s.title.toUpperCase(),
+                s.title,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -249,7 +257,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           const SizedBox(height: 18),
           _buildSessionDetailItem(Icons.calendar_month_outlined, '${s.time} (${s.date})'),
           const SizedBox(height: 10),
-          _buildSessionDetailItem(Icons.location_on_outlined, s.location.toUpperCase()),
+          _buildSessionDetailItem(Icons.location_on_outlined, s.location),
           const SizedBox(height: 16),
           const Divider(height: 1, color: AppColors.tileBorder),
           const SizedBox(height: 14),
@@ -261,7 +269,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                   const Icon(Icons.person_outline, size: 14, color: AppColors.textLight),
                   const SizedBox(width: 6),
                   Text(
-                    'COORD: MR. ARJUN MEHTA',
+                    'Coord: Mr. Arjun Mehta',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -292,7 +300,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                 child: Row(
                   children: const [
                     Text(
-                      'DETAILS',
+                      'Details',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

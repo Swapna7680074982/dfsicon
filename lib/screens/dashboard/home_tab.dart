@@ -7,12 +7,15 @@ import '../../providers/home_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/explore_provider.dart';
+import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../profile/profile_screen.dart';
 import '../sightseeing/sightseeing_list_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../workshops/workshops_list_screen.dart';
+import '../workshops/workshop_details_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -215,7 +218,7 @@ class HomeTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title.toUpperCase(),
+                  title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -248,7 +251,7 @@ class HomeTab extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        speaker.toUpperCase(),
+                        speaker,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -271,7 +274,7 @@ class HomeTab extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '${time.toUpperCase()} • ${hall.toUpperCase()}',
+                        '$time • $hall',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -368,7 +371,7 @@ class HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            title.toUpperCase(),
+            title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -379,7 +382,7 @@ class HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            subtitle.toUpperCase(),
+            subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -397,7 +400,7 @@ class HomeTab extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                booth.toUpperCase(),
+                booth,
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -492,7 +495,7 @@ class HomeTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title.toUpperCase(),
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -511,7 +514,7 @@ class HomeTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      distance.toUpperCase(),
+                      distance,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -524,7 +527,7 @@ class HomeTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      cost.toUpperCase(),
+                      cost,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -875,6 +878,8 @@ class HomeTab extends StatelessWidget {
     final homeProvider = Provider.of<HomeProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final sessionsProvider = Provider.of<SessionsProvider>(context);
+    final workshopsProvider = Provider.of<WorkshopsProvider>(context);
+    final myWorkshops = workshopsProvider.workshops;
 
     return WaterDropletsBackground(
       child: Scaffold(
@@ -883,9 +888,11 @@ class HomeTab extends StatelessWidget {
           child: RefreshIndicator(
             onRefresh: () async {
               final sessionsProv = Provider.of<SessionsProvider>(context, listen: false);
+              final workshopsProv = Provider.of<WorkshopsProvider>(context, listen: false);
               await authProvider.refreshSessionToken();
               await homeProvider.fetchSummits(authProvider.accessToken);
-              await sessionsProv.fetchConfirmedSessions(authProvider.accessToken);
+              await sessionsProv.fetchConfirmedSessions(authProvider.accessToken, forceRefresh: true);
+              await workshopsProv.fetchMyWorkshops(authProvider.accessToken, forceRefresh: true);
             },
             color: AppColors.primary,
             backgroundColor: Colors.white,
@@ -900,7 +907,7 @@ class HomeTab extends StatelessWidget {
                     width: double.infinity,
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF4F46E5)],
+                        colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -916,7 +923,7 @@ class HomeTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'WELCOME BACK',
+                              'Welcome Back',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
@@ -924,7 +931,7 @@ class HomeTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              authProvider.userName.toUpperCase(),
+                              authProvider.userName,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -1080,7 +1087,7 @@ class HomeTab extends StatelessWidget {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            homeProvider.eventInfo.location.toUpperCase(),
+                                            homeProvider.eventInfo.location,
                                             style: const TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w600,
@@ -1092,7 +1099,7 @@ class HomeTab extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      homeProvider.eventInfo.name.toUpperCase(),
+                                      homeProvider.eventInfo.name,
                                       style: const TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -1104,7 +1111,7 @@ class HomeTab extends StatelessWidget {
                                     Text(
                                       TimeFormatter.formatString(
                                         homeProvider.eventInfo.date,
-                                      ).toUpperCase(),
+                                      ),
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
@@ -1197,7 +1204,7 @@ class HomeTab extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'SESSIONS',
+                                    'Sessions',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -1354,8 +1361,198 @@ class HomeTab extends StatelessWidget {
                                   ),
                                 ),
                               const SizedBox(height: 28),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'My Workshops',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const WorkshopsListScreen(),
+                                        ),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: Row(
+                                      children: const [
+                                        Text(
+                                          'VIEW ALL',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              if (workshopsProvider.isLoading && myWorkshops.isEmpty)
+                                const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 24.0),
+                                    child: CircularProgressIndicator(color: AppColors.primary),
+                                  ),
+                                )
+                              else if (myWorkshops.isEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      workshopsProvider.errorMessage ?? 'No workshops registered yet',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(color: AppColors.textLight, fontSize: 13),
+                                    ),
+                                  ),
+                                )
+                              else ...[
+                                Builder(
+                                  builder: (context) {
+                                    final ws = myWorkshops.first;
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => WorkshopDetailsScreen(workshop: ws),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withAlpha(2),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 42,
+                                              height: 42,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEFF6FF),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.assignment_outlined,
+                                                color: AppColors.primary,
+                                                size: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: AppColors.primary.withAlpha(16),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          ws.workshopType,
+                                                          style: const TextStyle(
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: AppColors.primary,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: ws.status.toLowerCase() == 'active' ? const Color(0xFFECFDF5) : const Color(0xFFF3F4F6),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          ws.status,
+                                                          style: TextStyle(
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: ws.status.toLowerCase() == 'active' ? const Color(0xFF10B981) : AppColors.textSecondary,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    ws.workshopName,
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppColors.textPrimary,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Venue: ${ws.venueName} · ${ws.city}',
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color: AppColors.textLight,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            const Icon(
+                                              Icons.arrow_forward_ios_outlined,
+                                              size: 14,
+                                              color: AppColors.textLight,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                ),
+                              ],
+                              const SizedBox(height: 28),
                               const Text(
-                                'SPONSORS & EXHIBITORS',
+                                'Sponsors & Exhibitors',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -1392,7 +1589,7 @@ class HomeTab extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'SIGHTSEEING',
+                                    'Sightseeing',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
