@@ -28,6 +28,27 @@ class AbstractProvider with ChangeNotifier {
   bool _isLoadingTopicDetails = false;
   bool _isUpdatingTopic = false;
 
+  String? _lastTopicsAccessToken;
+
+  void clear() {
+    _myAbstracts = [];
+    _isLoadingList = false;
+    _selectedAbstractDetails = null;
+    _isLoadingDetails = false;
+    _isSubmitting = false;
+    _isResubmitting = false;
+    _summits = [];
+    _isLoadingSummits = false;
+    _errorMessage = null;
+    _myTopics = [];
+    _selectedTopicDetails = null;
+    _isLoadingTopicsList = false;
+    _isLoadingTopicDetails = false;
+    _isUpdatingTopic = false;
+    _lastTopicsAccessToken = null;
+    notifyListeners();
+  }
+
   // Getters
   List<Map<String, dynamic>> get myAbstracts => _myAbstracts;
   List<Map<String, dynamic>> get myTopics => _myTopics;
@@ -288,6 +309,10 @@ class AbstractProvider with ChangeNotifier {
   // ==========================================
   Future<bool> fetchMyTopics(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
+    if (accessToken != _lastTopicsAccessToken) {
+      forceRefresh = true;
+      _lastTopicsAccessToken = accessToken;
+    }
     if (!forceRefresh && _myTopics.isNotEmpty) return true;
     if (_isLoadingTopicsList) return false; // Prevent duplicate concurrent loading
     _isLoadingTopicsList = true;

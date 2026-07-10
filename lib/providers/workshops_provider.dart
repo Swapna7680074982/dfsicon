@@ -100,13 +100,26 @@ class WorkshopsProvider with ChangeNotifier {
   List<WorkshopItem> _workshops = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String? _lastAccessToken;
 
   List<WorkshopItem> get workshops => _workshops;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  void clear() {
+    _workshops = [];
+    _isLoading = false;
+    _errorMessage = null;
+    _lastAccessToken = null;
+    notifyListeners();
+  }
+
   Future<bool> fetchMyWorkshops(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
+    if (accessToken != _lastAccessToken) {
+      forceRefresh = true;
+      _lastAccessToken = accessToken;
+    }
     if (!forceRefresh && _workshops.isNotEmpty) return true;
     if (_isLoading) return false; // Prevent duplicate concurrent loading
     _isLoading = true;

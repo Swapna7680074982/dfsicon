@@ -111,6 +111,13 @@ class ExploreProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  void clear() {
+    _exhibitors = const [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   List<Exhibitor> get featuredExhibitors {
     final featured = _exhibitors.where((ex) => ex.category.toLowerCase() == 'featured').toList();
     if (featured.isEmpty && _exhibitors.isNotEmpty) {

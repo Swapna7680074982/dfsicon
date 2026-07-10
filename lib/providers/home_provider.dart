@@ -107,6 +107,43 @@ class HomeProvider with ChangeNotifier {
   HomeEventInfo get eventInfo => _eventInfo;
   List<Map<String, dynamic>> get summits => _summits;
 
+  void clear() {
+    _summits = [];
+    _isLoading = false;
+    _eventInfo = HomeEventInfo(
+      name: 'TechSummit 2026',
+      location: 'Convention Center, Hall 4',
+      date: 'Oct 12 - 14, 2026',
+    );
+    _exhibitors = [
+      HomeExhibitor(
+        initials: 'MC',
+        color: const Color(0xFF1E3A8A),
+        title: 'MedCore Health',
+        subtitle: 'Health IT & EMR',
+        booth: 'Booth A-12',
+        imageUrl: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?w=200&fit=crop',
+      ),
+      HomeExhibitor(
+        initials: 'HB',
+        color: const Color(0xFF8B5CF6),
+        title: 'HealthBridge',
+        subtitle: 'Interoperability',
+        booth: 'Booth B-05',
+        imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=200&fit=crop',
+      ),
+      HomeExhibitor(
+        initials: 'BS',
+        color: const Color(0xFF10B981),
+        title: 'BioSync Analytics',
+        subtitle: 'Clinical Data & Research',
+        booth: 'Booth C-08',
+        imageUrl: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=200&fit=crop',
+      ),
+    ];
+    notifyListeners();
+  }
+
   String _formatSummitDates(String start, String end) {
     if (start.isEmpty && end.isEmpty) return 'Oct 12 - 14, 2026';
     if (start.isEmpty) return end;

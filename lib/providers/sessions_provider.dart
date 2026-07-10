@@ -93,6 +93,9 @@ class SessionsProvider extends ChangeNotifier {
   List<SessionItem> _sessions = [];
   List<SessionItem> _mySessions = []; // Speaker-specific confirmed sessions
 
+  String? _lastAccessToken;
+  String? _lastMySessionsAccessToken;
+
   String get searchQuery => _searchQuery;
   bool get showOnlyBookmarked => _showOnlyBookmarked;
   bool get isLoading => _isLoading;
@@ -100,6 +103,20 @@ class SessionsProvider extends ChangeNotifier {
 
   List<SessionItem> get sessions => _sessions;
   List<SessionItem> get mySessions => _mySessions;
+
+  void clear() {
+    _venueInfo = null;
+    _halls = [];
+    _searchQuery = '';
+    _showOnlyBookmarked = false;
+    _isLoading = false;
+    _errorMessage = null;
+    _sessions = [];
+    _mySessions = [];
+    _lastAccessToken = null;
+    _lastMySessionsAccessToken = null;
+    notifyListeners();
+  }
 
   List<SessionItem> get filteredSessions {
     final query = _searchQuery.toLowerCase().trim();
@@ -247,6 +264,10 @@ class SessionsProvider extends ChangeNotifier {
 
   Future<bool> fetchConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
+    if (accessToken != _lastAccessToken) {
+      forceRefresh = true;
+      _lastAccessToken = accessToken;
+    }
     if (!forceRefresh && _sessions.isNotEmpty) return true;
     if (_isLoading) return false; // Prevent concurrent loading
     _isLoading = true;
@@ -292,6 +313,10 @@ class SessionsProvider extends ChangeNotifier {
   // ==========================================
   Future<bool> fetchMyConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
+    if (accessToken != _lastMySessionsAccessToken) {
+      forceRefresh = true;
+      _lastMySessionsAccessToken = accessToken;
+    }
     if (!forceRefresh && _mySessions.isNotEmpty) return true;
     if (_isLoading) return false; // Prevent concurrent loading
     _isLoading = true;
