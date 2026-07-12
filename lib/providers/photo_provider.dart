@@ -17,6 +17,9 @@ class PhotoProvider extends ChangeNotifier {
   bool get uploadSuccess => _uploadSuccess;
   bool get hasPhoto => _imagePath != null;
 
+  String? _uploadError;
+  String? get uploadError => _uploadError;
+
   Future<void> pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -29,6 +32,7 @@ class PhotoProvider extends ChangeNotifier {
       if (pickedFile != null) {
         _imagePath = pickedFile.path;
         _uploadSuccess = false;
+        _uploadError = null;
         notifyListeners();
       }
     } catch (e) {
@@ -39,6 +43,7 @@ class PhotoProvider extends ChangeNotifier {
   void clearImage() {
     _imagePath = null;
     _uploadSuccess = false;
+    _uploadError = null;
     notifyListeners();
   }
 
@@ -47,6 +52,7 @@ class PhotoProvider extends ChangeNotifier {
     if (!hasPhoto) return null;
 
     _isUploading = true;
+    _uploadError = null;
     notifyListeners();
 
     try {
@@ -71,13 +77,20 @@ class PhotoProvider extends ChangeNotifier {
           _uploadSuccess = true;
           notifyListeners();
           return data['profile_picture'] as String?;
+        } else {
+          _uploadError = data['message'] ?? 'Upload failed';
         }
+      } else {
+        _uploadError = 'Server error: ${response.statusCode}';
       }
       notifyListeners();
       return null;
     } catch (e, stack) {
       CustomLogger.logError('Upload profile photo failed', e, stack);
       _isUploading = false;
+      _uploadError = e.toString().contains('Failed host lookup')
+          ? 'Network error: please check your internet connection'
+          : 'Upload failed: ${e.toString()}';
       notifyListeners();
       return null;
     }

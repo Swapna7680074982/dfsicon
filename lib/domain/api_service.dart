@@ -537,6 +537,233 @@ class ApiService {
     return response;
   }
 
+  // ==========================================
+  // Delegate, Speaker & Utility API Calls
+  // ==========================================
+
+  static Future<http.Response> bookmarkSession({
+    required String assignmentId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.bookmarkSession);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "assignment_id": assignmentId
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> unbookmarkSession({
+    required String assignmentId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.unbookmarkSession);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "assignment_id": assignmentId
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchMyBookmarks({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myBookmarks);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> viewSessionParticipants({
+    String? assignmentId,
+    String? topicId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.viewSessionParticipants);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBodyMap = <String, dynamic>{};
+    if (assignmentId != null) {
+      requestBodyMap['assignment_id'] = assignmentId;
+    }
+    if (topicId != null) {
+      requestBodyMap['topic_id'] = topicId;
+    }
+    final requestBody = json.encode(requestBodyMap);
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchSummitStats({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.summitStats);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchInvitedSpeakers({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.invitedSpeakers);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> fetchMyProfile({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myProfile);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('GET', url.toString(), headers: headers);
+
+    final response = await http.get(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> updateProfile({
+    required Map<String, String> fields,
+    File? profileImage,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.updateProfile);
+    final request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $accessToken';
+    
+    fields.forEach((key, value) {
+      request.fields[key] = value;
+    });
+
+    if (profileImage != null) {
+      final fileExtension = profileImage.path.split('.').last.toLowerCase();
+      final mimeType = _getMimeTypeForExtension(fileExtension);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profile_image',
+          profileImage.path,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+    }
+
+    CustomLogger.logRequest(
+      'POST (Multipart)',
+      url.toString(),
+      headers: request.headers,
+      body: 'Fields: ${request.fields}, Image: ${profileImage?.path}',
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> updatePrivacySettings({
+    required Map<String, String> settings,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.updatePrivacySettings);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode(settings);
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // Helper
   static String _getMimeTypeForExtension(String fileExtension) {
     String mimeType = 'application/octet-stream';

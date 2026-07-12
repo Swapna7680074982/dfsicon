@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
+import 'package:dfsicon/main.dart';
 
 class AuthProvider with ChangeNotifier {
   String _phoneNumber = '';
@@ -57,9 +59,24 @@ class AuthProvider with ChangeNotifier {
   String get specialization => _profileData['specialization'] ?? (isSpeaker ? 'Senior Pathologist' : 'Sr. Surgeon');
   String get qualification => _profileData['qualification'] ?? (isSpeaker ? 'MD' : 'MS');
   String get experienceYears => _profileData['experience_years'] ?? '10';
-  String get hospitalClinicName => _profileData['hospital_clinic_name'] ?? (isSpeaker ? 'National Pathology Institute' : 'Medcare Hospitals');
+  String get hospitalClinicName => _profileData['organisation_name'] ?? _profileData['hospital_clinic_name'] ?? (isSpeaker ? 'National Pathology Institute' : 'Medcare Hospitals');
   String get medicalRegistrationNumber => _profileData['medical_registration_number'] ?? '123456';
   String get designation => _profileData['designation'] ?? (isSpeaker ? 'Chief Speaker' : 'Sr. Consultant');
+  
+  String get gender => _profileData['gender'] ?? '';
+  String get state => _profileData['state'] ?? '';
+  String get city => _profileData['city'] ?? '';
+  String get countryId => _profileData['country_id']?.toString() ?? '';
+  String get countryName => _profileData['country_name'] ?? '';
+  String get postalCode => _profileData['postal_code'] ?? '';
+  String get category => _profileData['category'] ?? '';
+
+  bool get showMobile => _profileData['show_mobile'] == '1' || _profileData['show_mobile'] == 1;
+  bool get showEmail => _profileData['show_email'] == '1' || _profileData['show_email'] == 1;
+  bool get showOrganisation => _profileData['show_organisation'] == '1' || _profileData['show_organisation'] == 1;
+  bool get showDesignation => _profileData['show_designation'] == '1' || _profileData['show_designation'] == 1;
+  bool get showProfileImage => _profileData['show_profile_image'] == '1' || _profileData['show_profile_image'] == 1;
+
   String get profileImage {
     final img = (_profileData['profile_image'] ?? 'NA').toString().trim();
     if (img == 'NA' || img.isEmpty) return 'NA';
@@ -101,8 +118,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   // API Call: Send OTP
-  Future<bool> sendOtp() async {
-    if (!isPhoneValid) return false;
+  Future<String?> sendOtp() async {
+    if (!isPhoneValid) return 'Invalid phone number';
     
     _isSendingOtp = true;
     notifyListeners();
@@ -114,23 +131,23 @@ class AuthProvider with ChangeNotifier {
       );
 
       _isSendingOtp = false;
+      final data = json.decode(response.body);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
         if (data['status'] == true) {
           _otpSent = true;
           _resendSeconds = 30;
           notifyListeners();
           _startTimer();
-          return true;
+          return null;
         }
       }
       notifyListeners();
-      return false;
+      return data['message'] ?? 'Failed to send OTP';
     } catch (e, stack) {
       CustomLogger.logError('Send OTP failed', e, stack);
       _isSendingOtp = false;
       notifyListeners();
-      return false;
+      return e.toString();
     }
   }
 
@@ -147,8 +164,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   // API Call: Resend OTP
-  Future<bool> resendOtp() async {
-    if (_resendSeconds > 0) return false;
+  Future<String?> resendOtp() async {
+    if (_resendSeconds > 0) return 'Please wait for the timer';
     
     _otpCode = '';
     _resendSeconds = 30;
@@ -159,8 +176,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   // API Call: Verify OTP
-  Future<bool> verifyOtp() async {
-    if (!isOtpComplete) return false;
+  Future<String?> verifyOtp() async {
+    if (!isOtpComplete) return 'Please enter the complete OTP';
 
     _isVerifying = true;
     notifyListeners();
@@ -172,8 +189,8 @@ class AuthProvider with ChangeNotifier {
         meta: _defaultMeta,
       );
 
+      final data = json.decode(response.body);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
         if (data['status'] == true) {
           _accessToken = data['access_token'] ?? '';
           _refreshToken = data['refresh_token'] ?? '';
@@ -183,18 +200,18 @@ class AuthProvider with ChangeNotifier {
 
           _isVerifying = false;
           notifyListeners();
-          return true;
+          return null;
         }
       }
       
       _isVerifying = false;
       notifyListeners();
-      return false;
+      return data['message'] ?? 'Verification failed';
     } catch (e, stack) {
       CustomLogger.logError('Verify OTP failed', e, stack);
       _isVerifying = false;
       notifyListeners();
-      return false;
+      return e.toString();
     }
   }
 
@@ -272,22 +289,103 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('profile_data');
   }
 
-  Future<void> updateProfileLocal({
-    required String name,
-    required String email,
-    required String mobile,
-    required String hospitalClinicName,
-    required String specialization,
-    required String designation,
+  Future<bool> fetchMyProfile() async {
+    if (_accessToken.isEmpty) return false;
+    try {
+      final response = await ApiService.fetchMyProfile(accessToken: _accessToken);
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          _profileData = Map<String, dynamic>.from(data['data']);
+          await _saveSession();
+          notifyListeners();
+          return true;
+        }
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch profile failed', e, stack);
+      return false;
+    }
+  }
+
+  Future<bool> updateProfileApi({
+    required Map<String, String> fields,
+    File? profileImage,
   }) async {
-    _profileData['full_name'] = name;
-    _profileData['email'] = email;
-    _profileData['mobile'] = mobile;
-    _profileData['hospital_clinic_name'] = hospitalClinicName;
-    _profileData['specialization'] = specialization;
-    _profileData['designation'] = designation;
-    await _saveSession();
-    notifyListeners();
+    if (_accessToken.isEmpty) return false;
+    try {
+      final response = await ApiService.updateProfile(
+        fields: fields,
+        profileImage: profileImage,
+        accessToken: _accessToken,
+      );
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          await fetchMyProfile();
+          return true;
+        }
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Update profile failed', e, stack);
+      return false;
+    }
+  }
+
+  Future<bool> updatePrivacySettings({
+    required String showMobile,
+    required String showEmail,
+    String? showOrganisation,
+    String? showDesignation,
+    String? showProfileImage,
+  }) async {
+    if (_accessToken.isEmpty) return false;
+    try {
+      final settings = {
+        'show_mobile': showMobile,
+        'show_email': showEmail,
+      };
+      if (showOrganisation != null) settings['show_organisation'] = showOrganisation;
+      if (showDesignation != null) settings['show_designation'] = showDesignation;
+      if (showProfileImage != null) settings['show_profile_image'] = showProfileImage;
+
+      final response = await ApiService.updatePrivacySettings(
+        settings: settings,
+        accessToken: _accessToken,
+      );
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          _profileData['show_mobile'] = showMobile;
+          _profileData['show_email'] = showEmail;
+          if (showOrganisation != null) _profileData['show_organisation'] = showOrganisation;
+          if (showDesignation != null) _profileData['show_designation'] = showDesignation;
+          if (showProfileImage != null) _profileData['show_profile_image'] = showProfileImage;
+
+          await _saveSession();
+          notifyListeners();
+          return true;
+        }
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Update privacy settings failed', e, stack);
+      return false;
+    }
   }
 
   Future<void> updateProfileImage(String profileImageUrl) async {

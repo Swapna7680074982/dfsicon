@@ -115,32 +115,44 @@ class HomeProvider with ChangeNotifier {
       location: 'Convention Center, Hall 4',
       date: 'Oct 12 - 14, 2026',
     );
-    _exhibitors = [
-      HomeExhibitor(
-        initials: 'MC',
-        color: const Color(0xFF1E3A8A),
-        title: 'MedCore Health',
-        subtitle: 'Health IT & EMR',
-        booth: 'Booth A-12',
-        imageUrl: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?w=200&fit=crop',
+    _stats = [
+      HomeStat(
+        icon: Icons.medical_services_outlined,
+        iconColor: const Color(0xFF6366F1),
+        iconBgColor: const Color(0xFFEEF2FF),
+        value: '0',
+        label: 'Sessions',
       ),
-      HomeExhibitor(
-        initials: 'HB',
-        color: const Color(0xFF8B5CF6),
-        title: 'HealthBridge',
-        subtitle: 'Interoperability',
-        booth: 'Booth B-05',
-        imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=200&fit=crop',
+      HomeStat(
+        icon: Icons.business,
+        iconColor: const Color(0xFFEC4899),
+        iconBgColor: const Color(0xFFFDF2F8),
+        value: '0',
+        label: 'Exhibitors',
       ),
-      HomeExhibitor(
-        initials: 'BS',
-        color: const Color(0xFF10B981),
-        title: 'BioSync Analytics',
-        subtitle: 'Clinical Data & Research',
-        booth: 'Booth C-08',
-        imageUrl: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=200&fit=crop',
+      HomeStat(
+        icon: Icons.people_outline,
+        iconColor: const Color(0xFF10B981),
+        iconBgColor: const Color(0xFFECFDF5),
+        value: '0',
+        label: 'Delegates',
+      ),
+      HomeStat(
+        icon: Icons.record_voice_over_outlined,
+        iconColor: const Color(0xFFF59E0B),
+        iconBgColor: const Color(0xFFFEF3C7),
+        value: '0',
+        label: 'Speakers',
+      ),
+      HomeStat(
+        icon: Icons.assignment_outlined,
+        iconColor: const Color(0xFF8B5CF6),
+        iconBgColor: const Color(0xFFF5F3FF),
+        value: '0',
+        label: 'Workshops',
       ),
     ];
+    _exhibitors = [];
     notifyListeners();
   }
 
@@ -197,6 +209,9 @@ class HomeProvider with ChangeNotifier {
             ),
           );
 
+          // Fetch summit stats
+          await fetchSummitStats(accessToken);
+
           // Fetch the dynamic sponsors for the current active summit
           final String summitId = first['summit_id']?.toString() ?? '';
           if (summitId.isNotEmpty) {
@@ -212,27 +227,41 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
-  final List<HomeStat> _stats = [
+  List<HomeStat> _stats = [
     HomeStat(
       icon: Icons.medical_services_outlined,
       iconColor: const Color(0xFF6366F1),
       iconBgColor: const Color(0xFFEEF2FF),
-      value: '48',
+      value: '0',
       label: 'Sessions',
     ),
     HomeStat(
       icon: Icons.business,
       iconColor: const Color(0xFFEC4899),
       iconBgColor: const Color(0xFFFDF2F8),
-      value: '120+',
+      value: '0',
       label: 'Exhibitors',
     ),
     HomeStat(
       icon: Icons.people_outline,
       iconColor: const Color(0xFF10B981),
       iconBgColor: const Color(0xFFECFDF5),
-      value: '2.4K',
+      value: '0',
       label: 'Delegates',
+    ),
+    HomeStat(
+      icon: Icons.record_voice_over_outlined,
+      iconColor: const Color(0xFFF59E0B),
+      iconBgColor: const Color(0xFFFEF3C7),
+      value: '0',
+      label: 'Speakers',
+    ),
+    HomeStat(
+      icon: Icons.assignment_outlined,
+      iconColor: const Color(0xFF8B5CF6),
+      iconBgColor: const Color(0xFFF5F3FF),
+      value: '0',
+      label: 'Workshops',
     ),
   ];
 
@@ -265,32 +294,7 @@ class HomeProvider with ChangeNotifier {
 
   List<HomeSession> get featuredSessions => _featuredSessions;
 
-  List<HomeExhibitor> _exhibitors = [
-    HomeExhibitor(
-      initials: 'MC',
-      color: const Color(0xFF1E3A8A),
-      title: 'MedCore Health',
-      subtitle: 'Health IT & EMR',
-      booth: 'Booth A-12',
-      imageUrl: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?w=200&fit=crop',
-    ),
-    HomeExhibitor(
-      initials: 'HB',
-      color: const Color(0xFF8B5CF6),
-      title: 'HealthBridge',
-      subtitle: 'Interoperability',
-      booth: 'Booth B-05',
-      imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=200&fit=crop',
-    ),
-    HomeExhibitor(
-      initials: 'BS',
-      color: const Color(0xFF10B981),
-      title: 'BioSync Analytics',
-      subtitle: 'Clinical Data & Research',
-      booth: 'Booth C-08',
-      imageUrl: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=200&fit=crop',
-    ),
-  ];
+  List<HomeExhibitor> _exhibitors = [];
 
   List<HomeExhibitor> get exhibitors => _exhibitors;
 
@@ -359,42 +363,102 @@ class HomeProvider with ChangeNotifier {
           final List<dynamic> list = data['data'];
           
           // Only replace if there are active sponsors returned from the API
-          if (list.isNotEmpty) {
-            final List<HomeExhibitor> fetchedList = [];
-            for (var item in list) {
-              final String sponsorId = item['sponsor_id']?.toString() ?? '';
-              final String companyName = item['company_name']?.toString() ?? '';
-              final String category = item['sponsor_category']?.toString() ?? 'Standard';
-              
-              String? logoUrl;
-              final media = item['media'];
-              if (media != null) {
-                final logos = media['logo'] as List<dynamic>?;
-                if (logos != null && logos.isNotEmpty) {
-                  logoUrl = logos.first['media_url']?.toString();
-                }
+          final List<HomeExhibitor> fetchedList = [];
+          for (var item in list) {
+            final String sponsorId = item['sponsor_id']?.toString() ?? '';
+            final String companyName = item['company_name']?.toString() ?? '';
+            final String category = item['sponsor_category']?.toString() ?? 'Standard';
+            
+            String? logoUrl;
+            final media = item['media'];
+            if (media != null) {
+              final logos = media['logo'] as List<dynamic>?;
+              if (logos != null && logos.isNotEmpty) {
+                logoUrl = logos.first['media_url']?.toString();
               }
-
-              final String initials = _getInitials(companyName);
-              final Color bg = _getCategoryColor(category);
-
-              fetchedList.add(
-                HomeExhibitor(
-                  initials: initials,
-                  color: bg,
-                  title: companyName,
-                  subtitle: category,
-                  booth: 'Booth $sponsorId',
-                  imageUrl: logoUrl,
-                ),
-              );
             }
-            _exhibitors = fetchedList;
+
+            final String initials = _getInitials(companyName);
+            final Color bg = _getCategoryColor(category);
+
+            fetchedList.add(
+              HomeExhibitor(
+                initials: initials,
+                color: bg,
+                title: companyName,
+                subtitle: category,
+                booth: 'Booth $sponsorId',
+                imageUrl: logoUrl,
+              ),
+            );
           }
+          _exhibitors = fetchedList;
         }
       }
     } catch (e) {
       debugPrint('Error fetching sponsors in HomeProvider: $e');
+    }
+  }
+
+  Map<String, dynamic> _summitStats = {};
+  Map<String, dynamic> get summitStats => _summitStats;
+
+  Future<void> fetchSummitStats(String accessToken) async {
+    if (accessToken.isEmpty) return;
+    try {
+      final response = await ApiService.fetchSummitStats(accessToken: accessToken);
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          _summitStats = Map<String, dynamic>.from(data['data']);
+          
+          _stats = [
+            HomeStat(
+              icon: Icons.medical_services_outlined,
+              iconColor: const Color(0xFF6366F1),
+              iconBgColor: const Color(0xFFEEF2FF),
+              value: _summitStats['sessions']?.toString() ?? '0',
+              label: 'Sessions',
+            ),
+            HomeStat(
+              icon: Icons.business,
+              iconColor: const Color(0xFFEC4899),
+              iconBgColor: const Color(0xFFFDF2F8),
+              value: _summitStats['exhibitors']?.toString() ?? '0',
+              label: 'Exhibitors',
+            ),
+            HomeStat(
+              icon: Icons.people_outline,
+              iconColor: const Color(0xFF10B981),
+              iconBgColor: const Color(0xFFECFDF5),
+              value: _summitStats['delegates']?.toString() ?? '0',
+              label: 'Delegates',
+            ),
+            HomeStat(
+              icon: Icons.record_voice_over_outlined,
+              iconColor: const Color(0xFFF59E0B),
+              iconBgColor: const Color(0xFFFEF3C7),
+              value: _summitStats['speakers']?.toString() ?? '0',
+              label: 'Speakers',
+            ),
+            HomeStat(
+              icon: Icons.assignment_outlined,
+              iconColor: const Color(0xFF8B5CF6),
+              iconBgColor: const Color(0xFFF5F3FF),
+              value: _summitStats['workshops']?.toString() ?? '0',
+              label: 'Workshops',
+            ),
+          ];
+
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching summit stats in HomeProvider: $e');
     }
   }
 }

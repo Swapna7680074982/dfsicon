@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../gallery/gallery_tab.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../../utils/time_formatter.dart';
@@ -19,6 +20,32 @@ class SessionDetailsScreen extends StatefulWidget {
 
 class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
   bool _isSpeakerConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadParticipants();
+    });
+  }
+
+  void _loadParticipants() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final sessProvider = Provider.of<SessionsProvider>(context, listen: false);
+    final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
+
+    final isBookmarked = sessProvider.sessions
+        .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
+        .isBookmarked;
+
+    if (isBookmarked) {
+      final assignmentId = widget.session.assignmentId ?? widget.session.id.toString();
+      connProvider.fetchSessionParticipants(
+        assignmentId: assignmentId,
+        accessToken: auth.accessToken,
+      );
+    }
+  }
 
   void _showParticipantsSheet(BuildContext context) {
     showModalBottomSheet(
@@ -57,8 +84,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                         children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
+                            children: [
+                              const Text(
                                 'Participants',
                                 style: TextStyle(
                                   fontSize: 22,
@@ -66,10 +93,10 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                '248 attending this session',
-                                style: TextStyle(
+                                '${connProvider.participantsCount} attending this session',
+                                style: const TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textSecondary,
                                 ),
@@ -102,118 +129,143 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                       ),
                       const SizedBox(height: 16),
                       Expanded(
-                        child: ListView.builder(
-                          controller: scrollController,
-                          itemCount: connProvider.participants.length,
-                          itemBuilder: (context, index) {
-                            final p = connProvider.participants[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 20.0),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: p.bg,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    alignment: Alignment.center,
+                        child: connProvider.isLoading
+                            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                            : connProvider.participants.isEmpty
+                                ? const Center(
                                     child: Text(
-                                      p.initials,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: p.initials == 'TN'
-                                            ? AppColors.textPrimary
-                                            : Colors.white,
-                                      ),
+                                      'No participants found for this session.',
+                                      style: TextStyle(color: AppColors.textSecondary),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          p.name,
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          p.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  SizedBox(
-                                    height: 36,
-                                    child: OutlinedButton(
-                                      onPressed: () {
-                                        connProvider.toggleConnect(p.id);
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        backgroundColor: p.isConnected
-                                            ? const Color(0xFFECFDF5)
-                                            : Colors.white,
-                                        foregroundColor: p.isConnected
-                                            ? const Color(0xFF10B981)
-                                            : AppColors.primary,
-                                        side: BorderSide(
-                                          color: p.isConnected
-                                              ? const Color(0xFFA7F3D0)
-                                              : AppColors.primary,
-                                          width: 1.5,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          if (p.isConnected) ...[
-                                            const Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
-                                            const SizedBox(width: 4),
-                                          ],
-                                          Text(
-                                            p.isConnected ? 'Connected' : 'Connect',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: p.isConnected
-                                                  ? const Color(0xFF047857)
-                                                  : AppColors.primary,
+                                  )
+                                : ListView.builder(
+                                    controller: scrollController,
+                                    itemCount: connProvider.participants.length,
+                                    itemBuilder: (context, index) {
+                                      final p = connProvider.participants[index];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 20.0),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 44,
+                                              height: 44,
+                                              decoration: BoxDecoration(
+                                                color: p.bg,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              clipBehavior: Clip.antiAlias,
+                                              alignment: Alignment.center,
+                                              child: p.profileImage != null && p.profileImage!.isNotEmpty
+                                                  ? Image.network(
+                                                      p.profileImage!,
+                                                      fit: BoxFit.cover,
+                                                      width: 44,
+                                                      height: 44,
+                                                      errorBuilder: (c, o, s) => Text(
+                                                        p.initials,
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : Text(
+                                                      p.initials,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    p.name,
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppColors.textPrimary,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    p.title,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: AppColors.textSecondary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            SizedBox(
+                                              height: 36,
+                                              child: OutlinedButton(
+                                                onPressed: () {
+                                                  connProvider.toggleConnect(p.id);
+                                                },
+                                                style: OutlinedButton.styleFrom(
+                                                  backgroundColor: p.isConnected
+                                                      ? const Color(0xFFECFDF5)
+                                                      : Colors.white,
+                                                  foregroundColor: p.isConnected
+                                                      ? const Color(0xFF10B981)
+                                                      : AppColors.primary,
+                                                  side: BorderSide(
+                                                    color: p.isConnected
+                                                        ? const Color(0xFFA7F3D0)
+                                                        : AppColors.primary,
+                                                    width: 1.5,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    if (p.isConnected) ...[
+                                                      const Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
+                                                      const SizedBox(width: 4),
+                                                    ],
+                                                    Text(
+                                                      p.isConnected ? 'Connected' : 'Connect',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: p.isConnected
+                                                            ? const Color(0xFF047857)
+                                                            : AppColors.primary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
                       ),
                       const SizedBox(height: 12),
                       Center(
-                        child: Text(
-                          'Showing 8 of 248 participants',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textLight,
+                        child: Consumer<ConnectionsProvider>(
+                          builder: (context, conn, _) => Text(
+                            'Showing ${conn.participants.length} of ${conn.participantsCount} participants',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textLight,
+                            ),
                           ),
                         ),
                       ),
@@ -247,6 +299,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final sessProvider = Provider.of<SessionsProvider>(context);
+    final connProvider = Provider.of<ConnectionsProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
 
     final isBookmarked = sessProvider.sessions
         .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
@@ -461,9 +515,11 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      final success = sessProvider.toggleBookmark(widget.session.id);
-                      if (!success && context.mounted) {
+                    onTap: () async {
+                      final success = await sessProvider.toggleBookmark(widget.session.id, auth.accessToken);
+                      if (success) {
+                        _loadParticipants();
+                      } else if (!success && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Only one session can be bookmarked at a time! Please un-bookmark the current session first.'),
@@ -727,70 +783,142 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               ),
             ),
             const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'PARTICIPANTS',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  '248 attending',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                SizedBox(
-                  width: 150,
-                  height: 36,
-                  child: Stack(
-                    children: [
-                      _buildOverlappingAvatar('MJ', const Color(0xFFE0DBFC), 0),
-                      _buildOverlappingAvatar('ER', const Color(0xFFD1FAE5), 24),
-                      _buildOverlappingAvatar('AP', const Color(0xFFFEF3C7), 48),
-                      _buildOverlappingAvatar('LW', const Color(0xFFFCE7F3), 72),
-                      _buildOverlappingAvatar('+244', Colors.grey.shade100, 96, textColor: AppColors.textSecondary),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => _showParticipantsSheet(context),
-                  child: Container(
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10),
+            if (isBookmarked) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'PARTICIPANTS',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.people_outline, size: 16, color: AppColors.textSecondary),
-                        SizedBox(width: 6),
-                        Text(
-                          'VIEW PARTICIPANTS',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondary,
-                          ),
+                  ),
+                  Text(
+                    '${connProvider.participantsCount} attending',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (connProvider.isLoading)
+                const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              else if (connProvider.participants.isEmpty)
+                const Text('No participants attending yet.', style: TextStyle(fontSize: 13, color: AppColors.textLight))
+              else
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 150,
+                      height: 36,
+                      child: Stack(
+                        children: [
+                          for (int i = 0; i < connProvider.participants.length && i < 4; i++)
+                            _buildOverlappingAvatar(
+                              connProvider.participants[i].initials,
+                              connProvider.participants[i].bg,
+                              (i * 24).toDouble(),
+                              profileImage: connProvider.participants[i].profileImage,
+                            ),
+                          if (connProvider.participants.length > 4)
+                            _buildOverlappingAvatar(
+                              '+${connProvider.participants.length - 4}',
+                              Colors.grey.shade100,
+                              96.0,
+                              textColor: AppColors.textSecondary,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => _showParticipantsSheet(context),
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ],
+                        child: Row(
+                          children: const [
+                            Icon(Icons.people_outline, size: 16, color: AppColors.textSecondary),
+                            SizedBox(width: 6),
+                            Text(
+                              'VIEW PARTICIPANTS',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+            ] else ...[
+              const Text(
+                'PARTICIPANTS',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.lock_outline, color: Colors.amber.shade800, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Participants Locked',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Bookmark this session to view participants.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 28),
             const Text(
               'CONVENTION CENTER MAP',
@@ -958,7 +1086,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     );
   }
 
-  Widget _buildOverlappingAvatar(String initials, Color bg, double leftOffset, {Color textColor = Colors.white}) {
+  Widget _buildOverlappingAvatar(String initials, Color bg, double leftOffset, {Color textColor = Colors.white, String? profileImage}) {
     return Positioned(
       left: leftOffset,
       child: Container(
@@ -969,15 +1097,31 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 2),
         ),
+        clipBehavior: Clip.antiAlias,
         alignment: Alignment.center,
-        child: Text(
-          initials,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: initials == 'TN' ? AppColors.textPrimary : textColor,
-          ),
-        ),
+        child: profileImage != null && profileImage.isNotEmpty
+            ? Image.network(
+                profileImage,
+                fit: BoxFit.cover,
+                width: 32,
+                height: 32,
+                errorBuilder: (c, o, s) => Text(
+                  initials,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: initials == 'TN' ? AppColors.textPrimary : textColor,
+                  ),
+                ),
+              )
+            : Text(
+                initials,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: initials == 'TN' ? AppColors.textPrimary : textColor,
+                ),
+              ),
       ),
     );
   }

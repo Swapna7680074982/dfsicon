@@ -13,6 +13,7 @@ import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
 import '../workshops/workshops_list_screen.dart';
 import '../workshops/workshop_details_screen.dart';
+import '../explore/invited_speakers_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -261,6 +262,88 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                   ),
                 ),
                 
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const InvitedSpeakersScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.tileBorder, width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(2),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.people_outline,
+                                    color: AppColors.primary,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: const [
+                                      Text(
+                                        'Invited Speakers',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'View summit speakers & keynotes',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textLight,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: AppColors.textLight,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 // 1. MY SESSIONS SECTION
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
@@ -341,6 +424,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                               coordinatorPhone: '+91 98765 12345',
                               coordinatorEmail: 'arjun.mehta@dfisicon.org',
                               description: s.description,
+                              topicId: s.topicId,
                             ),
                           ),
                         );

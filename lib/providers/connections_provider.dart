@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:dfsicon/domain/api_service.dart';
+import 'package:dfsicon/utils/custom_logger.dart';
+import 'package:dfsicon/main.dart';
 
 class ParticipantItem {
   final String id;
@@ -7,6 +11,7 @@ class ParticipantItem {
   final String initials;
   final Color bg;
   bool isConnected;
+  final String? profileImage;
 
   ParticipantItem({
     required this.id,
@@ -15,78 +20,115 @@ class ParticipantItem {
     required this.initials,
     required this.bg,
     this.isConnected = false,
+    this.profileImage,
   });
 }
 
 class ConnectionsProvider extends ChangeNotifier {
-  final List<ParticipantItem> _participants = [
-    ParticipantItem(
-      id: 'p1',
-      name: 'Marcus Johnson',
-      title: 'VP Engineering, ChainLogic',
-      initials: 'MJ',
-      bg: const Color(0xFFE0DBFC),
-      isConnected: false,
-    ),
-    ParticipantItem(
-      id: 'p2',
-      name: 'Emily Rodriguez',
-      title: 'Head of Design, DesignLab',
-      initials: 'ER',
-      bg: const Color(0xFFD1FAE5),
-      isConnected: false,
-    ),
-    ParticipantItem(
-      id: 'p3',
-      name: 'Dr. Alan Park',
-      title: 'Research Director, Quan',
-      initials: 'AP',
-      bg: const Color(0xFFFEF3C7),
-      isConnected: true,
-    ),
-    ParticipantItem(
-      id: 'p4',
-      name: 'Lisa Wong',
-      title: 'CEO, GreenFuture Ventures',
-      initials: 'LW',
-      bg: const Color(0xFFFCE7F3),
-      isConnected: false,
-    ),
-    ParticipantItem(
-      id: 'p5',
-      name: 'Raj Kumar',
-      title: 'CTO, NexusTech',
-      initials: 'RK',
-      bg: const Color(0xFFE0E7FF),
-      isConnected: false,
-    ),
-    ParticipantItem(
-      id: 'p6',
-      name: 'Aisha Mensah',
-      title: 'Product Lead, InnovateLab',
-      initials: 'AM',
-      bg: const Color(0xFFCCFBF1),
-      isConnected: false,
-    ),
-    ParticipantItem(
-      id: 'p7',
-      name: 'Thomas Ng',
-      title: 'Data Scientist, DataSync',
-      initials: 'TN',
-      bg: const Color(0xFFF1F5F9),
-      isConnected: true,
-    ),
-    ParticipantItem(
-      id: 'p8',
-      name: 'Sofia Okonjo',
-      title: 'UX Researcher, DesignLab',
-      initials: 'SO',
-      bg: const Color(0xFFFFE4E6),
-      isConnected: false,
-    ),
-  ];
+  List<ParticipantItem> _participants = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+  int _participantsCount = 0;
 
   List<ParticipantItem> get participants => _participants;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  int get participantsCount => _participantsCount;
+
+  static String _getInitials(String name) {
+    if (name.isEmpty) return 'PA';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+
+  static Color _getColorForIndex(int index) {
+    final colors = [
+      const Color(0xFF6366F1), // Indigo
+      const Color(0xFFEC4899), // Pink
+      const Color(0xFF10B981), // Emerald
+      const Color(0xFFF59E0B), // Amber
+      const Color(0xFFEF4444), // Red
+      const Color(0xFF8B5CF6), // Purple
+    ];
+    return colors[index % colors.length];
+  }
+
+  Future<bool> fetchSessionParticipants({
+    String? assignmentId,
+    String? topicId,
+    required String accessToken,
+  }) async {
+    if (accessToken.isEmpty) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    _participants = [];
+    _participantsCount = 0;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.viewSessionParticipants(
+        assignmentId: assignmentId,
+        topicId: topicId,
+        accessToken: accessToken,
+      );
+
+      _isLoading = false;
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          final List list = data['data']['participants'] ?? [];
+          _participantsCount = data['data']['participants_count'] as int? ?? list.length;
+          _participants = list.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            final String delegateId = item['delegate_id']?.toString() ?? idx.toString();
+            final String fullName = item['full_name']?.toString() ?? 'Participant';
+            final String designation = item['designation']?.toString() ?? '';
+            final String organisation = item['organisation']?.toString() ?? '';
+            final String title = designation.isNotEmpty && organisation.isNotEmpty
+                ? '$designation, $organisation'
+                : (designation.isNotEmpty ? designation : (organisation.isNotEmpty ? organisation : 'Attendee'));
+            
+            String? profileImage = item['profile_image']?.toString();
+            if (profileImage != null && profileImage.contains('/./')) {
+              profileImage = profileImage.replaceAll('/./', '/');
+            }
+            
+            return ParticipantItem(
+              id: delegateId,
+              name: fullName,
+              title: title,
+              initials: _getInitials(fullName),
+              bg: _getColorForIndex(idx),
+              isConnected: false,
+              profileImage: (profileImage != null && profileImage.isNotEmpty && profileImage != 'null') ? profileImage : null,
+            );
+          }).toList();
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = data['message'] ?? 'Failed to load participants';
+        }
+      } else {
+        _errorMessage = 'Server error: ${response.statusCode}';
+      }
+      notifyListeners();
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch session participants failed', e, stack);
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 
   void toggleConnect(String id) {
     final index = _participants.indexWhere((p) => p.id == id);

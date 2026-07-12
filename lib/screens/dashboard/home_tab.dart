@@ -1560,29 +1560,49 @@ class HomeTab extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              SizedBox(
-                                height: 160,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: homeProvider.exhibitors.length,
-                                  itemBuilder: (context, index) {
-                                    final e = homeProvider.exhibitors[index];
-                                    return GestureDetector(
-                                      onTap: () {
-                                        _onExhibitorClick(context, e);
-                                      },
-                                      child: _buildExhibitorCard(
-                                        initials: e.initials,
-                                        color: e.color,
-                                        title: e.title,
-                                        subtitle: e.subtitle,
-                                        booth: e.booth,
-                                        imageUrl: e.imageUrl,
+                              if (homeProvider.exhibitors.isEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      'No exhibitors found',
+                                      style: TextStyle(
+                                        color: AppColors.textLight,
+                                        fontSize: 13,
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ),
+                                )
+                              else
+                                SizedBox(
+                                  height: 160,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: homeProvider.exhibitors.length,
+                                    itemBuilder: (context, index) {
+                                      final e = homeProvider.exhibitors[index];
+                                      return GestureDetector(
+                                        onTap: () {
+                                          _onExhibitorClick(context, e);
+                                        },
+                                        child: _buildExhibitorCard(
+                                          initials: e.initials,
+                                          color: e.color,
+                                          title: e.title,
+                                          subtitle: e.subtitle,
+                                          booth: e.booth,
+                                          imageUrl: e.imageUrl,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
                               const SizedBox(height: 28),
                               Row(
                                 mainAxisAlignment:

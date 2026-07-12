@@ -9,6 +9,7 @@ import '../sightseeing/sightseeing_list_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../help_desk/help_desk_screen.dart';
 import '../workshops/workshops_list_screen.dart';
+import '../explore/invited_speakers_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 
 class ExploreTab extends StatefulWidget {
@@ -112,6 +113,21 @@ class _ExploreTabState extends State<ExploreTab> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const WorkshopsListScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCategoryCard(
+                    context,
+                    title: 'INVITED SPEAKERS',
+                    subtitle: 'Meet the key speakers of the summit',
+                    icon: Icons.record_voice_over_outlined,
+                    iconBg: const Color(0xFFEFF6FF),
+                    iconColor: Colors.blueAccent,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const InvitedSpeakersScreen()),
                       );
                     },
                   ),

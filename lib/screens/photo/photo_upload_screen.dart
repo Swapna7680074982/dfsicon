@@ -177,6 +177,14 @@ class PhotoUploadScreen extends StatelessWidget {
                   if (photoUrl != null) {
                     await authProvider.updateProfileImage(photoUrl);
                     navigator.pushReplacementNamed('/dashboard');
+                  } else if (photoProvider.uploadError != null && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                         content: Text(photoProvider.uploadError!),
+                         behavior: SnackBarBehavior.floating,
+                         backgroundColor: Colors.redAccent,
+                      ),
+                    );
                   }
                 },
               ),

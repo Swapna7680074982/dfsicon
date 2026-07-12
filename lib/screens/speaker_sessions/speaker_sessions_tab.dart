@@ -293,6 +293,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                         coordinatorPhone: '+91 98765 12345',
                         coordinatorEmail: 'arjun.mehta@dfisicon.org',
                         description: s.description,
+                        topicId: s.topicId,
                       ),
                     ),
                   );

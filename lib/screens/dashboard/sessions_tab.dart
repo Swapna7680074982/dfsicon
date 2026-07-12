@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/sessions_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 
@@ -39,6 +39,7 @@ class _SessionsTabState extends State<SessionsTab> {
   @override
   Widget build(BuildContext context) {
     final sessionsProvider = Provider.of<SessionsProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
     final filteredSessions = sessionsProvider.filteredSessions;
 
     return WaterDropletsBackground(
@@ -271,8 +272,8 @@ class _SessionsTabState extends State<SessionsTab> {
                                             ),
                                             const SizedBox(width: 12),
                                             GestureDetector(
-                                              onTap: () {
-                                                final success = sessionsProvider.toggleBookmark(session.id);
+                                              onTap: () async {
+                                                final success = await sessionsProvider.toggleBookmark(session.id, auth.accessToken);
                                                 if (!success && context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     const SnackBar(

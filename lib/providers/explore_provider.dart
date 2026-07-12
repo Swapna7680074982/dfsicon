@@ -247,4 +247,49 @@ class ExploreProvider with ChangeNotifier {
         return const Color(0xFF3B82F6);
     }
   }
+
+  List<Map<String, dynamic>> _invitedSpeakers = [];
+  bool _isLoadingSpeakers = false;
+  String? _speakersError;
+
+  List<Map<String, dynamic>> get invitedSpeakers => _invitedSpeakers;
+  bool get isLoadingSpeakers => _isLoadingSpeakers;
+  String? get speakersError => _speakersError;
+
+  Future<bool> fetchInvitedSpeakers(String accessToken) async {
+    if (accessToken.isEmpty) return false;
+    _isLoadingSpeakers = true;
+    _speakersError = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.fetchInvitedSpeakers(accessToken: accessToken);
+      _isLoadingSpeakers = false;
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          final speakersList = data['data']['speakers'] as List<dynamic>? ?? [];
+          _invitedSpeakers = List<Map<String, dynamic>>.from(speakersList);
+          notifyListeners();
+          return true;
+        } else {
+          _speakersError = data['message'] ?? 'Failed to load invited speakers';
+        }
+      } else {
+        _speakersError = 'Server error: ${response.statusCode}';
+      }
+      notifyListeners();
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch invited speakers failed', e, stack);
+      _isLoadingSpeakers = false;
+      _speakersError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

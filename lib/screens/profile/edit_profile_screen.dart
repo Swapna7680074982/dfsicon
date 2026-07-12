@@ -21,6 +21,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _hospitalController;
   late TextEditingController _specializationController;
   late TextEditingController _designationController;
+  
+  // Dynamic API fields
+  late TextEditingController _genderController;
+  late TextEditingController _stateController;
+  late TextEditingController _cityController;
+  late TextEditingController _countryIdController;
+  late TextEditingController _postalCodeController;
+  late TextEditingController _categoryController;
+  late TextEditingController _qualificationController;
+  late TextEditingController _experienceYearsController;
+
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -32,6 +44,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _hospitalController = TextEditingController(text: authProvider.hospitalClinicName);
     _specializationController = TextEditingController(text: authProvider.specialization);
     _designationController = TextEditingController(text: authProvider.designation);
+
+    _genderController = TextEditingController(text: authProvider.gender);
+    _stateController = TextEditingController(text: authProvider.state);
+    _cityController = TextEditingController(text: authProvider.city);
+    _countryIdController = TextEditingController(text: authProvider.countryId.isEmpty ? '1' : authProvider.countryId);
+    _postalCodeController = TextEditingController(text: authProvider.postalCode);
+    _categoryController = TextEditingController(text: authProvider.category);
+    _qualificationController = TextEditingController(text: authProvider.qualification);
+    _experienceYearsController = TextEditingController(text: authProvider.experienceYears);
   }
 
   @override
@@ -42,6 +63,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _hospitalController.dispose();
     _specializationController.dispose();
     _designationController.dispose();
+    
+    _genderController.dispose();
+    _stateController.dispose();
+    _cityController.dispose();
+    _countryIdController.dispose();
+    _postalCodeController.dispose();
+    _categoryController.dispose();
+    _qualificationController.dispose();
+    _experienceYearsController.dispose();
     super.dispose();
   }
 
@@ -118,46 +148,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: ElevatedButton(
-                onPressed: photoProvider.isUploading
+                onPressed: _isSaving
                     ? null
                     : () async {
                         if (_formKey.currentState!.validate()) {
-                          // Upload photo if a new one is selected
-                          if (photoProvider.hasPhoto && !photoProvider.uploadSuccess) {
-                            final String? newProfilePic = await photoProvider.uploadPhoto(authProvider.accessToken);
-                            if (newProfilePic != null) {
-                              await authProvider.updateProfileImage(newProfilePic);
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Failed to upload profile photo. Saving text changes.'),
-                                    behavior: SnackBarBehavior.floating,
-                                    backgroundColor: Colors.redAccent,
-                                  ),
-                                );
-                              }
-                            }
+                          setState(() {
+                            _isSaving = true;
+                          });
+
+                          final fields = {
+                            'gender': _genderController.text.trim(),
+                            'state': _stateController.text.trim(),
+                            'city': _cityController.text.trim(),
+                            'country_id': _countryIdController.text.trim(),
+                            'postal_code': _postalCodeController.text.trim(),
+                            'category': _categoryController.text.trim(),
+                            'specialization': _specializationController.text.trim(),
+                            'qualification': _qualificationController.text.trim(),
+                            'experience_years': _experienceYearsController.text.trim(),
+                            'organisation_name': _hospitalController.text.trim(),
+                            'designation': _designationController.text.trim(),
+                          };
+
+                          File? imgFile;
+                          if (photoProvider.hasPhoto) {
+                            imgFile = File(photoProvider.imagePath!);
                           }
 
-                          await authProvider.updateProfileLocal(
-                            name: _nameController.text,
-                            email: _emailController.text,
-                            mobile: _phoneController.text,
-                            hospitalClinicName: _hospitalController.text,
-                            specialization: _specializationController.text,
-                            designation: _designationController.text,
+                          final success = await authProvider.updateProfileApi(
+                            fields: fields,
+                            profileImage: imgFile,
                           );
 
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Profile saved successfully!'),
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: AppColors.primary,
-                              ),
-                            );
-                            Navigator.pop(context);
+                          setState(() {
+                            _isSaving = false;
+                          });
+
+                          if (mounted) {
+                            if (success) {
+                              photoProvider.clearImage();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profile saved successfully!'),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: AppColors.primary,
+                                ),
+                              );
+                              Navigator.pop(context);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to update profile. Please try again.'),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
                           }
                         }
                       },
@@ -171,7 +217,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: photoProvider.isUploading
+                child: _isSaving
                     ? const SizedBox(
                         width: 16,
                         height: 16,
@@ -267,29 +313,100 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
               const SizedBox(height: 30),
+              
+              // Read-only section warning
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline, color: Colors.amber.shade800, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Full Name, Email, and Phone cannot be edited.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.amber.shade900,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               _buildFieldLabel('Full Name'),
               const SizedBox(height: 8),
-              _buildTextField(_nameController),
+              _buildTextField(_nameController, isEnabled: false),
               const SizedBox(height: 20),
+              
               _buildFieldLabel('Email'),
               const SizedBox(height: 8),
-              _buildTextField(_emailController),
+              _buildTextField(_emailController, isEnabled: false),
               const SizedBox(height: 20),
+              
               _buildFieldLabel('Phone'),
               const SizedBox(height: 8),
-              _buildTextField(_phoneController),
+              _buildTextField(_phoneController, isEnabled: false),
               const SizedBox(height: 20),
-              _buildFieldLabel('Hospital Name'),
+
+              _buildFieldLabel('Gender'),
+              const SizedBox(height: 8),
+              _buildDropdownField(
+                controller: _genderController,
+                items: ['Male', 'Female', 'Other'],
+              ),
+              const SizedBox(height: 20),
+
+              _buildFieldLabel('Hospital / Organisation'),
               const SizedBox(height: 8),
               _buildTextField(_hospitalController),
               const SizedBox(height: 20),
+
+              _buildFieldLabel('Designation'),
+              const SizedBox(height: 8),
+              _buildTextField(_designationController),
+              const SizedBox(height: 20),
+              
               _buildFieldLabel('Specialization'),
               const SizedBox(height: 8),
               _buildTextField(_specializationController),
               const SizedBox(height: 20),
-              _buildFieldLabel('Designation'),
+
+              _buildFieldLabel('Qualification'),
               const SizedBox(height: 8),
-              _buildTextField(_designationController),
+              _buildTextField(_qualificationController),
+              const SizedBox(height: 20),
+
+              _buildFieldLabel('Experience (Years)'),
+              const SizedBox(height: 8),
+              _buildTextField(_experienceYearsController, keyboardType: TextInputType.number),
+              const SizedBox(height: 20),
+
+              _buildFieldLabel('Category'),
+              const SizedBox(height: 8),
+              _buildTextField(_categoryController),
+              const SizedBox(height: 20),
+
+              _buildFieldLabel('City'),
+              const SizedBox(height: 8),
+              _buildTextField(_cityController),
+              const SizedBox(height: 20),
+
+              _buildFieldLabel('State'),
+              const SizedBox(height: 8),
+              _buildTextField(_stateController),
+              const SizedBox(height: 20),
+
+              _buildFieldLabel('Postal Code'),
+              const SizedBox(height: 8),
+              _buildTextField(_postalCodeController, keyboardType: TextInputType.number),
               const SizedBox(height: 30),
             ],
           ),
@@ -309,16 +426,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller) {
+  Widget _buildTextField(
+    TextEditingController controller, {
+    bool isEnabled = true,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(
+      enabled: isEnabled,
+      keyboardType: keyboardType,
+      style: TextStyle(
         fontSize: 14,
-        color: AppColors.textSecondary,
+        color: isEnabled ? AppColors.textSecondary : Colors.grey.shade500,
+        fontWeight: isEnabled ? FontWeight.normal : FontWeight.w500,
       ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: isEnabled ? Colors.grey.shade50 : Colors.grey.shade100,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -328,9 +452,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required TextEditingController controller,
+    required List<String> items,
+  }) {
+    if (controller.text.isEmpty && items.isNotEmpty) {
+      controller.text = items.first;
+    }
+    return DropdownButtonFormField<String>(
+      value: items.contains(controller.text) ? controller.text : items.first,
+      onChanged: (val) {
+        if (val != null) {
+          controller.text = val;
+        }
+      },
+      items: items.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(
+            item,
+            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+        );
+      }).toList(),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
       ),
     );

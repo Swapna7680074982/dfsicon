@@ -106,11 +106,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               TextButton(
                                 onPressed: (authProvider.isPhoneValid && !authProvider.isSendingOtp)
-                                    ? () {
-                                        if (!authProvider.otpSent) {
-                                          authProvider.sendOtp();
-                                        } else {
-                                          authProvider.resendOtp();
+                                    ? () async {
+                                        final String? errorMsg = !authProvider.otpSent
+                                            ? await authProvider.sendOtp()
+                                            : await authProvider.resendOtp();
+                                        if (errorMsg != null && context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(errorMsg),
+                                              behavior: SnackBarBehavior.floating,
+                                              backgroundColor: Colors.redAccent,
+                                            ),
+                                          );
                                         }
                                       }
                                     : null,
@@ -176,13 +183,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           isLoading: authProvider.isVerifying,
                           onPressed: () async {
                             final navigator = Navigator.of(context);
-                            final bool success = await authProvider.verifyOtp();
-                            if (success && mounted) {
+                            final String? errorMsg = await authProvider.verifyOtp();
+                            if (errorMsg == null && mounted) {
                               if (authProvider.hasValidProfileImage) {
                                 navigator.pushReplacementNamed('/dashboard');
                               } else {
                                 navigator.pushNamed('/photo_upload');
                               }
+                            } else if (errorMsg != null && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMsg),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
                             }
                           },
                         ),

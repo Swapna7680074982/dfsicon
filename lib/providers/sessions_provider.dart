@@ -18,6 +18,10 @@ class SessionItem {
   bool isAdded;
 
   // Real API fields
+  final String? assignmentId;
+  final String? topicId;
+  final int? bookmarkId;
+  final int participantsCount;
   final String? description;
   final String? thumbnail;
   final String? keywords;
@@ -37,6 +41,10 @@ class SessionItem {
     required this.location,
     this.isBookmarked = false,
     this.isAdded = false,
+    this.assignmentId,
+    this.topicId,
+    this.bookmarkId,
+    this.participantsCount = 0,
     this.description,
     this.thumbnail,
     this.keywords,
@@ -142,7 +150,7 @@ class SessionsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool toggleBookmark(int sessionId) {
+  Future<bool> toggleBookmark(int sessionId, String accessToken) async {
     final index = _sessions.indexWhere((s) => s.id == sessionId);
     if (index != -1) {
       final isCurrentlyBookmarked = _sessions[index].isBookmarked;
@@ -152,9 +160,24 @@ class SessionsProvider extends ChangeNotifier {
           return false;
         }
       }
-      _sessions[index].isBookmarked = !_sessions[index].isBookmarked;
-      notifyListeners();
-      return true;
+
+      try {
+        final assignmentId = _sessions[index].assignmentId ?? _sessions[index].id.toString();
+        final response = isCurrentlyBookmarked
+            ? await ApiService.unbookmarkSession(assignmentId: assignmentId, accessToken: accessToken)
+            : await ApiService.bookmarkSession(assignmentId: assignmentId, accessToken: accessToken);
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['status'] == true) {
+            _sessions[index].isBookmarked = !isCurrentlyBookmarked;
+            notifyListeners();
+            return true;
+          }
+        }
+      } catch (e, stack) {
+        CustomLogger.logError('Bookmark API failure', e, stack);
+      }
     }
     return false;
   }
@@ -382,12 +405,12 @@ class SessionsProvider extends ChangeNotifier {
   }
 
   SessionItem _mapJsonToSession(Map<String, dynamic> json, int index) {
-    final abstractId = json['abstract_id']?.toString() ?? json['topic_id']?.toString() ?? '';
+    final abstractId = json['abstract_id']?.toString() ?? json['topic_id']?.toString() ?? json['assignment_id']?.toString() ?? '';
     final id = int.tryParse(abstractId) ?? index;
     final title = json['abstract_title']?.toString() ?? json['title']?.toString() ?? 'Session';
     final speakerName = json['speaker_name']?.toString() ?? 'TBA';
     final designation = json['designation']?.toString() ?? '';
-    final clinicName = json['hospital_clinic_name']?.toString() ?? '';
+    final clinicName = json['organisation']?.toString() ?? json['hospital_clinic_name']?.toString() ?? '';
     final speakerTitle = designation.isNotEmpty && clinicName.isNotEmpty
         ? '$designation, $clinicName'
         : (designation.isNotEmpty ? designation : (clinicName.isNotEmpty ? clinicName : 'Speaker'));
@@ -411,13 +434,24 @@ class SessionsProvider extends ChangeNotifier {
       }
     }
 
-    final slotName = json['slot_name']?.toString() ?? '';
-    final timeStr = slotName.isNotEmpty ? slotName : 'TBA';
+    final startTime = json['start_time']?.toString() ?? '';
+    final endTime = json['end_time']?.toString() ?? '';
+    String timeStr = '';
+    if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+      timeStr = '$startTime - $endTime';
+    } else {
+      final slotName = json['slot_name']?.toString() ?? '';
+      timeStr = slotName.isNotEmpty ? slotName : 'TBA';
+    }
     final hallName = json['hall_name']?.toString() ?? 'TBA';
     final venueName = json['venue_name']?.toString() ?? '';
     final locationStr = venueName.isNotEmpty
         ? '$hallName, $venueName'
         : hallName;
+
+    final isBookmarked = json['is_bookmarked'] == true || json['is_bookmarked'] == 'true' || json['is_bookmarked'] == 1 || json['is_bookmarked'] == '1';
+    final bookmarkId = int.tryParse(json['bookmark_id']?.toString() ?? '');
+    final participantsCount = int.tryParse(json['participants_count']?.toString() ?? '0') ?? 0;
 
     return SessionItem(
       id: id,
@@ -429,9 +463,13 @@ class SessionsProvider extends ChangeNotifier {
       date: displayDate.isNotEmpty ? displayDate : 'TBA',
       time: timeStr,
       location: locationStr,
-      isBookmarked: false,
+      isBookmarked: isBookmarked,
       isAdded: false,
-      description: json['abstract_description']?.toString(),
+      assignmentId: json['assignment_id']?.toString(),
+      topicId: json['topic_id']?.toString(),
+      bookmarkId: bookmarkId,
+      participantsCount: participantsCount,
+      description: json['abstract_description']?.toString() ?? json['description']?.toString() ?? '',
       thumbnail: json['thumbnail']?.toString(),
       keywords: json['keywords']?.toString(),
       acceptedFilePath: json['accepted_file_path']?.toString(),
