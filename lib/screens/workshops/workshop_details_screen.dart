@@ -526,12 +526,38 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'WORKSHOP SPEAKERS (${speakers.length})',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        GestureDetector(
+          onTap: () => _showAllSpeakersModal(context, speakers),
+          child: Container(
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'WORKSHOP SPEAKERS (${speakers.length})',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (speakers.isNotEmpty)
+                  Row(
+                    children: const [
+                      Text(
+                        'VIEW ALL',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_outlined, size: 12, color: AppColors.primary),
+                    ],
+                  ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -559,8 +585,35 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
             ),
           )
         else
-          Column(
-            children: speakers.map((s) => _buildParticipantTile(s)).toList(),
+          GestureDetector(
+            onTap: () => _showAllSpeakersModal(context, speakers),
+            child: Row(
+              children: [
+                for (int i = 0; i < speakers.length && i < 4; i++) ...[
+                  _buildAvatarChip(speakers[i]),
+                  const SizedBox(width: 6),
+                ],
+                if (speakers.length > 4)
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+${speakers.length - 4}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
       ],
     );
@@ -570,30 +623,39 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'WORKSHOP DELEGATES (${delegates.length})',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            if (delegates.length > 3)
-              GestureDetector(
-                onTap: () => _showAllDelegatesModal(context, delegates),
-                child: const Text(
-                  'VIEW ALL',
-                  style: TextStyle(
-                    fontSize: 12,
+        GestureDetector(
+          onTap: () => _showAllDelegatesModal(context, delegates),
+          child: Container(
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'WORKSHOP DELEGATES (${delegates.length})',
+                  style: const TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-          ],
+                if (delegates.isNotEmpty)
+                  Row(
+                    children: const [
+                      Text(
+                        'VIEW ALL',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_outlined, size: 12, color: AppColors.primary),
+                    ],
+                  ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 10),
         if (isLoading)
@@ -619,34 +681,154 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
               ),
             ),
           )
-        else ...[
-          Column(
-            children: delegates.take(3).map((d) => _buildParticipantTile(d)).toList(),
+        else
+          GestureDetector(
+            onTap: () => _showAllDelegatesModal(context, delegates),
+            child: Row(
+              children: [
+                for (int i = 0; i < delegates.length && i < 4; i++) ...[
+                  _buildAvatarChip(delegates[i]),
+                  const SizedBox(width: 6),
+                ],
+                if (delegates.length > 4)
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+${delegates.length - 4}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          if (delegates.length > 3) ...[
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: () => _showAllDelegatesModal(context, delegates),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ],
+    );
+  }
+
+  Widget _buildAvatarChip(WorkshopParticipant p) {
+    final avatarUrl = _getAbsoluteUrl(p.profileImage);
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: p.bg,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: avatarUrl.isNotEmpty
+          ? Image.network(
+              avatarUrl,
+              fit: BoxFit.cover,
+              width: 38,
+              height: 38,
+              errorBuilder: (c, o, s) => Text(
+                p.initials,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                child: Text(
-                  'VIEW ALL ${delegates.length} DELEGATES',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+              ),
+            )
+          : Text(
+              p.initials,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+    );
+  }
+
+  void _showAllSpeakersModal(BuildContext context, List<WorkshopParticipant> speakers) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-            ),
-          ],
-        ],
-      ],
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'WORKSHOP SPEAKERS',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${speakers.length} SPEAKERS ASSIGNED',
+                style: const TextStyle(fontSize: 12, color: AppColors.textLight),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: speakers.length,
+                  itemBuilder: (context, idx) {
+                    final s = speakers[idx];
+                    return _buildParticipantTile(s);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
