@@ -466,6 +466,31 @@ class ApiService {
     return response;
   }
 
+  static Future<http.Response> viewWorkshopParticipants({
+    required String workshopId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.viewWorkshopParticipants);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final body = json.encode({
+      'workshop_id': workshopId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // ==========================================
   // Speaker Topics API Calls
   // ==========================================

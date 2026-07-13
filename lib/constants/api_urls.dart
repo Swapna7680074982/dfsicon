@@ -19,6 +19,7 @@ class ApiUrls {
   static const String getVenueAndHalls = '$baseUrl/utility/get_venue_and_halls';
 
   static const String myWorkshops = '$baseUrl/utility/my_workshops';
+  static const String viewWorkshopParticipants = '$baseUrl/utility/view_workshop_participants';
   static const String speakerMyTopics = '$baseUrl/speaker/my_topics';
   static const String speakerTopicDetails = '$baseUrl/speaker/topic_details';
   static const String speakerUpdateTopicDetails = '$baseUrl/speaker/update_topic_details';

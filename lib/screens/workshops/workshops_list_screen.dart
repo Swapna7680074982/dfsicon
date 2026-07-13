@@ -38,7 +38,7 @@ class _WorkshopsListScreenState extends State<WorkshopsListScreen> {
   }
 
   String _formatDateString(String dateStr) {
-    if (dateStr.isEmpty) return 'TBA';
+    if (dateStr.isEmpty) return '';
     try {
       final dateTime = DateTime.tryParse(dateStr);
       if (dateTime == null) return dateStr;
@@ -190,6 +190,7 @@ class _WorkshopsListScreenState extends State<WorkshopsListScreen> {
   }
 
   Widget _buildWorkshopCard(BuildContext context, WorkshopItem w) {
+    final formattedStart = _formatDateString(w.workshopStart);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -266,40 +267,46 @@ class _WorkshopsListScreenState extends State<WorkshopsListScreen> {
                 height: 1.35,
               ),
             ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textLight),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${w.venueName}, ${w.city}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
+            if (w.venueName.isNotEmpty || w.city.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textLight),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      w.venueName.isNotEmpty && w.city.isNotEmpty
+                          ? '${w.venueName}, ${w.city}'
+                          : '${w.venueName}${w.city}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.textLight),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Starts: ${_formatDateString(w.workshopStart)}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
+                ],
+              ),
+            ],
+            if (formattedStart.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.textLight),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Starts: $formattedStart',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             const SizedBox(height: 14),
             const Divider(height: 1, color: AppColors.tileBorder),
             const SizedBox(height: 14),

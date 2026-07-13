@@ -903,10 +903,17 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          _buildSessionDetailItem(Icons.calendar_month_outlined, '$time ($date)'),
-          const SizedBox(height: 10),
-          _buildSessionDetailItem(Icons.location_on_outlined, location),
+          if (time.isNotEmpty || date.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _buildSessionDetailItem(
+              Icons.calendar_month_outlined,
+              time.isNotEmpty && date.isNotEmpty ? '$time ($date)' : '$time$date',
+            ),
+          ],
+          if (location.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildSessionDetailItem(Icons.location_on_outlined, location),
+          ],
         ],
       ),
     );

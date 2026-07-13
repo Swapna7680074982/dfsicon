@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
 
 class SpeakerSessionDetailScreen extends StatefulWidget {
@@ -44,11 +45,15 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
+      final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
       final topicIdVal = widget.topicId ?? '1';
       connProvider.fetchSessionParticipants(
         topicId: topicIdVal,
         accessToken: auth.accessToken,
       );
+      if (widget.topicId != null) {
+        abstractProvider.fetchTopicDetails(widget.topicId!, auth.accessToken);
+      }
     });
   }
 
@@ -56,6 +61,22 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
   Widget build(BuildContext context) {
     final sessProvider = Provider.of<SessionsProvider>(context);
     final connProvider = Provider.of<ConnectionsProvider>(context);
+    final abstractProvider = Provider.of<AbstractProvider>(context);
+    final topicDetails = abstractProvider.selectedTopicDetails;
+    final isLoadingTopic = abstractProvider.isLoadingTopicDetails;
+
+    String displayTitle = widget.title;
+    String? displayDescription = widget.description;
+    if (topicDetails != null && topicDetails['topic_id']?.toString() == widget.topicId) {
+      final String topicTitle = topicDetails['title']?.toString() ?? '';
+      if (topicTitle.isNotEmpty) {
+        displayTitle = topicTitle;
+      }
+      final String background = topicDetails['background_introduction']?.toString() ?? '';
+      if (background.isNotEmpty) {
+        displayDescription = background;
+      }
+    }
 
     final halls = sessProvider.halls.isNotEmpty
         ? sessProvider.halls
@@ -141,7 +162,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    widget.title.toUpperCase(),
+                    displayTitle.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -149,28 +170,34 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                       height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_month_outlined, color: Colors.white70, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${widget.time} (${widget.date})',
-                        style: const TextStyle(fontSize: 13, color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, color: Colors.white70, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.location.toUpperCase(),
-                        style: const TextStyle(fontSize: 13, color: Colors.white70),
-                      ),
-                    ],
-                  ),
+                  if (widget.time.isNotEmpty || widget.date.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_month_outlined, color: Colors.white70, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.time.isNotEmpty && widget.date.isNotEmpty
+                              ? '${widget.time} (${widget.date})'
+                              : '${widget.time}${widget.date}',
+                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (widget.location.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, color: Colors.white70, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.location.toUpperCase(),
+                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -255,16 +282,24 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              widget.description != null && widget.description!.isNotEmpty
-                  ? widget.description!
-                  : 'No description provided for this session.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                height: 1.5,
+            if (isLoadingTopic && (displayDescription == null || displayDescription.isEmpty))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              )
+            else
+              Text(
+                displayDescription != null && displayDescription.isNotEmpty
+                    ? displayDescription
+                    : 'No description provided for this session.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
               ),
-            ),
             const SizedBox(height: 28),
             GestureDetector(
               onTap: () => _showParticipantsModal(context),

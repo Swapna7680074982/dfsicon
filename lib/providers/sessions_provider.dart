@@ -334,6 +334,33 @@ class SessionsProvider extends ChangeNotifier {
   // ==========================================
   // Fetch Speaker Confirmed Sessions
   // ==========================================
+  SessionItem _mapTopicToSession(Map<String, dynamic> json, int index) {
+    final topicId = json['topic_id']?.toString() ?? '';
+    final id = int.tryParse(topicId) ?? index;
+    final title = json['title']?.toString() ?? 'Session';
+    final format = json['presentation_format']?.toString() ?? 'Oral/Poster';
+    
+    return SessionItem(
+      id: id,
+      title: title,
+      speakerName: 'You', // Speaker's own session
+      speakerTitle: format,
+      speakerInitials: 'YS',
+      speakerBg: _getColorForIndex(index),
+      date: '',
+      time: '',
+      location: '',
+      isBookmarked: false,
+      isAdded: false,
+      topicId: topicId,
+      participantsCount: 0,
+      description: '', // Loaded dynamically in detail screen
+      keywords: '',
+      venueAddress: '',
+      summitTitle: '',
+    );
+  }
+
   Future<bool> fetchMyConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
     if (accessToken != _lastMySessionsAccessToken) {
@@ -348,7 +375,7 @@ class SessionsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await ApiService.fetchMyConfirmedSessions(accessToken: accessToken);
+      final response = await ApiService.fetchSpeakerMyTopics(accessToken: accessToken);
       _isLoading = false;
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
@@ -357,9 +384,10 @@ class SessionsProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = _safeJsonDecode(response.body);
         if (data['status'] == true) {
-          final List sessionsJson = data['data'] ?? data['sessions'] ?? [];
-          _mySessions = sessionsJson.asMap().entries.map((entry) {
-            return _mapJsonToSession(entry.value, entry.key);
+          final List topicsJson = data['data'] ?? [];
+          final confirmedTopics = topicsJson.where((t) => t['status'] == 'Confirmed').toList();
+          _mySessions = confirmedTopics.asMap().entries.map((entry) {
+            return _mapTopicToSession(entry.value, entry.key);
           }).toList();
           notifyListeners();
           return true;
@@ -408,7 +436,7 @@ class SessionsProvider extends ChangeNotifier {
     final abstractId = json['abstract_id']?.toString() ?? json['topic_id']?.toString() ?? json['assignment_id']?.toString() ?? '';
     final id = int.tryParse(abstractId) ?? index;
     final title = json['abstract_title']?.toString() ?? json['title']?.toString() ?? 'Session';
-    final speakerName = json['speaker_name']?.toString() ?? 'TBA';
+    final speakerName = json['speaker_name']?.toString() ?? '';
     final designation = json['designation']?.toString() ?? '';
     final clinicName = json['organisation']?.toString() ?? json['hospital_clinic_name']?.toString() ?? '';
     final speakerTitle = designation.isNotEmpty && clinicName.isNotEmpty
@@ -441,12 +469,12 @@ class SessionsProvider extends ChangeNotifier {
       timeStr = '$startTime - $endTime';
     } else {
       final slotName = json['slot_name']?.toString() ?? '';
-      timeStr = slotName.isNotEmpty ? slotName : 'TBA';
+      timeStr = slotName.isNotEmpty ? slotName : '';
     }
-    final hallName = json['hall_name']?.toString() ?? 'TBA';
+    final hallName = json['hall_name']?.toString() ?? '';
     final venueName = json['venue_name']?.toString() ?? '';
     final locationStr = venueName.isNotEmpty
-        ? '$hallName, $venueName'
+        ? (hallName.isNotEmpty ? '$hallName, $venueName' : venueName)
         : hallName;
 
     final isBookmarked = json['is_bookmarked'] == true || json['is_bookmarked'] == 'true' || json['is_bookmarked'] == 1 || json['is_bookmarked'] == '1';
@@ -460,7 +488,7 @@ class SessionsProvider extends ChangeNotifier {
       speakerTitle: speakerTitle,
       speakerInitials: _getInitials(speakerName),
       speakerBg: _getColorForIndex(index),
-      date: displayDate.isNotEmpty ? displayDate : 'TBA',
+      date: displayDate,
       time: timeStr,
       location: locationStr,
       isBookmarked: isBookmarked,

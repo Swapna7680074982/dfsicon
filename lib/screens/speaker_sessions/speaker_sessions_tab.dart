@@ -254,10 +254,19 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                   color: AppColors.textPrimary,
                 ),
               ),
-          const SizedBox(height: 18),
-          _buildSessionDetailItem(Icons.calendar_month_outlined, '${s.time} (${s.date})'),
-          const SizedBox(height: 10),
-          _buildSessionDetailItem(Icons.location_on_outlined, s.location),
+          if (s.time.isNotEmpty || s.date.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _buildSessionDetailItem(
+              Icons.calendar_month_outlined,
+              s.time.isNotEmpty && s.date.isNotEmpty
+                  ? '${s.time} (${s.date})'
+                  : '${s.time}${s.date}',
+            ),
+          ],
+          if (s.location.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildSessionDetailItem(Icons.location_on_outlined, s.location),
+          ],
           const SizedBox(height: 16),
           const Divider(height: 1, color: AppColors.tileBorder),
           const SizedBox(height: 14),

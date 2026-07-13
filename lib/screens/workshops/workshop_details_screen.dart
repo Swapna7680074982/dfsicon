@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../../widgets/water_droplets_background.dart';
 
-class WorkshopDetailsScreen extends StatelessWidget {
+class WorkshopDetailsScreen extends StatefulWidget {
   final WorkshopItem workshop;
 
   const WorkshopDetailsScreen({super.key, required this.workshop});
 
+  @override
+  State<WorkshopDetailsScreen> createState() => _WorkshopDetailsScreenState();
+}
+
+class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final workshopsProv = Provider.of<WorkshopsProvider>(context, listen: false);
+      workshopsProv.fetchWorkshopParticipants(widget.workshop.workshopId, auth.accessToken);
+    });
+  }
+
   String _formatDateString(String dateStr) {
-    if (dateStr.isEmpty) return 'TBA';
+    if (dateStr.isEmpty) return '';
     try {
       final dateTime = DateTime.tryParse(dateStr);
       if (dateTime == null) return dateStr;
@@ -38,10 +55,10 @@ class WorkshopDetailsScreen extends StatelessWidget {
     if (path == null || path.isEmpty || path.trim() == 'null' || path.trim() == 'NA') {
       return '';
     }
-    if (path.startsWith('http')) {
-      return path;
-    }
     String cleanPath = path.trim();
+    if (cleanPath.startsWith('http')) {
+      return cleanPath.replaceAll('/./', '/');
+    }
     if (cleanPath.startsWith('./')) {
       cleanPath = cleanPath.substring(2);
     } else if (cleanPath.startsWith('/')) {
@@ -52,8 +69,25 @@ class WorkshopDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bannerUrl = _getAbsoluteUrl(workshop.workshopImage);
-    final brochureUrl = _getAbsoluteUrl(workshop.brochureFile);
+    final bannerUrl = _getAbsoluteUrl(widget.workshop.workshopImage);
+    final brochureUrl = _getAbsoluteUrl(widget.workshop.brochureFile);
+
+    final workshopsProv = Provider.of<WorkshopsProvider>(context);
+    final isLoadingParticipants = workshopsProv.isLoadingParticipants;
+    final speakers = workshopsProv.workshopSpeakers;
+    final delegates = workshopsProv.workshopDelegates;
+
+    final venue = widget.workshop.venueName;
+    final address = widget.workshop.address;
+    final city = widget.workshop.city;
+    final state = widget.workshop.state;
+    final postalCode = widget.workshop.postalCode;
+    final hasLocation = venue.isNotEmpty || address.isNotEmpty || city.isNotEmpty;
+
+    final startFormatted = _formatDateString(widget.workshop.workshopStart);
+    final endFormatted = _formatDateString(widget.workshop.workshopEnd);
+    final regStartFormatted = _formatDateString(widget.workshop.registrationStart);
+    final regEndFormatted = _formatDateString(widget.workshop.registrationEnd);
 
     return WaterDropletsBackground(
       child: Scaffold(
@@ -74,12 +108,14 @@ class WorkshopDetailsScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            workshop.workshopName,
+            widget.workshop.workshopName,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         body: SingleChildScrollView(
@@ -92,6 +128,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                 Container(
                   height: 200,
                   width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     boxShadow: [
                       BoxShadow(
@@ -104,11 +141,9 @@ class WorkshopDetailsScreen extends StatelessWidget {
                   child: Image.network(
                     bannerUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => _buildPlaceholderBanner(),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                   ),
-                )
-              else
-                _buildPlaceholderBanner(),
+                ),
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
@@ -125,7 +160,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            workshop.workshopType.toUpperCase(),
+                            widget.workshop.workshopType.toUpperCase(),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -141,7 +176,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'CODE: ${workshop.workshopCode}'.toUpperCase(),
+                            'CODE: ${widget.workshop.workshopCode}'.toUpperCase(),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -153,7 +188,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      workshop.workshopName.toUpperCase(),
+                      widget.workshop.workshopName.toUpperCase(),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -203,7 +238,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    workshop.brochureFile!.split('/').last,
+                                    widget.workshop.brochureFile!.split('/').last,
                                     style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -254,7 +289,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                     ],
 
                     // Description Section
-                    if (workshop.description.isNotEmpty) ...[
+                    if (widget.workshop.description.isNotEmpty) ...[
                       const Text(
                         'ABOUT WORKSHOP',
                         style: TextStyle(
@@ -273,7 +308,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
                           border: Border.all(color: AppColors.tileBorder, width: 1.5),
                         ),
                         child: Text(
-                          workshop.description,
+                          widget.workshop.description,
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
@@ -285,95 +320,114 @@ class WorkshopDetailsScreen extends StatelessWidget {
                     ],
 
                     // Venue Section
-                    const Text(
-                      'VENUE & LOCATION',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    if (hasLocation) ...[
+                      const Text(
+                        'VENUE & LOCATION',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.tileBorder, width: 1.5),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      workshop.venueName.toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '${workshop.address}, ${workshop.city}, ${workshop.state} - ${workshop.postalCode}'
-                                          .toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.textSecondary,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ],
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (venue.isNotEmpty) ...[
+                                        Text(
+                                          venue.toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                      if (address.isNotEmpty || city.isNotEmpty || state.isNotEmpty) ...[
+                                        if (venue.isNotEmpty) const SizedBox(height: 6),
+                                        Text(
+                                          '${address.isNotEmpty ? "$address, " : ""}${city.isNotEmpty ? "$city, " : ""}${state.isNotEmpty ? "$state" : ""}${postalCode.isNotEmpty ? " - $postalCode" : ""}'
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: AppColors.textSecondary,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Timing & Registration Period
-                    const Text(
-                      'TIMING & SCHEDULE',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    if (startFormatted.isNotEmpty ||
+                        endFormatted.isNotEmpty ||
+                        regStartFormatted.isNotEmpty ||
+                        regEndFormatted.isNotEmpty) ...[
+                      const Text(
+                        'TIMING & SCHEDULE',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.tileBorder, width: 1.5),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (startFormatted.isNotEmpty) ...[
+                              _buildDetailRow(Icons.play_circle_outline, 'WORKSHOP START', startFormatted),
+                            ],
+                            if (endFormatted.isNotEmpty) ...[
+                              if (startFormatted.isNotEmpty) const SizedBox(height: 14),
+                              _buildDetailRow(Icons.stop_circle_outlined, 'WORKSHOP END', endFormatted),
+                            ],
+                            if (regStartFormatted.isNotEmpty) ...[
+                              if (startFormatted.isNotEmpty || endFormatted.isNotEmpty) const SizedBox(height: 14),
+                              _buildDetailRow(Icons.app_registration, 'REGISTRATION OPEN', regStartFormatted),
+                            ],
+                            if (regEndFormatted.isNotEmpty) ...[
+                              if (startFormatted.isNotEmpty || endFormatted.isNotEmpty || regStartFormatted.isNotEmpty) const SizedBox(height: 14),
+                              _buildDetailRow(Icons.event_busy_outlined, 'REGISTRATION CLOSE', regEndFormatted),
+                            ],
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailRow(Icons.play_circle_outline, 'WORKSHOP START', _formatDateString(workshop.workshopStart)),
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.stop_circle_outlined, 'WORKSHOP END', _formatDateString(workshop.workshopEnd)),
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.app_registration, 'REGISTRATION OPEN', _formatDateString(workshop.registrationStart)),
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.event_busy_outlined, 'REGISTRATION CLOSE', _formatDateString(workshop.registrationEnd)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Fee & Registration Status
                     const Text(
@@ -396,18 +450,32 @@ class WorkshopDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildDetailRow(Icons.payments_outlined, 'WORKSHOP FEE', '${workshop.fee} ${workshop.currency}'),
+                          if (widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') ...[
+                            _buildDetailRow(Icons.payments_outlined, 'WORKSHOP FEE', '${widget.workshop.fee} ${widget.workshop.currency}'),
+                          ],
+                          if (widget.workshop.role != null && widget.workshop.role!.isNotEmpty) ...[
+                            if (widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') const SizedBox(height: 14),
+                            _buildDetailRow(Icons.person_pin_outlined, 'ASSIGNED ROLE', widget.workshop.role!),
+                          ],
+                          if (widget.workshop.attendanceStatus.isNotEmpty) ...[
+                            if ((widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') || (widget.workshop.role != null && widget.workshop.role!.isNotEmpty)) const SizedBox(height: 14),
+                            _buildDetailRow(Icons.verified_user_outlined, 'ATTENDANCE STATUS', widget.workshop.attendanceStatus),
+                          ],
                           const SizedBox(height: 14),
-                          _buildDetailRow(Icons.person_pin_outlined, 'ASSIGNED ROLE', workshop.role ?? 'Delegate'),
+                          _buildDetailRow(Icons.card_membership_outlined, 'CERTIFICATE AVAILABLE', widget.workshop.certificateAvailable == '1' ? 'Yes' : 'No'),
                           const SizedBox(height: 14),
-                          _buildDetailRow(Icons.verified_user_outlined, 'ATTENDANCE STATUS', workshop.attendanceStatus),
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.card_membership_outlined, 'CERTIFICATE AVAILABLE', workshop.certificateAvailable == '1' ? 'Yes' : 'No'),
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.assignment_turned_in_outlined, 'FEEDBACK SUBMITTED', workshop.feedbackSubmitted == '1' ? 'Yes' : 'No'),
+                          _buildDetailRow(Icons.assignment_turned_in_outlined, 'FEEDBACK SUBMITTED', widget.workshop.feedbackSubmitted == '1' ? 'Yes' : 'No'),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+
+                    // Workshop Speakers Section
+                    _buildSpeakersSection(context, isLoadingParticipants, speakers),
+                    const SizedBox(height: 24),
+
+                    // Workshop Delegates Section
+                    _buildDelegatesSection(context, isLoadingParticipants, delegates),
                   ],
                 ),
               ),
@@ -418,26 +486,7 @@ class WorkshopDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholderBanner() {
-    return Container(
-      height: 200,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.biotech,
-          color: Colors.white.withAlpha(50),
-          size: 80,
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildDetailRow(IconData icon, String title, String value) {
     return Row(
@@ -470,6 +519,320 @@ class WorkshopDetailsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSpeakersSection(BuildContext context, bool isLoading, List<WorkshopParticipant> speakers) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'WORKSHOP SPEAKERS (${speakers.length})',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (speakers.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.tileBorder, width: 1.5),
+            ),
+            child: const Center(
+              child: Text(
+                'No speakers assigned to this workshop.',
+                style: TextStyle(fontSize: 13, color: AppColors.textLight),
+              ),
+            ),
+          )
+        else
+          Column(
+            children: speakers.map((s) => _buildParticipantTile(s)).toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDelegatesSection(BuildContext context, bool isLoading, List<WorkshopParticipant> delegates) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'WORKSHOP DELEGATES (${delegates.length})',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (delegates.length > 3)
+              GestureDetector(
+                onTap: () => _showAllDelegatesModal(context, delegates),
+                child: const Text(
+                  'VIEW ALL',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (delegates.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.tileBorder, width: 1.5),
+            ),
+            child: const Center(
+              child: Text(
+                'No delegates registered to this workshop yet.',
+                style: TextStyle(fontSize: 13, color: AppColors.textLight),
+              ),
+            ),
+          )
+        else ...[
+          Column(
+            children: delegates.take(3).map((d) => _buildParticipantTile(d)).toList(),
+          ),
+          if (delegates.length > 3) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () => _showAllDelegatesModal(context, delegates),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  'VIEW ALL ${delegates.length} DELEGATES',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildParticipantTile(WorkshopParticipant p) {
+    final avatarUrl = _getAbsoluteUrl(p.profileImage);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.tileBorder, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(2),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: p.bg,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            clipBehavior: Clip.antiAlias,
+            alignment: Alignment.center,
+            child: avatarUrl.isNotEmpty
+                ? Image.network(
+                    avatarUrl,
+                    fit: BoxFit.cover,
+                    width: 44,
+                    height: 44,
+                    errorBuilder: (c, o, s) => Text(
+                      p.initials,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  )
+                : Text(
+                    p.initials,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  p.fullName.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (p.designation.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    p.designation.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (p.mobile.isNotEmpty && p.mobile != 'NA' && p.mobile.toLowerCase() != 'null') ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone_outlined, size: 12, color: AppColors.textLight),
+                      const SizedBox(width: 6),
+                      Text(
+                        p.mobile,
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+                if (p.email.isNotEmpty && p.email != 'NA' && p.email.toLowerCase() != 'null') ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.mail_outline, size: 12, color: AppColors.textLight),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          p.email,
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAllDelegatesModal(BuildContext context, List<WorkshopParticipant> delegates) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'WORKSHOP DELEGATES',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${delegates.length} DELEGATES REGISTERED',
+                style: const TextStyle(fontSize: 12, color: AppColors.textLight),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: delegates.length,
+                  itemBuilder: (context, idx) {
+                    final d = delegates[idx];
+                    return _buildParticipantTile(d);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
