@@ -20,6 +20,7 @@ class SessionDetailsScreen extends StatefulWidget {
 
 class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
   bool _isSpeakerConnected = false;
+  bool _isSavingBookmark = false;
 
   @override
   void initState() {
@@ -516,7 +517,16 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
+                      if (_isSavingBookmark) return;
+                      setState(() {
+                        _isSavingBookmark = true;
+                      });
                       final success = await sessProvider.toggleBookmark(widget.session.id, auth.accessToken);
+                      if (mounted) {
+                        setState(() {
+                          _isSavingBookmark = false;
+                        });
+                      }
                       if (success) {
                         _loadParticipants();
                       } else if (!success && context.mounted) {
@@ -542,11 +552,20 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                            color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
-                            size: 18,
-                          ),
+                          _isSavingBookmark
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : Icon(
+                                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                                  color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
+                                  size: 18,
+                                ),
                           const SizedBox(width: 8),
                           Text(
                             isBookmarked ? 'Saved' : 'Save',

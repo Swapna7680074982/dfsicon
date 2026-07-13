@@ -490,7 +490,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                   ],
                 ),
               ),
-            if (!isLoading)
+            if (!isLoading && status != 'Confirmed')
               Positioned(
                 bottom: 50,
                 left: 20,

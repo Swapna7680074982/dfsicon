@@ -15,6 +15,7 @@ class SessionsTab extends StatefulWidget {
 
 class _SessionsTabState extends State<SessionsTab> {
   final TextEditingController _searchController = TextEditingController();
+  final Set<int> _loadingBookmarks = {};
 
   @override
   void initState() {
@@ -273,7 +274,16 @@ class _SessionsTabState extends State<SessionsTab> {
                                             const SizedBox(width: 12),
                                             GestureDetector(
                                               onTap: () async {
+                                                if (_loadingBookmarks.contains(session.id)) return;
+                                                setState(() {
+                                                  _loadingBookmarks.add(session.id);
+                                                });
                                                 final success = await sessionsProvider.toggleBookmark(session.id, auth.accessToken);
+                                                if (mounted) {
+                                                  setState(() {
+                                                    _loadingBookmarks.remove(session.id);
+                                                  });
+                                                }
                                                 if (!success && context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     const SnackBar(
@@ -284,15 +294,24 @@ class _SessionsTabState extends State<SessionsTab> {
                                                   );
                                                 }
                                               },
-                                              child: Icon(
-                                                session.isBookmarked
-                                                    ? Icons.bookmark
-                                                    : Icons.bookmark_border,
-                                                color: session.isBookmarked
-                                                    ? AppColors.primary
-                                                    : AppColors.textLight,
-                                                size: 24,
-                                              ),
+                                              child: _loadingBookmarks.contains(session.id)
+                                                  ? const SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: AppColors.primary,
+                                                      ),
+                                                    )
+                                                  : Icon(
+                                                      session.isBookmarked
+                                                          ? Icons.bookmark
+                                                          : Icons.bookmark_border,
+                                                      color: session.isBookmarked
+                                                          ? AppColors.primary
+                                                          : AppColors.textLight,
+                                                      size: 24,
+                                                    ),
                                             ),
                                           ],
                                         ),

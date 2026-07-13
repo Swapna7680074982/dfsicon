@@ -66,7 +66,7 @@ class HomeTab extends StatelessWidget {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -75,20 +75,20 @@ class HomeTab extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: iconBgColor,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: 16),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
@@ -97,7 +97,7 @@ class HomeTab extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 9,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
@@ -118,6 +118,7 @@ class HomeTab extends StatelessWidget {
     required String gradientStart,
     required String gradientEnd,
     required String imageUrl,
+    required bool isBookmarked,
   }) {
     return Container(
       width: 210,
@@ -193,23 +194,24 @@ class HomeTab extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.bookmark,
-                    color: Colors.white,
-                    size: 14,
+              if (isBookmarked)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.bookmark,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           Padding(
@@ -585,83 +587,34 @@ class HomeTab extends StatelessWidget {
         // Stats row skeleton
         Row(
           children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFDDE4F0),
-                    width: 1.5,
+            for (int i = 0; i < 4; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFDDE4F0),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildShimmerBox(width: 36, height: 36, radius: 18),
+                      const SizedBox(height: 8),
+                      _buildShimmerBox(width: 30, height: 16),
+                      const SizedBox(height: 6),
+                      _buildShimmerBox(width: 45, height: 10),
+                    ],
                   ),
                 ),
-                child: Column(
-                  children: [
-                    _buildShimmerBox(width: 44, height: 44, radius: 22),
-                    const SizedBox(height: 10),
-                    _buildShimmerBox(width: 40, height: 18),
-                    const SizedBox(height: 6),
-                    _buildShimmerBox(width: 60, height: 12),
-                  ],
-                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFDDE4F0),
-                    width: 1.5,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildShimmerBox(width: 44, height: 44, radius: 22),
-                    const SizedBox(height: 10),
-                    _buildShimmerBox(width: 40, height: 18),
-                    const SizedBox(height: 6),
-                    _buildShimmerBox(width: 60, height: 12),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFDDE4F0),
-                    width: 1.5,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildShimmerBox(width: 44, height: 44, radius: 22),
-                    const SizedBox(height: 10),
-                    _buildShimmerBox(width: 40, height: 18),
-                    const SizedBox(height: 6),
-                    _buildShimmerBox(width: 60, height: 12),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ],
         ),
         const SizedBox(height: 28),
@@ -1178,7 +1131,7 @@ class HomeTab extends StatelessWidget {
                                     value: homeProvider.stats[0].value,
                                     label: homeProvider.stats[0].label,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   _buildStatCard(
                                     icon: homeProvider.stats[1].icon,
                                     iconColor: homeProvider.stats[1].iconColor,
@@ -1187,7 +1140,16 @@ class HomeTab extends StatelessWidget {
                                     value: homeProvider.stats[1].value,
                                     label: homeProvider.stats[1].label,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
+                                  _buildStatCard(
+                                    icon: homeProvider.stats[4].icon,
+                                    iconColor: homeProvider.stats[4].iconColor,
+                                    iconBgColor:
+                                        homeProvider.stats[4].iconBgColor,
+                                    value: homeProvider.stats[4].value,
+                                    label: homeProvider.stats[4].label,
+                                  ),
+                                  const SizedBox(width: 8),
                                   _buildStatCard(
                                     icon: homeProvider.stats[2].icon,
                                     iconColor: homeProvider.stats[2].iconColor,
@@ -1355,6 +1317,7 @@ class HomeTab extends StatelessWidget {
                                           gradientStart: gradientStart,
                                           gradientEnd: gradientEnd,
                                           imageUrl: imageUrl,
+                                          isBookmarked: s.isBookmarked,
                                         ),
                                       );
                                     },
