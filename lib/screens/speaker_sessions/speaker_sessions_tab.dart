@@ -231,21 +231,23 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.local_offer_outlined, size: 14, color: AppColors.primary),
-              const SizedBox(width: 6),
-              Text(
-                tag,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+          if (tag.trim().isNotEmpty) ...[
+            Row(
+              children: [
+                const Icon(Icons.local_offer_outlined, size: 14, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  tag,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           Text(
                 s.title,
                 style: const TextStyle(
