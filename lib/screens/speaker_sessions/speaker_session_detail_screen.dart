@@ -87,7 +87,51 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
             HallItem(hallId: '4', hallName: 'Hall 4', hallCapacity: '0'),
           ];
 
-    final sessionLocation = widget.location.toLowerCase();
+    String locationText = widget.location;
+    String timeText = widget.time;
+    String dateText = widget.date;
+
+    final sessionData = connProvider.sessionData;
+    if (sessionData != null) {
+      final hallName = sessionData['hall_name']?.toString() ?? '';
+      final venueName = sessionData['venue_name']?.toString() ?? '';
+      if (venueName.isNotEmpty) {
+        locationText = hallName.isNotEmpty ? '$hallName, $venueName' : venueName;
+      } else if (hallName.isNotEmpty) {
+        locationText = hallName;
+      }
+
+      final scheduleDateStr = sessionData['schedule_date']?.toString() ?? '';
+      if (scheduleDateStr.isNotEmpty) {
+        try {
+          final dt = DateTime.tryParse(scheduleDateStr);
+          if (dt != null) {
+            final months = [
+              'January', 'February', 'March', 'April', 'May', 'June',
+              'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            dateText = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+          } else {
+            dateText = scheduleDateStr;
+          }
+        } catch (_) {
+          dateText = scheduleDateStr;
+        }
+      }
+
+      final startTime = sessionData['start_time']?.toString() ?? '';
+      final endTime = sessionData['end_time']?.toString() ?? '';
+      if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+        timeText = '$startTime - $endTime';
+      } else {
+        final slotName = sessionData['slot_name']?.toString() ?? '';
+        if (slotName.isNotEmpty) {
+          timeText = slotName;
+        }
+      }
+    }
+
+    final sessionLocation = locationText.toLowerCase();
 
     bool checkHighlight(String hallName) {
       final nameLower = hallName.toLowerCase();
@@ -172,30 +216,34 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                       height: 1.3,
                     ),
                   ),
-                  if (widget.time.isNotEmpty || widget.date.isNotEmpty) ...[
+                  if (timeText.isNotEmpty || dateText.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Row(
                       children: [
                         const Icon(Icons.calendar_month_outlined, color: Colors.white70, size: 16),
                         const SizedBox(width: 8),
-                        Text(
-                          widget.time.isNotEmpty && widget.date.isNotEmpty
-                              ? '${widget.time} (${widget.date})'
-                              : '${widget.time}${widget.date}',
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        Expanded(
+                          child: Text(
+                            timeText.isNotEmpty && dateText.isNotEmpty
+                                ? '$timeText ($dateText)'
+                                : '$timeText$dateText',
+                            style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          ),
                         ),
                       ],
                     ),
                   ],
-                  if (widget.location.isNotEmpty) ...[
+                  if (locationText.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         const Icon(Icons.location_on_outlined, color: Colors.white70, size: 16),
                         const SizedBox(width: 8),
-                        Text(
-                          widget.location.toUpperCase(),
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        Expanded(
+                          child: Text(
+                            locationText.toUpperCase(),
+                            style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          ),
                         ),
                       ],
                     ),

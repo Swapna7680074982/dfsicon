@@ -29,11 +29,13 @@ class ConnectionsProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   int _participantsCount = 0;
+  Map<String, dynamic>? _sessionData;
 
   List<ParticipantItem> get participants => _participants;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get participantsCount => _participantsCount;
+  Map<String, dynamic>? get sessionData => _sessionData;
 
   static String _getInitials(String name) {
     if (name.isEmpty) return 'PA';
@@ -66,6 +68,7 @@ class ConnectionsProvider extends ChangeNotifier {
     _errorMessage = null;
     _participants = [];
     _participantsCount = 0;
+    _sessionData = null;
     notifyListeners();
 
     try {
@@ -83,6 +86,7 @@ class ConnectionsProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true && data['data'] != null) {
+          _sessionData = data['data']['session'] as Map<String, dynamic>?;
           final List list = data['data']['participants'] ?? [];
           _participantsCount = data['data']['participants_count'] as int? ?? list.length;
           _participants = list.asMap().entries.map((entry) {

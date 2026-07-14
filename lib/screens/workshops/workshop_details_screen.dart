@@ -459,7 +459,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
                           ],
                           if (widget.workshop.attendanceStatus.isNotEmpty) ...[
                             if ((widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') || (widget.workshop.role != null && widget.workshop.role!.isNotEmpty)) const SizedBox(height: 14),
-                            _buildDetailRow(Icons.verified_user_outlined, 'ATTENDANCE STATUS', widget.workshop.attendanceStatus),
+                            _buildDetailRow(Icons.comment_outlined, 'COMMENT', widget.workshop.attendanceStatus),
                           ],
                           const SizedBox(height: 14),
                           _buildDetailRow(Icons.card_membership_outlined, 'CERTIFICATE AVAILABLE', widget.workshop.certificateAvailable == '1' ? 'Yes' : 'No'),

@@ -320,7 +320,51 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             HallItem(hallId: '4', hallName: 'Hall 4', hallCapacity: '0'),
           ];
 
-    final sessionLocation = widget.session.location.toLowerCase();
+    String locationText = widget.session.location;
+    String timeText = widget.session.time;
+    String dateText = widget.session.date;
+
+    final sessionData = connProvider.sessionData;
+    if (sessionData != null) {
+      final hallName = sessionData['hall_name']?.toString() ?? '';
+      final venueName = sessionData['venue_name']?.toString() ?? '';
+      if (venueName.isNotEmpty) {
+        locationText = hallName.isNotEmpty ? '$hallName, $venueName' : venueName;
+      } else if (hallName.isNotEmpty) {
+        locationText = hallName;
+      }
+
+      final scheduleDateStr = sessionData['schedule_date']?.toString() ?? '';
+      if (scheduleDateStr.isNotEmpty) {
+        try {
+          final dt = DateTime.tryParse(scheduleDateStr);
+          if (dt != null) {
+            final months = [
+              'January', 'February', 'March', 'April', 'May', 'June',
+              'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            dateText = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+          } else {
+            dateText = scheduleDateStr;
+          }
+        } catch (_) {
+          dateText = scheduleDateStr;
+        }
+      }
+
+      final startTime = sessionData['start_time']?.toString() ?? '';
+      final endTime = sessionData['end_time']?.toString() ?? '';
+      if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+        timeText = '$startTime - $endTime';
+      } else {
+        final slotName = sessionData['slot_name']?.toString() ?? '';
+        if (slotName.isNotEmpty) {
+          timeText = slotName;
+        }
+      }
+    }
+
+    final sessionLocation = locationText.toLowerCase();
 
     bool checkHighlight(String hallName) {
       final nameLower = hallName.toLowerCase();
@@ -484,7 +528,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    TimeFormatter.formatString(widget.session.date, timeStr: widget.session.time).toUpperCase(),
+                    TimeFormatter.formatString(dateText, timeStr: timeText).toUpperCase(),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -501,7 +545,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.session.location.toUpperCase(),
+                    locationText.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
