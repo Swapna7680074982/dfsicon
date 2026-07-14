@@ -292,7 +292,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    height: 200,
+                    height: 240,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
@@ -300,7 +300,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                       border: Border.all(color: Colors.grey.shade100, width: 1),
                     ),
                     child: CustomPaint(
-                      painter: ExhibitorFloorPlanPainter(exhibitorId: exhibitor.id),
+                      painter: ExhibitorFloorPlanPainter(boothCode: exhibitor.boothCode),
                     ),
                   ),
                 ],
@@ -375,9 +375,9 @@ class ExhibitorDetailsScreen extends StatelessWidget {
 }
 
 class ExhibitorFloorPlanPainter extends CustomPainter {
-  final String exhibitorId;
+  final String boothCode;
 
-  const ExhibitorFloorPlanPainter({required this.exhibitorId});
+  const ExhibitorFloorPlanPainter({required this.boothCode});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -403,60 +403,70 @@ class ExhibitorFloorPlanPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
 
-    final isHallA = exhibitorId == 'ha';
-    final isHallB = exhibitorId == 'hb';
-    final isRoomC = exhibitorId == 'cf';
-    final isRoomD = exhibitorId == 'pt';
-    final isExhibitionHall = exhibitorId == 'mc';
+    final codeClean = boothCode.toLowerCase();
+    final isBooth1 = codeClean.contains('booth 1');
+    final isBooth2 = codeClean.contains('booth 2');
+    final isBooth3 = codeClean.contains('booth 3');
+    final isBooth4 = codeClean.contains('booth 4');
+    final isBooth5 = codeClean.contains('booth 5');
+    final isBooth6 = codeClean.contains('booth 6');
 
     final hallARect = RRect.fromRectAndRadius(
       Rect.fromLTWH(16, 16, (size.width - 48) * 0.45, 60),
       const Radius.circular(8),
     );
-    canvas.drawRRect(hallARect, isHallA ? fillHighlight : fillOther);
-    canvas.drawRRect(hallARect, isHallA ? borderHighlight : paintLine);
+    canvas.drawRRect(hallARect, isBooth1 ? fillHighlight : fillOther);
+    canvas.drawRRect(hallARect, isBooth1 ? borderHighlight : paintLine);
 
     final hallBRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(24 + (size.width - 48) * 0.45, 16, (size.width - 48) * 0.55, 60),
       const Radius.circular(8),
     );
-    canvas.drawRRect(hallBRect, isHallB ? fillHighlight : fillOther);
-    canvas.drawRRect(hallBRect, isHallB ? borderHighlight : paintLine);
+    canvas.drawRRect(hallBRect, isBooth2 ? fillHighlight : fillOther);
+    canvas.drawRRect(hallBRect, isBooth2 ? borderHighlight : paintLine);
 
     final roomCRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 88, (size.width - 48) * 0.3, 40),
+      Rect.fromLTWH(16, 88, (size.width - 48) * 0.3, 60),
       const Radius.circular(8),
     );
-    canvas.drawRRect(roomCRect, isRoomC ? fillHighlight : fillOther);
-    canvas.drawRRect(roomCRect, isRoomC ? borderHighlight : paintLine);
+    canvas.drawRRect(roomCRect, isBooth3 ? fillHighlight : fillOther);
+    canvas.drawRRect(roomCRect, isBooth3 ? borderHighlight : paintLine);
 
     final lobbyRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.3, 88, (size.width - 48) * 0.7, 40),
+      Rect.fromLTWH(24 + (size.width - 48) * 0.3, 88, (size.width - 48) * 0.7, 60),
       const Radius.circular(8),
     );
     canvas.drawRRect(lobbyRect, fillOther);
     canvas.drawRRect(lobbyRect, paintLine);
 
     final roomDRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 140, (size.width - 48) * 0.33, 40),
+      Rect.fromLTWH(16, 160, (size.width - 48) * 0.33, 60),
       const Radius.circular(8),
     );
-    canvas.drawRRect(roomDRect, isRoomD ? fillHighlight : fillOther);
-    canvas.drawRRect(roomDRect, isRoomD ? borderHighlight : paintLine);
+    canvas.drawRRect(roomDRect, isBooth4 ? fillHighlight : fillOther);
+    canvas.drawRRect(roomDRect, isBooth4 ? borderHighlight : paintLine);
 
-    final exhibitRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.33, 140, (size.width - 48) * 0.67, 40),
+    final booth5Rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(24 + (size.width - 48) * 0.33, 160, (size.width - 48) * 0.33, 60),
       const Radius.circular(8),
     );
-    canvas.drawRRect(exhibitRect, isExhibitionHall ? fillHighlight : fillOther);
-    canvas.drawRRect(exhibitRect, isExhibitionHall ? borderHighlight : paintLine);
+    canvas.drawRRect(booth5Rect, isBooth5 ? fillHighlight : fillOther);
+    canvas.drawRRect(booth5Rect, isBooth5 ? borderHighlight : paintLine);
 
-    _drawCenterText(canvas, textPainter, 'Hall A', Offset(16 + (size.width - 48) * 0.225, 46), isHighlighted: isHallA);
-    _drawCenterText(canvas, textPainter, 'Hall B', Offset(24 + (size.width - 48) * 0.725, 46), isHighlighted: isHallB);
-    _drawCenterText(canvas, textPainter, 'Room C', Offset(16 + (size.width - 48) * 0.15, 108), isHighlighted: isRoomC);
-    _drawCenterText(canvas, textPainter, 'Lobby', Offset(24 + (size.width - 48) * 0.65, 108));
-    _drawCenterText(canvas, textPainter, 'Room D', Offset(16 + (size.width - 48) * 0.165, 160), isHighlighted: isRoomD);
-    _drawCenterText(canvas, textPainter, 'Exhibition Hall', Offset(24 + (size.width - 48) * 0.665, 160), isHighlighted: isExhibitionHall);
+    final booth6Rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(32 + (size.width - 48) * 0.66, 160, (size.width - 48) * 0.34, 60),
+      const Radius.circular(8),
+    );
+    canvas.drawRRect(booth6Rect, isBooth6 ? fillHighlight : fillOther);
+    canvas.drawRRect(booth6Rect, isBooth6 ? borderHighlight : paintLine);
+
+    _drawCenterText(canvas, textPainter, 'Booth 1', Offset(16 + (size.width - 48) * 0.225, 46), isHighlighted: isBooth1);
+    _drawCenterText(canvas, textPainter, 'Booth 2', Offset(24 + (size.width - 48) * 0.725, 46), isHighlighted: isBooth2);
+    _drawCenterText(canvas, textPainter, 'Booth 3', Offset(16 + (size.width - 48) * 0.15, 118), isHighlighted: isBooth3);
+    _drawCenterText(canvas, textPainter, 'Lobby', Offset(24 + (size.width - 48) * 0.65, 118));
+    _drawCenterText(canvas, textPainter, 'Booth 4', Offset(16 + (size.width - 48) * 0.165, 190), isHighlighted: isBooth4);
+    _drawCenterText(canvas, textPainter, 'Booth 5', Offset(24 + (size.width - 48) * 0.495, 190), isHighlighted: isBooth5);
+    _drawCenterText(canvas, textPainter, 'Booth 6', Offset(32 + (size.width - 48) * 0.83, 190), isHighlighted: isBooth6);
 
     final dotPaint = Paint()
       ..color = const Color(0xFF6366F1)
@@ -466,16 +476,18 @@ class ExhibitorFloorPlanPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     Offset? targetOffset;
-    if (isHallA) {
+    if (isBooth1) {
       targetOffset = Offset(16 + (size.width - 48) * 0.225, 46);
-    } else if (isHallB) {
+    } else if (isBooth2) {
       targetOffset = Offset(24 + (size.width - 48) * 0.725, 46);
-    } else if (isRoomC) {
-      targetOffset = Offset(16 + (size.width - 48) * 0.15, 108);
-    } else if (isRoomD) {
-      targetOffset = Offset(16 + (size.width - 48) * 0.165, 160);
-    } else if (isExhibitionHall) {
-      targetOffset = Offset(24 + (size.width - 48) * 0.665, 160);
+    } else if (isBooth3) {
+      targetOffset = Offset(16 + (size.width - 48) * 0.15, 118);
+    } else if (isBooth4) {
+      targetOffset = Offset(16 + (size.width - 48) * 0.165, 190);
+    } else if (isBooth5) {
+      targetOffset = Offset(24 + (size.width - 48) * 0.495, 190);
+    } else if (isBooth6) {
+      targetOffset = Offset(32 + (size.width - 48) * 0.83, 190);
     }
 
     if (targetOffset != null) {

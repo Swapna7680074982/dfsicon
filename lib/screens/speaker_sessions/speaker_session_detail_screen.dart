@@ -62,8 +62,18 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
     final sessProvider = Provider.of<SessionsProvider>(context);
     final connProvider = Provider.of<ConnectionsProvider>(context);
     final abstractProvider = Provider.of<AbstractProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
     final topicDetails = abstractProvider.selectedTopicDetails;
     final isLoadingTopic = abstractProvider.isLoadingTopicDetails;
+
+    String getInitials(String name) {
+      if (name.isEmpty) return 'SK';
+      final parts = name.trim().split(RegExp(r'\s+'));
+      if (parts.length >= 2) {
+        return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      }
+      return parts[0][0].toUpperCase();
+    }
 
     String displayTitle = widget.title;
     String? displayDescription = widget.description;
@@ -75,6 +85,43 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       final String background = topicDetails['background_introduction']?.toString() ?? '';
       if (background.isNotEmpty) {
         displayDescription = background;
+      }
+    }
+
+    String coordinatorName = widget.coordinatorName;
+    String coordinatorPhone = widget.coordinatorPhone;
+    String coordinatorEmail = widget.coordinatorEmail;
+
+    if (topicDetails != null && topicDetails['topic_id']?.toString() == widget.topicId) {
+      final String? name = topicDetails['coordinator_name']?.toString() ?? topicDetails['coordinator']?.toString();
+      final String? phone = (topicDetails['coordinator_phone'] ?? topicDetails['coordinator_mobile'] ?? topicDetails['coordinator_contact'])?.toString();
+      final String? email = topicDetails['coordinator_email']?.toString();
+
+      if (name != null && name.trim().isNotEmpty) {
+        coordinatorName = name.trim();
+      }
+      if (phone != null && phone.trim().isNotEmpty) {
+        coordinatorPhone = phone.trim();
+      }
+      if (email != null && email.trim().isNotEmpty) {
+        coordinatorEmail = email.trim();
+      }
+    }
+
+    final sessionData = connProvider.sessionData;
+    if (sessionData != null) {
+      final String? name = sessionData['coordinator_name']?.toString() ?? sessionData['coordinator']?.toString();
+      final String? phone = (sessionData['coordinator_phone'] ?? sessionData['coordinator_mobile'] ?? sessionData['coordinator_contact'])?.toString();
+      final String? email = sessionData['coordinator_email']?.toString();
+
+      if (name != null && name.trim().isNotEmpty) {
+        coordinatorName = name.trim();
+      }
+      if (phone != null && phone.trim().isNotEmpty) {
+        coordinatorPhone = phone.trim();
+      }
+      if (email != null && email.trim().isNotEmpty) {
+        coordinatorEmail = email.trim();
       }
     }
 
@@ -91,7 +138,6 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
     String timeText = widget.time;
     String dateText = widget.date;
 
-    final sessionData = connProvider.sessionData;
     if (sessionData != null) {
       final hallName = sessionData['hall_name']?.toString() ?? '';
       final venueName = sessionData['venue_name']?.toString() ?? '';
@@ -252,76 +298,173 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ),
             ),
             const SizedBox(height: 28),
-            const Text(
-              'COORDINATOR DETAILS',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+            if (coordinatorName.trim().isNotEmpty && coordinatorName.trim().toUpperCase() != 'NOT ASSIGNED') ...[
+              const Text(
+                'COORDINATOR DETAILS',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.tileBorder, width: 1),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.tileBorder, width: 1),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.person_outline, color: AppColors.primary, size: 18),
                         ),
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.person_outline, color: AppColors.primary, size: 18),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'NAME',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textLight,
-                                fontWeight: FontWeight.bold,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'NAME',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textLight,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.coordinatorName.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                              const SizedBox(height: 2),
+                              Text(
+                                coordinatorName.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Divider(height: 1, color: AppColors.tileBorder),
-                  ),
-                  _buildCoordinatorContact(Icons.phone_outlined, widget.coordinatorPhone),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Divider(height: 1, color: AppColors.tileBorder),
-                  ),
-                  _buildCoordinatorContact(Icons.mail_outline, widget.coordinatorEmail),
-                ],
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: Divider(height: 1, color: AppColors.tileBorder),
+                    ),
+                    _buildCoordinatorContact(Icons.phone_outlined, coordinatorPhone.isNotEmpty ? coordinatorPhone : 'N/A'),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: Divider(height: 1, color: AppColors.tileBorder),
+                    ),
+                    _buildCoordinatorContact(Icons.mail_outline, coordinatorEmail.isNotEmpty ? coordinatorEmail : 'N/A'),
+                  ],
+                ),
               ),
-            ),
+            ] else ...[
+              const Text(
+                'SPEAKER DETAILS',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.tileBorder, width: 1),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEFF6FF),
+                            shape: BoxShape.circle,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          alignment: Alignment.center,
+                          child: auth.hasValidProfileImage
+                              ? Image.network(
+                                  auth.profileImage,
+                                  fit: BoxFit.cover,
+                                  width: 44,
+                                  height: 44,
+                                  errorBuilder: (c, o, s) => Text(
+                                    getInitials(auth.userName),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  getInitials(auth.userName),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                auth.userName.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${auth.designation}, ${auth.hospitalClinicName}'.toUpperCase(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: Divider(height: 1, color: AppColors.tileBorder),
+                    ),
+                    _buildCoordinatorContact(Icons.phone_outlined, auth.mobile.isNotEmpty ? auth.mobile : 'N/A'),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: Divider(height: 1, color: AppColors.tileBorder),
+                    ),
+                    _buildCoordinatorContact(Icons.mail_outline, auth.email.isNotEmpty ? auth.email : 'N/A'),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 28),
             const Text(
               'SESSION DESCRIPTION',

@@ -212,7 +212,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   }
 
   Widget _buildSessionCard(BuildContext context, SessionItem s) {
+    final auth = Provider.of<AuthProvider>(context);
     final String tag = (s.keywords ?? 'Health Tech').split(',').first;
+    final String displaySpeaker = s.speakerName == 'You' ? auth.userName : s.speakerName;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -280,7 +282,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                   const Icon(Icons.person_outline, size: 14, color: AppColors.textLight),
                   const SizedBox(width: 6),
                   Text(
-                    'Coord: Mr. Arjun Mehta',
+                    s.coordinatorName != null && s.coordinatorName!.isNotEmpty
+                        ? 'Coord: ${s.coordinatorName}'
+                        : 'Speaker: $displaySpeaker',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -300,9 +304,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                         time: s.time,
                         location: s.location,
                         tag: tag,
-                        coordinatorName: 'Mr. Arjun Mehta',
-                        coordinatorPhone: '+91 98765 12345',
-                        coordinatorEmail: 'arjun.mehta@dfisicon.org',
+                        coordinatorName: s.coordinatorName ?? '',
+                        coordinatorPhone: s.coordinatorPhone ?? '',
+                        coordinatorEmail: s.coordinatorEmail ?? '',
                         description: s.description,
                         topicId: s.topicId,
                       ),

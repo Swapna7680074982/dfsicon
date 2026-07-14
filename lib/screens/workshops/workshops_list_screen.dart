@@ -236,25 +236,6 @@ class _WorkshopsListScreenState extends State<WorkshopsListScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: w.status.toLowerCase() == 'active'
-                        ? const Color(0xFFECFDF5)
-                        : const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    w.status,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: w.status.toLowerCase() == 'active'
-                          ? const Color(0xFF10B981)
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 14),

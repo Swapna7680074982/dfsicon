@@ -28,6 +28,9 @@ class SessionItem {
   final String? acceptedFilePath;
   final String? venueAddress;
   final String? summitTitle;
+  final String? coordinatorName;
+  final String? coordinatorPhone;
+  final String? coordinatorEmail;
 
   SessionItem({
     required this.id,
@@ -51,6 +54,9 @@ class SessionItem {
     this.acceptedFilePath,
     this.venueAddress,
     this.summitTitle,
+    this.coordinatorName,
+    this.coordinatorPhone,
+    this.coordinatorEmail,
   });
 }
 
@@ -358,6 +364,9 @@ class SessionsProvider extends ChangeNotifier {
       keywords: '',
       venueAddress: '',
       summitTitle: '',
+      coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
+      coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
+      coordinatorEmail: json['coordinator_email']?.toString(),
     );
   }
 
@@ -503,6 +512,9 @@ class SessionsProvider extends ChangeNotifier {
       acceptedFilePath: json['accepted_file_path']?.toString(),
       venueAddress: json['venue_address']?.toString(),
       summitTitle: json['summit_title']?.toString(),
+      coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
+      coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
+      coordinatorEmail: json['coordinator_email']?.toString(),
     );
   }
 }

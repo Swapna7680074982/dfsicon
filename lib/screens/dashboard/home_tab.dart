@@ -1460,22 +1460,6 @@ class HomeTab extends StatelessWidget {
                                                           ),
                                                         ),
                                                       ),
-                                                      const SizedBox(width: 8),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                        decoration: BoxDecoration(
-                                                          color: ws.status.toLowerCase() == 'active' ? const Color(0xFFECFDF5) : const Color(0xFFF3F4F6),
-                                                          borderRadius: BorderRadius.circular(6),
-                                                        ),
-                                                        child: Text(
-                                                          ws.status,
-                                                          style: TextStyle(
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: ws.status.toLowerCase() == 'active' ? const Color(0xFF10B981) : AppColors.textSecondary,
-                                                          ),
-                                                        ),
-                                                      ),
                                                     ],
                                                   ),
                                                   const SizedBox(height: 8),
