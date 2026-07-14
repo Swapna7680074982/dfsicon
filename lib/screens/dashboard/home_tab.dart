@@ -57,6 +57,25 @@ class HomeTab extends StatelessWidget {
     return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
   }
 
+  String? _getSpeakerProfileImageUrl(String? path) {
+    if (path == null || path.isEmpty || path == 'null' || path == 'NA') {
+      return null;
+    }
+    String cleanPath = path.trim();
+    if (cleanPath.contains('/./')) {
+      cleanPath = cleanPath.replaceAll('/./', '/');
+    }
+    if (cleanPath.startsWith('http')) {
+      return cleanPath;
+    }
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required Color iconColor,
@@ -119,6 +138,7 @@ class HomeTab extends StatelessWidget {
     required String gradientEnd,
     required String imageUrl,
     required bool isBookmarked,
+    String? speakerProfileImage,
   }) {
     return Container(
       width: 210,
@@ -240,15 +260,31 @@ class HomeTab extends StatelessWidget {
                         color: speakerBg,
                         shape: BoxShape.circle,
                       ),
+                      clipBehavior: Clip.antiAlias,
                       alignment: Alignment.center,
-                      child: Text(
-                        speakerInitials.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _getSpeakerProfileImageUrl(speakerProfileImage) != null
+                          ? Image.network(
+                              _getSpeakerProfileImageUrl(speakerProfileImage)!,
+                              fit: BoxFit.cover,
+                              width: 24,
+                              height: 24,
+                              errorBuilder: (c, o, s) => Text(
+                                speakerInitials.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              speakerInitials.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1318,6 +1354,7 @@ class HomeTab extends StatelessWidget {
                                           gradientEnd: gradientEnd,
                                           imageUrl: imageUrl,
                                           isBookmarked: s.isBookmarked,
+                                          speakerProfileImage: s.speakerProfileImage,
                                         ),
                                       );
                                     },

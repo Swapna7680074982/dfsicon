@@ -6,6 +6,7 @@ import '../../providers/connections_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
+import '../../utils/time_formatter.dart';
 
 class SpeakerSessionDetailScreen extends StatefulWidget {
   final String title;
@@ -123,6 +124,11 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       if (email != null && email.trim().isNotEmpty) {
         coordinatorEmail = email.trim();
       }
+
+      final String? background = sessionData['background_introduction']?.toString();
+      if (background != null && background.trim().isNotEmpty) {
+        displayDescription = background.trim();
+      }
     }
 
     final halls = sessProvider.halls.isNotEmpty
@@ -168,7 +174,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       final startTime = sessionData['start_time']?.toString() ?? '';
       final endTime = sessionData['end_time']?.toString() ?? '';
       if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
-        timeText = '$startTime - $endTime';
+        timeText = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
       } else {
         final slotName = sessionData['slot_name']?.toString() ?? '';
         if (slotName.isNotEmpty) {

@@ -176,7 +176,51 @@ class TimeFormatter {
     } catch (_) {}
     return null;
   }
+
+  /// Formats a single time string (e.g. "09:00:00", "13:30:00", "09:00") into "09:00 AM" or "01:30 PM".
+  static String formatTime(String timeStr) {
+    if (timeStr.isEmpty) return '';
+    final upper = timeStr.trim().toUpperCase();
+    if (upper.contains('AM') || upper.contains('PM')) {
+      return timeStr;
+    }
+    try {
+      final parts = upper.split(':');
+      if (parts.isNotEmpty) {
+        int? hour = int.tryParse(parts[0]);
+        int minute = 0;
+        if (parts.length > 1) {
+          minute = int.tryParse(parts[1]) ?? 0;
+        }
+        if (hour != null) {
+          final period = hour >= 12 ? 'PM' : 'AM';
+          final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+          final hourStr = displayHour.toString().padLeft(2, '0');
+          final minuteStr = minute.toString().padLeft(2, '0');
+          return '$hourStr:$minuteStr $period';
+        }
+      }
+    } catch (_) {}
+    return timeStr;
+  }
+
+  /// Formats a time range string (e.g. "09:00:00 - 10:00:00") into "09:00 AM - 10:00 AM".
+  static String formatTimeRange(String timeRange) {
+    if (timeRange.isEmpty) return '';
+    if (timeRange.contains('–') || timeRange.contains('-')) {
+      final parts = timeRange.split(RegExp(r'[–-]'));
+      if (parts.length == 2) {
+        final start = formatTime(parts[0]);
+        final end = formatTime(parts[1]);
+        if (start.isNotEmpty && end.isNotEmpty) {
+          return '$start - $end';
+        }
+      }
+    }
+    return formatTime(timeRange);
+  }
 }
+
 
 class _TimeOfDay {
   final int hour;

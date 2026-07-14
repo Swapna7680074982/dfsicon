@@ -31,6 +31,25 @@ class _SessionsTabState extends State<SessionsTab> {
     await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
   }
 
+  String? _getSpeakerProfileImageUrl(String? path) {
+    if (path == null || path.isEmpty || path == 'null' || path == 'NA') {
+      return null;
+    }
+    String cleanPath = path.trim();
+    if (cleanPath.contains('/./')) {
+      cleanPath = cleanPath.replaceAll('/./', '/');
+    }
+    if (cleanPath.startsWith('http')) {
+      return cleanPath;
+    }
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -325,15 +344,31 @@ class _SessionsTabState extends State<SessionsTab> {
                                                 color: session.speakerBg,
                                                 shape: BoxShape.circle,
                                               ),
+                                              clipBehavior: Clip.antiAlias,
                                               alignment: Alignment.center,
-                                              child: Text(
-                                                session.speakerInitials.toUpperCase(),
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
+                                              child: _getSpeakerProfileImageUrl(session.speakerProfileImage) != null
+                                                  ? Image.network(
+                                                      _getSpeakerProfileImageUrl(session.speakerProfileImage)!,
+                                                      fit: BoxFit.cover,
+                                                      width: 40,
+                                                      height: 40,
+                                                      errorBuilder: (c, o, s) => Text(
+                                                        session.speakerInitials.toUpperCase(),
+                                                        style: const TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : Text(
+                                                      session.speakerInitials.toUpperCase(),
+                                                      style: const TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
                                             ),
                                             const SizedBox(width: 12),
                                             Expanded(

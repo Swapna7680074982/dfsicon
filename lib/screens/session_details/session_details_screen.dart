@@ -297,6 +297,25 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
   }
 
+  String? _getSpeakerProfileImageUrl(String? path) {
+    if (path == null || path.isEmpty || path == 'null' || path == 'NA') {
+      return null;
+    }
+    String cleanPath = path.trim();
+    if (cleanPath.contains('/./')) {
+      cleanPath = cleanPath.replaceAll('/./', '/');
+    }
+    if (cleanPath.startsWith('http')) {
+      return cleanPath;
+    }
+    if (cleanPath.startsWith('./')) {
+      cleanPath = cleanPath.substring(2);
+    } else if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessProvider = Provider.of<SessionsProvider>(context);
@@ -355,12 +374,29 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
       final startTime = sessionData['start_time']?.toString() ?? '';
       final endTime = sessionData['end_time']?.toString() ?? '';
       if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
-        timeText = '$startTime - $endTime';
+        timeText = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
       } else {
         final slotName = sessionData['slot_name']?.toString() ?? '';
         if (slotName.isNotEmpty) {
           timeText = slotName;
         }
+      }
+    }
+
+    String displayDescription = widget.session.description ?? '';
+    if (sessionData != null) {
+      final backgroundIntro = sessionData['background_introduction']?.toString();
+      if (backgroundIntro != null && backgroundIntro.isNotEmpty) {
+        displayDescription = backgroundIntro;
+      }
+    }
+
+    String? speakerProfileImageUrl = _getSpeakerProfileImageUrl(widget.session.speakerProfileImage);
+    if (sessionData != null && sessionData['speaker_profile_image'] != null) {
+      final img = sessionData['speaker_profile_image'].toString();
+      final cleaned = _getSpeakerProfileImageUrl(img);
+      if (cleaned != null) {
+        speakerProfileImageUrl = cleaned;
       }
     }
 
@@ -528,7 +564,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    TimeFormatter.formatString(dateText, timeStr: timeText).toUpperCase(),
+                    '${TimeFormatter.formatTimeRange(timeText)} ($dateText)'.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -724,9 +760,9 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              widget.session.description != null && widget.session.description!.isNotEmpty
-                  ? widget.session.description!
-                  : 'Explore how artificial intelligence is revolutionizing diagnostic accuracy, reducing misdiagnosis rates, and enabling clinicians to make faster, evidence-based decisions. Real-world case studies from leading health systems and a look at the regulatory landscape ahead.',
+              displayDescription.isNotEmpty
+                  ? displayDescription
+                  : 'No description provided for this session.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
@@ -759,15 +795,31 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                       color: widget.session.speakerBg,
                       shape: BoxShape.circle,
                     ),
+                    clipBehavior: Clip.antiAlias,
                     alignment: Alignment.center,
-                    child: Text(
-                      widget.session.speakerInitials.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: speakerProfileImageUrl != null
+                        ? Image.network(
+                            speakerProfileImageUrl,
+                            fit: BoxFit.cover,
+                            width: 44,
+                            height: 44,
+                            errorBuilder: (c, o, s) => Text(
+                              widget.session.speakerInitials.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            widget.session.speakerInitials.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 import '../main.dart';
+import '../utils/time_formatter.dart';
 
 class SessionItem {
   final int id;
@@ -31,6 +32,7 @@ class SessionItem {
   final String? coordinatorName;
   final String? coordinatorPhone;
   final String? coordinatorEmail;
+  final String? speakerProfileImage;
 
   SessionItem({
     required this.id,
@@ -57,6 +59,7 @@ class SessionItem {
     this.coordinatorName,
     this.coordinatorPhone,
     this.coordinatorEmail,
+    this.speakerProfileImage,
   });
 }
 
@@ -346,6 +349,15 @@ class SessionsProvider extends ChangeNotifier {
     final title = json['title']?.toString() ?? 'Session';
     final format = json['presentation_format']?.toString() ?? 'Oral/Poster';
     
+    final speakerProfileImage = json['speaker_profile_image']?.toString() ?? json['speaker_image']?.toString() ?? json['profile_image']?.toString();
+    String? cleanSpeakerProfileImage = speakerProfileImage;
+    if (cleanSpeakerProfileImage != null) {
+      cleanSpeakerProfileImage = cleanSpeakerProfileImage.trim();
+      if (cleanSpeakerProfileImage.isEmpty || cleanSpeakerProfileImage == 'null' || cleanSpeakerProfileImage == 'NA') {
+        cleanSpeakerProfileImage = null;
+      }
+    }
+
     return SessionItem(
       id: id,
       title: title,
@@ -367,6 +379,7 @@ class SessionsProvider extends ChangeNotifier {
       coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
       coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
       coordinatorEmail: json['coordinator_email']?.toString(),
+      speakerProfileImage: cleanSpeakerProfileImage,
     );
   }
 
@@ -475,7 +488,7 @@ class SessionsProvider extends ChangeNotifier {
     final endTime = json['end_time']?.toString() ?? '';
     String timeStr = '';
     if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
-      timeStr = '$startTime - $endTime';
+      timeStr = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
     } else {
       final slotName = json['slot_name']?.toString() ?? '';
       timeStr = slotName.isNotEmpty ? slotName : '';
@@ -489,6 +502,15 @@ class SessionsProvider extends ChangeNotifier {
     final isBookmarked = json['is_bookmarked'] == true || json['is_bookmarked'] == 'true' || json['is_bookmarked'] == 1 || json['is_bookmarked'] == '1';
     final bookmarkId = int.tryParse(json['bookmark_id']?.toString() ?? '');
     final participantsCount = int.tryParse(json['participants_count']?.toString() ?? '0') ?? 0;
+
+    final speakerProfileImage = json['speaker_profile_image']?.toString() ?? json['speaker_image']?.toString() ?? json['profile_image']?.toString();
+    String? cleanSpeakerProfileImage = speakerProfileImage;
+    if (cleanSpeakerProfileImage != null) {
+      cleanSpeakerProfileImage = cleanSpeakerProfileImage.trim();
+      if (cleanSpeakerProfileImage.isEmpty || cleanSpeakerProfileImage == 'null' || cleanSpeakerProfileImage == 'NA') {
+        cleanSpeakerProfileImage = null;
+      }
+    }
 
     return SessionItem(
       id: id,
@@ -506,7 +528,7 @@ class SessionsProvider extends ChangeNotifier {
       topicId: json['topic_id']?.toString(),
       bookmarkId: bookmarkId,
       participantsCount: participantsCount,
-      description: json['abstract_description']?.toString() ?? json['description']?.toString() ?? '',
+      description: json['abstract_description']?.toString() ?? json['background_introduction']?.toString() ?? json['description']?.toString() ?? '',
       thumbnail: json['thumbnail']?.toString(),
       keywords: json['keywords']?.toString(),
       acceptedFilePath: json['accepted_file_path']?.toString(),
@@ -515,6 +537,7 @@ class SessionsProvider extends ChangeNotifier {
       coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
       coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
       coordinatorEmail: json['coordinator_email']?.toString(),
+      speakerProfileImage: cleanSpeakerProfileImage,
     );
   }
 }
