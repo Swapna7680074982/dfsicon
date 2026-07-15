@@ -601,18 +601,18 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                       setState(() {
                         _isSavingBookmark = true;
                       });
-                      final success = await sessProvider.toggleBookmark(widget.session.id, auth.accessToken);
+                      final errorMessage = await sessProvider.toggleBookmark(widget.session.id, auth.accessToken);
                       if (mounted) {
                         setState(() {
                           _isSavingBookmark = false;
                         });
                       }
-                      if (success) {
+                      if (errorMessage == null) {
                         _loadParticipants();
-                      } else if (!success && context.mounted) {
+                      } else if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Only one session can be bookmarked at a time! Please un-bookmark the current session first.'),
+                          SnackBar(
+                            content: Text(errorMessage),
                             behavior: SnackBarBehavior.floating,
                             backgroundColor: Colors.redAccent,
                           ),

@@ -297,16 +297,16 @@ class _SessionsTabState extends State<SessionsTab> {
                                                 setState(() {
                                                   _loadingBookmarks.add(session.id);
                                                 });
-                                                final success = await sessionsProvider.toggleBookmark(session.id, auth.accessToken);
+                                                final errorMessage = await sessionsProvider.toggleBookmark(session.id, auth.accessToken);
                                                 if (mounted) {
                                                   setState(() {
                                                     _loadingBookmarks.remove(session.id);
                                                   });
                                                 }
-                                                if (!success && context.mounted) {
+                                                if (errorMessage != null && context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text('Only one session can be bookmarked at a time! Please un-bookmark the current session first.'),
+                                                    SnackBar(
+                                                      content: Text(errorMessage),
                                                       behavior: SnackBarBehavior.floating,
                                                       backgroundColor: Colors.redAccent,
                                                     ),

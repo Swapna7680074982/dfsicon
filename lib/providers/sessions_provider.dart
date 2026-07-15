@@ -33,6 +33,9 @@ class SessionItem {
   final String? coordinatorPhone;
   final String? coordinatorEmail;
   final String? speakerProfileImage;
+  final String? startTime;
+  final String? endTime;
+  final String? scheduleDate;
 
   SessionItem({
     required this.id,
@@ -60,6 +63,9 @@ class SessionItem {
     this.coordinatorPhone,
     this.coordinatorEmail,
     this.speakerProfileImage,
+    this.startTime,
+    this.endTime,
+    this.scheduleDate,
   });
 }
 
@@ -159,36 +165,103 @@ class SessionsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> toggleBookmark(int sessionId, String accessToken) async {
-    final index = _sessions.indexWhere((s) => s.id == sessionId);
-    if (index != -1) {
-      final isCurrentlyBookmarked = _sessions[index].isBookmarked;
-      if (!isCurrentlyBookmarked) {
-        final hasBookmarked = _sessions.any((s) => s.isBookmarked);
-        if (hasBookmarked) {
-          return false;
+  int? _parseTimeToMinutes(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    try {
+      String clean = timeStr.trim().toUpperCase();
+      final hasAmPm = clean.contains('AM') || clean.contains('PM');
+      
+      final parts = clean.split(':');
+      if (parts.isNotEmpty) {
+        int? hour = int.tryParse(parts[0]);
+        int minute = 0;
+        if (parts.length > 1) {
+          final minStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+          minute = int.tryParse(minStr) ?? 0;
+        }
+        if (hour != null) {
+          if (hasAmPm) {
+            if (clean.contains('PM') && hour < 12) {
+              hour += 12;
+            } else if (clean.contains('AM') && hour == 12) {
+              hour = 0;
+            }
+          }
+          return hour * 60 + minute;
         }
       }
+    } catch (_) {}
+    return null;
+  }
 
-      try {
-        final assignmentId = _sessions[index].assignmentId ?? _sessions[index].id.toString();
-        final response = isCurrentlyBookmarked
-            ? await ApiService.unbookmarkSession(assignmentId: assignmentId, accessToken: accessToken)
-            : await ApiService.bookmarkSession(assignmentId: assignmentId, accessToken: accessToken);
+  bool _isTimeOverlap(SessionItem a, SessionItem b) {
+    final dateA = a.scheduleDate ?? a.date;
+    final dateB = b.scheduleDate ?? b.date;
+    if (dateA.isNotEmpty && dateB.isNotEmpty && dateA != dateB) {
+      return false; // Different days
+    }
 
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          if (data['status'] == true) {
-            _sessions[index].isBookmarked = !isCurrentlyBookmarked;
-            notifyListeners();
-            return true;
-          }
+    final timePartsA = a.time.split('-');
+    final rawStartA = timePartsA.isNotEmpty ? timePartsA[0] : null;
+    final rawEndA = timePartsA.length > 1 ? timePartsA[1] : null;
+
+    final timePartsB = b.time.split('-');
+    final rawStartB = timePartsB.isNotEmpty ? timePartsB[0] : null;
+    final rawEndB = timePartsB.length > 1 ? timePartsB[1] : null;
+
+    final startA = _parseTimeToMinutes(a.startTime ?? rawStartA);
+    final endA = _parseTimeToMinutes(a.endTime ?? rawEndA);
+    final startB = _parseTimeToMinutes(b.startTime ?? rawStartB);
+    final endB = _parseTimeToMinutes(b.endTime ?? rawEndB);
+
+    if (startA != null && endA != null && startB != null && endB != null) {
+      return startA < endB && startB < endA;
+    }
+
+    if (a.time.isNotEmpty && b.time.isNotEmpty) {
+      return a.time == b.time;
+    }
+
+    return false;
+  }
+
+  Future<String?> toggleBookmark(int sessionId, String accessToken) async {
+    final index = _sessions.indexWhere((s) => s.id == sessionId);
+    if (index == -1) return 'Session not found';
+
+    final session = _sessions[index];
+    final isCurrentlyBookmarked = session.isBookmarked;
+
+    if (!isCurrentlyBookmarked) {
+      for (final other in _sessions) {
+        if (other.isBookmarked && _isTimeOverlap(session, other)) {
+          return 'This session conflicts with another bookmarked session ("${other.title}") scheduled at the same time!';
         }
-      } catch (e, stack) {
-        CustomLogger.logError('Bookmark API failure', e, stack);
       }
     }
-    return false;
+
+    try {
+      final assignmentId = session.assignmentId ?? session.id.toString();
+      final response = isCurrentlyBookmarked
+          ? await ApiService.unbookmarkSession(assignmentId: assignmentId, accessToken: accessToken)
+          : await ApiService.bookmarkSession(assignmentId: assignmentId, accessToken: accessToken);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          session.isBookmarked = !isCurrentlyBookmarked;
+          notifyListeners();
+          return null; // Success
+        } else {
+          return data['message'] ?? 'Failed to update bookmark status';
+        }
+      } else {
+        return 'Server error: ${response.statusCode}';
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Bookmark API failure', e, stack);
+      return 'Failed to toggle bookmark. Please check your internet connection.';
+    }
   }
 
   void toggleAdded(int sessionId) {
@@ -538,6 +611,9 @@ class SessionsProvider extends ChangeNotifier {
       coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
       coordinatorEmail: json['coordinator_email']?.toString(),
       speakerProfileImage: cleanSpeakerProfileImage,
+      startTime: startTime,
+      endTime: endTime,
+      scheduleDate: scheduleDateStr,
     );
   }
 }
