@@ -132,6 +132,8 @@ class WorkshopsProvider with ChangeNotifier {
 
   List<WorkshopParticipant> _workshopSpeakers = [];
   List<WorkshopParticipant> _workshopDelegates = [];
+  List<WorkshopParticipant> _workshopFaculty = [];
+  List<WorkshopParticipant> _workshopFacilitators = [];
   bool _isLoadingParticipants = false;
   String? _participantsErrorMessage;
 
@@ -141,6 +143,8 @@ class WorkshopsProvider with ChangeNotifier {
 
   List<WorkshopParticipant> get workshopSpeakers => _workshopSpeakers;
   List<WorkshopParticipant> get workshopDelegates => _workshopDelegates;
+  List<WorkshopParticipant> get workshopFaculty => _workshopFaculty;
+  List<WorkshopParticipant> get workshopFacilitators => _workshopFacilitators;
   bool get isLoadingParticipants => _isLoadingParticipants;
   String? get participantsErrorMessage => _participantsErrorMessage;
 
@@ -151,6 +155,8 @@ class WorkshopsProvider with ChangeNotifier {
     _lastAccessToken = null;
     _workshopSpeakers = [];
     _workshopDelegates = [];
+    _workshopFaculty = [];
+    _workshopFacilitators = [];
     _isLoadingParticipants = false;
     _participantsErrorMessage = null;
     notifyListeners();
@@ -183,6 +189,8 @@ class WorkshopsProvider with ChangeNotifier {
     _participantsErrorMessage = null;
     _workshopSpeakers = [];
     _workshopDelegates = [];
+    _workshopFaculty = [];
+    _workshopFacilitators = [];
     notifyListeners();
 
     try {
@@ -234,6 +242,52 @@ class WorkshopsProvider with ChangeNotifier {
             final String mobile = item['mobile']?.toString() ?? '';
             final String email = item['email']?.toString() ?? '';
             final String designation = item['designation']?.toString() ?? 'Delegate';
+            String? profileImage = item['profile_image']?.toString();
+            
+            return WorkshopParticipant(
+              userId: userId,
+              fullName: fullName,
+              mobile: mobile,
+              email: email,
+              designation: designation,
+              profileImage: (profileImage != null && profileImage.isNotEmpty && profileImage != 'null') ? profileImage : null,
+              initials: _getInitials(fullName),
+              bg: _getColorForIndex(idx),
+            );
+          }).toList();
+
+          final List facultyList = innerData['faculty'] ?? [];
+          _workshopFaculty = facultyList.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            final String userId = item['user_id']?.toString() ?? idx.toString();
+            final String fullName = item['full_name']?.toString() ?? 'Faculty';
+            final String mobile = item['mobile']?.toString() ?? '';
+            final String email = item['email']?.toString() ?? '';
+            final String designation = item['designation']?.toString() ?? 'Faculty';
+            String? profileImage = item['profile_image']?.toString();
+            
+            return WorkshopParticipant(
+              userId: userId,
+              fullName: fullName,
+              mobile: mobile,
+              email: email,
+              designation: designation,
+              profileImage: (profileImage != null && profileImage.isNotEmpty && profileImage != 'null') ? profileImage : null,
+              initials: _getInitials(fullName),
+              bg: _getColorForIndex(idx),
+            );
+          }).toList();
+
+          final List facilitatorsList = innerData['facilitators'] ?? [];
+          _workshopFacilitators = facilitatorsList.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            final String userId = item['user_id']?.toString() ?? idx.toString();
+            final String fullName = item['full_name']?.toString() ?? 'Facilitator';
+            final String mobile = item['mobile']?.toString() ?? '';
+            final String email = item['email']?.toString() ?? '';
+            final String designation = item['designation']?.toString() ?? 'Facilitator';
             String? profileImage = item['profile_image']?.toString();
             
             return WorkshopParticipant(

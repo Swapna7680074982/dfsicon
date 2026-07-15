@@ -212,21 +212,6 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // Segments/Choice Chips for Approved vs Confirmed
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        _buildFilterChip('All', 'All', abstractProvider.myTopics.length),
-                        const SizedBox(width: 12),
-                        _buildFilterChip('Approved', 'Approved', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'approved').length),
-                        const SizedBox(width: 12),
-                        _buildFilterChip('Confirmed', 'Confirmed', abstractProvider.myTopics.where((t) => t['status']?.toString().toLowerCase() == 'confirmed').length),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -307,57 +292,6 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
     );
   }
 
-  Widget _buildFilterChip(String label, String value, int count) {
-    final isSelected = _selectedStatusFilter == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedStatusFilter = value;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(20) : Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.tileBorder,
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label.toUpperCase(),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withAlpha(30) : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                count.toString(),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? AppColors.primary : AppColors.textLight,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildAbstractItemCard(BuildContext context, Map<String, dynamic> abs) {
     final status = (abs['status'] ?? 'Approved').toString();

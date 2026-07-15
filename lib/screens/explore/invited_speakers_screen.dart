@@ -298,12 +298,15 @@ class _InvitedSpeakersScreenState extends State<InvitedSpeakersScreen> {
                                                     children: [
                                                       const Icon(Icons.phone_outlined, size: 12, color: AppColors.textLight),
                                                       const SizedBox(width: 4),
-                                                      Text(
-                                                        isMobilePrivate ? 'Private (Hidden)' : mobile,
-                                                        style: TextStyle(
-                                                          fontSize: 11,
-                                                          color: isMobilePrivate ? Colors.grey.shade400 : AppColors.textSecondary,
-                                                          fontStyle: isMobilePrivate ? FontStyle.italic : FontStyle.normal,
+                                                      Expanded(
+                                                        child: Text(
+                                                          isMobilePrivate ? 'Private (Hidden)' : mobile,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            color: isMobilePrivate ? Colors.grey.shade400 : AppColors.textSecondary,
+                                                            fontStyle: isMobilePrivate ? FontStyle.italic : FontStyle.normal,
+                                                          ),
                                                         ),
                                                       ),
                                                     ],
@@ -313,12 +316,15 @@ class _InvitedSpeakersScreenState extends State<InvitedSpeakersScreen> {
                                                     children: [
                                                       const Icon(Icons.mail_outline_rounded, size: 12, color: AppColors.textLight),
                                                       const SizedBox(width: 4),
-                                                      Text(
-                                                        isEmailPrivate ? 'Private (Hidden)' : email,
-                                                        style: TextStyle(
-                                                          fontSize: 11,
-                                                          color: isEmailPrivate ? Colors.grey.shade400 : AppColors.textSecondary,
-                                                          fontStyle: isEmailPrivate ? FontStyle.italic : FontStyle.normal,
+                                                      Expanded(
+                                                        child: Text(
+                                                          isEmailPrivate ? 'Private (Hidden)' : email,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            color: isEmailPrivate ? Colors.grey.shade400 : AppColors.textSecondary,
+                                                            fontStyle: isEmailPrivate ? FontStyle.italic : FontStyle.normal,
+                                                          ),
                                                         ),
                                                       ),
                                                     ],
@@ -392,12 +398,18 @@ class _InvitedSpeakersScreenState extends State<InvitedSpeakersScreen> {
                                                               setState(() {
                                                                 _isUpdatingPrivacy = true;
                                                               });
-                                                              await authProvider.updatePrivacySettings(
+                                                              final success = await authProvider.updatePrivacySettings(
                                                                 showMobile: val ? '1' : '0',
                                                                 showEmail: authProvider.showEmail ? '1' : '0',
                                                                 showOrganisation: authProvider.showOrganisation ? '1' : '0',
                                                                 showDesignation: authProvider.showDesignation ? '1' : '0',
                                                               );
+                                                              if (success && mounted) {
+                                                                await authProvider.fetchMyProfile();
+                                                                if (mounted) {
+                                                                  await exploreProvider.fetchInvitedSpeakers(authProvider.accessToken, showLoading: false);
+                                                                }
+                                                              }
                                                               setState(() {
                                                                 _isUpdatingPrivacy = false;
                                                               });
@@ -432,12 +444,18 @@ class _InvitedSpeakersScreenState extends State<InvitedSpeakersScreen> {
                                                               setState(() {
                                                                 _isUpdatingPrivacy = true;
                                                               });
-                                                              await authProvider.updatePrivacySettings(
+                                                              final success = await authProvider.updatePrivacySettings(
                                                                 showMobile: authProvider.showMobile ? '1' : '0',
                                                                 showEmail: val ? '1' : '0',
                                                                 showOrganisation: authProvider.showOrganisation ? '1' : '0',
                                                                 showDesignation: authProvider.showDesignation ? '1' : '0',
                                                               );
+                                                              if (success && mounted) {
+                                                                await authProvider.fetchMyProfile();
+                                                                if (mounted) {
+                                                                  await exploreProvider.fetchInvitedSpeakers(authProvider.accessToken, showLoading: false);
+                                                                }
+                                                              }
                                                               setState(() {
                                                                 _isUpdatingPrivacy = false;
                                                               });

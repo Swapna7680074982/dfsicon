@@ -256,15 +256,19 @@ class ExploreProvider with ChangeNotifier {
   bool get isLoadingSpeakers => _isLoadingSpeakers;
   String? get speakersError => _speakersError;
 
-  Future<bool> fetchInvitedSpeakers(String accessToken) async {
+  Future<bool> fetchInvitedSpeakers(String accessToken, {bool showLoading = true}) async {
     if (accessToken.isEmpty) return false;
-    _isLoadingSpeakers = true;
-    _speakersError = null;
-    notifyListeners();
+    if (showLoading) {
+      _isLoadingSpeakers = true;
+      _speakersError = null;
+      notifyListeners();
+    }
 
     try {
       final response = await ApiService.fetchInvitedSpeakers(accessToken: accessToken);
-      _isLoadingSpeakers = false;
+      if (showLoading) {
+        _isLoadingSpeakers = false;
+      }
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
         return false;
@@ -286,7 +290,9 @@ class ExploreProvider with ChangeNotifier {
       return false;
     } catch (e, stack) {
       CustomLogger.logError('Fetch invited speakers failed', e, stack);
-      _isLoadingSpeakers = false;
+      if (showLoading) {
+        _isLoadingSpeakers = false;
+      }
       _speakersError = e.toString();
       notifyListeners();
       return false;

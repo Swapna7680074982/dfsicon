@@ -74,8 +74,10 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
 
     final workshopsProv = Provider.of<WorkshopsProvider>(context);
     final isLoadingParticipants = workshopsProv.isLoadingParticipants;
-    final speakers = workshopsProv.workshopSpeakers;
-    final delegates = workshopsProv.workshopDelegates;
+    // final speakers = workshopsProv.workshopSpeakers;
+    // final delegates = workshopsProv.workshopDelegates;
+    final faculty = workshopsProv.workshopFaculty;
+    final facilitators = workshopsProv.workshopFacilitators;
 
     final venue = widget.workshop.venueName;
     final address = widget.workshop.address;
@@ -429,53 +431,23 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
                       const SizedBox(height: 24),
                     ],
 
-                    // Fee & Registration Status
-                    const Text(
-                      'REGISTRATION DETAILS',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.tileBorder, width: 1.5),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') ...[
-                            _buildDetailRow(Icons.payments_outlined, 'WORKSHOP FEE', '${widget.workshop.fee} ${widget.workshop.currency}'),
-                          ],
-                          if (widget.workshop.role != null && widget.workshop.role!.isNotEmpty) ...[
-                            if (widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') const SizedBox(height: 14),
-                            _buildDetailRow(Icons.person_pin_outlined, 'ASSIGNED ROLE', widget.workshop.role!),
-                          ],
-                          if (widget.workshop.attendanceStatus.isNotEmpty) ...[
-                            if ((widget.workshop.fee.isNotEmpty && widget.workshop.fee != '0' && widget.workshop.fee != '0.00') || (widget.workshop.role != null && widget.workshop.role!.isNotEmpty)) const SizedBox(height: 14),
-                            _buildDetailRow(Icons.comment_outlined, 'COMMENT', widget.workshop.attendanceStatus),
-                          ],
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.card_membership_outlined, 'CERTIFICATE AVAILABLE', widget.workshop.certificateAvailable == '1' ? 'Yes' : 'No'),
-                          const SizedBox(height: 14),
-                          _buildDetailRow(Icons.assignment_turned_in_outlined, 'FEEDBACK SUBMITTED', widget.workshop.feedbackSubmitted == '1' ? 'Yes' : 'No'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
 
+                    /*
                     // Workshop Speakers Section
                     _buildSpeakersSection(context, isLoadingParticipants, speakers),
                     const SizedBox(height: 24),
 
                     // Workshop Delegates Section
                     _buildDelegatesSection(context, isLoadingParticipants, delegates),
+                    const SizedBox(height: 24),
+                    */
+
+                    // Workshop Faculty Section
+                    _buildFacultySection(context, isLoadingParticipants, faculty),
+                    const SizedBox(height: 24),
+
+                    // Workshop Facilitators Section
+                    _buildFacilitatorsSection(context, isLoadingParticipants, facilitators),
                   ],
                 ),
               ),
@@ -522,6 +494,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     );
   }
 
+  /*
   Widget _buildSpeakersSection(BuildContext context, bool isLoading, List<WorkshopParticipant> speakers) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -715,6 +688,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
       ],
     );
   }
+  */
 
   Widget _buildAvatarChip(WorkshopParticipant p) {
     final avatarUrl = _getAbsoluteUrl(p.profileImage);
@@ -754,6 +728,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     );
   }
 
+  /*
   void _showAllSpeakersModal(BuildContext context, List<WorkshopParticipant> speakers) {
     showModalBottomSheet(
       context: context,
@@ -831,6 +806,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
       },
     );
   }
+  */
 
   Widget _buildParticipantTile(WorkshopParticipant p) {
     final avatarUrl = _getAbsoluteUrl(p.profileImage);
@@ -940,6 +916,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     );
   }
 
+  /*
   void _showAllDelegatesModal(BuildContext context, List<WorkshopParticipant> delegates) {
     showModalBottomSheet(
       context: context,
@@ -1008,6 +985,357 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
                   itemBuilder: (context, idx) {
                     final d = delegates[idx];
                     return _buildParticipantTile(d);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  */
+
+  Widget _buildFacultySection(BuildContext context, bool isLoading, List<WorkshopParticipant> faculty) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => _showAllFacultyModal(context, faculty),
+          child: Container(
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'WORKSHOP FACULTY (${faculty.length})',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (faculty.isNotEmpty)
+                  Row(
+                    children: const [
+                      Text(
+                        'VIEW ALL',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_outlined, size: 12, color: AppColors.primary),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (faculty.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.tileBorder, width: 1.5),
+            ),
+            child: const Center(
+              child: Text(
+                'No faculty assigned to this workshop.',
+                style: TextStyle(fontSize: 13, color: AppColors.textLight),
+              ),
+            ),
+          )
+        else
+          GestureDetector(
+            onTap: () => _showAllFacultyModal(context, faculty),
+            child: Row(
+              children: [
+                for (int i = 0; i < faculty.length && i < 4; i++) ...[
+                  _buildAvatarChip(faculty[i]),
+                  const SizedBox(width: 6),
+                ],
+                if (faculty.length > 4)
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+${faculty.length - 4}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFacilitatorsSection(BuildContext context, bool isLoading, List<WorkshopParticipant> facilitators) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => _showAllFacilitatorsModal(context, facilitators),
+          child: Container(
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'WORKSHOP FACILITATORS (${facilitators.length})',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (facilitators.isNotEmpty)
+                  Row(
+                    children: const [
+                      Text(
+                        'VIEW ALL',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_outlined, size: 12, color: AppColors.primary),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (facilitators.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.tileBorder, width: 1.5),
+            ),
+            child: const Center(
+              child: Text(
+                'No facilitators assigned to this workshop.',
+                style: TextStyle(fontSize: 13, color: AppColors.textLight),
+              ),
+            ),
+          )
+        else
+          GestureDetector(
+            onTap: () => _showAllFacilitatorsModal(context, facilitators),
+            child: Row(
+              children: [
+                for (int i = 0; i < facilitators.length && i < 4; i++) ...[
+                  _buildAvatarChip(facilitators[i]),
+                  const SizedBox(width: 6),
+                ],
+                if (facilitators.length > 4)
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+${facilitators.length - 4}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showAllFacultyModal(BuildContext context, List<WorkshopParticipant> faculty) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'WORKSHOP FACULTY',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${faculty.length} FACULTY ASSIGNED',
+                style: const TextStyle(fontSize: 12, color: AppColors.textLight),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: faculty.length,
+                  itemBuilder: (context, idx) {
+                    final f = faculty[idx];
+                    return _buildParticipantTile(f);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAllFacilitatorsModal(BuildContext context, List<WorkshopParticipant> facilitators) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'WORKSHOP FACILITATORS',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${facilitators.length} FACILITATORS ASSIGNED',
+                style: const TextStyle(fontSize: 12, color: AppColors.textLight),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: facilitators.length,
+                  itemBuilder: (context, idx) {
+                    final f = facilitators[idx];
+                    return _buildParticipantTile(f);
                   },
                 ),
               ),
