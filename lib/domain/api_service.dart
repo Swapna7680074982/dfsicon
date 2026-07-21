@@ -443,6 +443,31 @@ class ApiService {
     return response;
   }
 
+  static Future<http.Response> fetchSummitBooths({
+    required String summitId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.getSummitBooths);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final body = json.encode({
+      "summit_id": summitId
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // ==========================================
   // Workshops API Call
   // ==========================================

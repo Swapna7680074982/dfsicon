@@ -12,7 +12,7 @@ import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../profile/profile_screen.dart';
-import '../sightseeing/sightseeing_list_screen.dart';
+// import '../sightseeing/sightseeing_list_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../workshops/workshops_list_screen.dart';
 import '../workshops/workshop_details_screen.dart';
@@ -31,14 +31,6 @@ class HomeTab extends StatelessWidget {
     ['0xFFD97706', '0xFFFBBF24'], // Amber
     ['0xFFDC2626', '0xFFFCA5A5'], // Red
     ['0xFF7C3AED', '0xFFA78BFA'], // Purple
-  ];
-
-  static const List<String> _fallbackImages = [
-    'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1516841273335-e39b37888115?w=400&fit=crop',
-    'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&fit=crop',
-    'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=400&fit=crop',
   ];
 
   String _getThumbnailUrl(String? path) {
@@ -152,103 +144,127 @@ class HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              SizedBox(
-                height: 110,
-                width: double.infinity,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(18),
-                    topRight: Radius.circular(18),
-                  ),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(int.parse(gradientStart)),
-                              Color(int.parse(gradientEnd)),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+          if (imageUrl.trim().isNotEmpty)
+            Stack(
+              children: [
+                SizedBox(
+                  height: 110,
+                  width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(int.parse(gradientStart)),
+                                Color(int.parse(gradientEnd)),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(int.parse(gradientStart)),
-                              Color(int.parse(gradientEnd)),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.biotech,
-                            color: Colors.white.withAlpha(80),
-                            size: 40,
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(int.parse(gradientStart)),
+                                Color(int.parse(gradientEnd)),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              if (isBookmarked)
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.bookmark,
-                      color: Colors.white,
-                      size: 14,
+                          child: Center(
+                            child: Icon(
+                              Icons.biotech,
+                              color: Colors.white.withAlpha(80),
+                              size: 40,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
-            ],
-          ),
+                if (isBookmarked)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bookmark,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    height: 1.3,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                    if (imageUrl.trim().isEmpty && isBookmarked) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.bookmark,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -437,12 +453,16 @@ class HomeTab extends StatelessWidget {
                 color: AppColors.textLight,
               ),
               const SizedBox(width: 4),
-              Text(
-                booth,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+              Expanded(
+                child: Text(
+                  booth,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -452,6 +472,7 @@ class HomeTab extends StatelessWidget {
     );
   }
 
+  /*
   Widget _buildSightseeCard({
     required String title,
     required String distance,
@@ -473,89 +494,81 @@ class HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 90,
-            width: double.infinity,
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
+          Expanded(
+            child: Stack(
+              children: [
+                Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Color(int.parse(colorStart)),
-                        Color(int.parse(colorEnd)),
-                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
                       colors: [
-                        Color(int.parse(colorStart)),
-                        Color(int.parse(colorEnd)),
+                        _parseColor(colorStart),
+                        _parseColor(colorEnd),
                       ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      color: Colors.white.withAlpha(80),
-                      size: 32,
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Center(
+                            child: Icon(icon, color: Colors.white, size: 36),
+                          ),
+                        )
+                      : Center(
+                          child: Icon(icon, color: Colors.white, size: 36),
+                        ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha((0.4 * 255).round()),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 11,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          distance,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 12,
-                      color: AppColors.textLight,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      distance,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -581,6 +594,7 @@ class HomeTab extends StatelessWidget {
       ),
     );
   }
+  */
 
   Widget _buildShimmerBox({double? width, double? height, double radius = 12}) {
     return Container(
@@ -732,6 +746,7 @@ class HomeTab extends StatelessWidget {
             ),
           ),
         ),
+        /*
         const SizedBox(height: 28),
         // Sightseeing heading skeleton
         _buildShimmerBox(width: 120, height: 22),
@@ -774,6 +789,7 @@ class HomeTab extends StatelessWidget {
             ),
           ),
         ),
+        */
       ],
     );
   }
@@ -840,14 +856,10 @@ class HomeTab extends StatelessWidget {
         boothZone: homeExhibitor.subtitle.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall',
         initials: homeExhibitor.initials,
         bg: homeExhibitor.color,
-        description: 'Exhibitor & Sponsor',
-        products: const [
-          'Healthcare Infrastructure',
-          'Clinical Operations Management',
-          'Vibrant Medical Technologies',
-        ],
-        website: 'heterohcl.com',
-        email: 'sponsors@heterohcl.com',
+        description: '',
+        products: const [],
+        website: '',
+        email: '',
         logoUrl: homeExhibitor.imageUrl,
       );
       if (context.mounted) {
@@ -1237,7 +1249,6 @@ class HomeTab extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              const SizedBox(height: 12),
                               if (sessionsProvider.isLoading &&
                                   sessionsProvider.sessions.isEmpty)
                                 SizedBox(
@@ -1310,56 +1321,76 @@ class HomeTab extends StatelessWidget {
                                   ),
                                 )
                               else
-                                SizedBox(
-                                  height: 260,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: sessionsProvider.sessions.length > 5
-                                        ? 5
-                                        : sessionsProvider.sessions.length,
-                                    itemBuilder: (context, index) {
-                                      final s =
-                                          sessionsProvider.sessions[index];
-                                      final colorIndex = index % _gradientPairs.length;
-                                      final gradientStart =
-                                          _gradientPairs[colorIndex][0];
-                                      final gradientEnd =
-                                          _gradientPairs[colorIndex][1];
-                                      final imageUrl = (s.thumbnail != null &&
-                                              s.thumbnail!.isNotEmpty)
-                                          ? _getThumbnailUrl(s.thumbnail!)
-                                          : _fallbackImages[index %
-                                              _fallbackImages.length];
+                                () {
+                                  final bool hasAnySessionImage =
+                                      sessionsProvider.sessions.any(
+                                    (s) =>
+                                        s.thumbnail != null &&
+                                        s.thumbnail!.trim().isNotEmpty &&
+                                        s.thumbnail != 'null' &&
+                                        s.thumbnail != 'NA',
+                                  );
+                                  final double sessionListHeight =
+                                      hasAnySessionImage ? 260 : 150;
 
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  SessionDetailsScreen(
-                                                session: s,
-                                              ),
+                                  return SizedBox(
+                                    height: sessionListHeight,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount:
+                                          sessionsProvider.sessions.length > 5
+                                              ? 5
+                                              : sessionsProvider.sessions.length,
+                                      itemBuilder: (context, index) {
+                                        final s =
+                                            sessionsProvider.sessions[index];
+                                        final colorIndex =
+                                            index % _gradientPairs.length;
+                                        final gradientStart =
+                                            _gradientPairs[colorIndex][0];
+                                        final gradientEnd =
+                                            _gradientPairs[colorIndex][1];
+                                        final imageUrl = (s.thumbnail != null &&
+                                                s.thumbnail!.trim().isNotEmpty &&
+                                                s.thumbnail != 'null' &&
+                                                s.thumbnail != 'NA')
+                                            ? _getThumbnailUrl(s.thumbnail!)
+                                            : '';
+
+                                        return Align(
+                                          alignment: Alignment.topCenter,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      SessionDetailsScreen(
+                                                    session: s,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: _buildSessionCard(
+                                              title: s.title,
+                                              speaker: s.speakerName,
+                                              speakerInitials: s.speakerInitials,
+                                              speakerBg: s.speakerBg,
+                                              time: s.time,
+                                              hall: s.location,
+                                              gradientStart: gradientStart,
+                                              gradientEnd: gradientEnd,
+                                              imageUrl: imageUrl,
+                                              isBookmarked: s.isBookmarked,
+                                              speakerProfileImage:
+                                                  s.speakerProfileImage,
                                             ),
-                                          );
-                                        },
-                                        child: _buildSessionCard(
-                                          title: s.title,
-                                          speaker: s.speakerName,
-                                          speakerInitials: s.speakerInitials,
-                                          speakerBg: s.speakerBg,
-                                          time: s.time,
-                                          hall: s.location,
-                                          gradientStart: gradientStart,
-                                          gradientEnd: gradientEnd,
-                                          imageUrl: imageUrl,
-                                          isBookmarked: s.isBookmarked,
-                                          speakerProfileImage: s.speakerProfileImage,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                }(),
                               const SizedBox(height: 28),
                               Row(
                                 mainAxisAlignment:
@@ -1587,6 +1618,7 @@ class HomeTab extends StatelessWidget {
                                     },
                                   ),
                                 ),
+                              /*
                               const SizedBox(height: 28),
                               Row(
                                 mainAxisAlignment:
@@ -1655,6 +1687,7 @@ class HomeTab extends StatelessWidget {
                                   },
                                 ),
                               ),
+                              */
                             ],
                           ),
                   ),

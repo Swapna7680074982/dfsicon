@@ -87,18 +87,43 @@ class VenueInfo {
     required this.stateName,
     required this.cityName,
   });
+
+  factory VenueInfo.fromJson(Map<String, dynamic> json) {
+    return VenueInfo(
+      venueId: json['venue_id']?.toString() ?? '',
+      venueName: json['venue_name']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+      totalHalls: json['total_halls']?.toString() ?? '',
+      sessionsPerDay: json['sessions_per_day']?.toString() ?? '',
+      stateName: json['state_name']?.toString() ?? '',
+      cityName: json['city_name']?.toString() ?? '',
+    );
+  }
 }
 
 class HallItem {
   final String hallId;
   final String hallName;
+  final String hallLabel;
   final String hallCapacity;
 
   HallItem({
     required this.hallId,
     required this.hallName,
+    this.hallLabel = '',
     required this.hallCapacity,
   });
+
+  factory HallItem.fromJson(Map<String, dynamic> json) {
+    final name = json['hall_name']?.toString() ?? '';
+    final label = json['hall_label']?.toString() ?? '';
+    return HallItem(
+      hallId: json['hall_id']?.toString() ?? '',
+      hallName: name,
+      hallLabel: label.isNotEmpty ? label : name,
+      hallCapacity: json['hall_capacity']?.toString() ?? '0',
+    );
+  }
 }
 
 class SessionsProvider extends ChangeNotifier {
@@ -327,26 +352,15 @@ class SessionsProvider extends ChangeNotifier {
         final data = _safeJsonDecode(response.body);
         if (data['status'] == true && data['data'] != null) {
           final dynamic venueJson = data['data']['venue'];
-          if (venueJson != null) {
-            _venueInfo = VenueInfo(
-              venueId: venueJson['venue_id']?.toString() ?? '',
-              venueName: venueJson['venue_name']?.toString() ?? '',
-              address: venueJson['address']?.toString() ?? '',
-              totalHalls: venueJson['total_halls']?.toString() ?? '',
-              sessionsPerDay: venueJson['sessions_per_day']?.toString() ?? '',
-              stateName: venueJson['state_name']?.toString() ?? '',
-              cityName: venueJson['city_name']?.toString() ?? '',
-            );
+          if (venueJson != null && venueJson is Map<String, dynamic>) {
+            _venueInfo = VenueInfo.fromJson(venueJson);
           }
 
           final List hallsJson = data['data']['halls'] ?? [];
-          _halls = hallsJson.map((h) {
-            return HallItem(
-              hallId: h['hall_id']?.toString() ?? '',
-              hallName: h['hall_name']?.toString() ?? '',
-              hallCapacity: h['hall_capacity']?.toString() ?? '',
-            );
-          }).toList();
+          _halls = hallsJson
+              .whereType<Map<String, dynamic>>()
+              .map((h) => HallItem.fromJson(h))
+              .toList();
 
           notifyListeners();
           return true;
@@ -431,6 +445,52 @@ class SessionsProvider extends ChangeNotifier {
       }
     }
 
+    final sessDetails = (json['session_details'] is Map)
+        ? json['session_details'] as Map<String, dynamic>
+        : null;
+
+    final hallLabel = sessDetails?['hall_label']?.toString() ?? json['hall_label']?.toString() ?? '';
+    final hallName = sessDetails?['hall_name']?.toString() ?? json['hall_name']?.toString() ?? '';
+    final displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+
+    final slotLabel = sessDetails?['slot_label']?.toString() ?? json['slot_label']?.toString() ?? '';
+    final slotName = sessDetails?['slot_name']?.toString() ?? json['slot_name']?.toString() ?? '';
+
+    final startTime = sessDetails?['start_time']?.toString() ?? json['start_time']?.toString() ?? '';
+    final endTime = sessDetails?['end_time']?.toString() ?? json['end_time']?.toString() ?? '';
+    String timeStr = '';
+    if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+      timeStr = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
+    } else if (slotLabel.isNotEmpty) {
+      timeStr = slotLabel;
+    } else if (slotName.isNotEmpty) {
+      timeStr = slotName;
+    }
+
+    final venueName = sessDetails?['venue_name']?.toString() ?? json['venue_name']?.toString() ?? '';
+    final locationStr = venueName.isNotEmpty
+        ? (displayHall.isNotEmpty ? '$displayHall, $venueName' : venueName)
+        : displayHall;
+
+    String displayDate = '';
+    final scheduleDateStr = sessDetails?['schedule_date']?.toString() ?? json['schedule_date']?.toString() ?? '';
+    if (scheduleDateStr.isNotEmpty) {
+      try {
+        final dt = DateTime.tryParse(scheduleDateStr);
+        if (dt != null) {
+          final months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+          ];
+          displayDate = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+        } else {
+          displayDate = scheduleDateStr;
+        }
+      } catch (_) {
+        displayDate = scheduleDateStr;
+      }
+    }
+
     return SessionItem(
       id: id,
       title: title,
@@ -438,21 +498,24 @@ class SessionsProvider extends ChangeNotifier {
       speakerTitle: format,
       speakerInitials: 'YS',
       speakerBg: _getColorForIndex(index),
-      date: '',
-      time: '',
-      location: '',
+      date: displayDate,
+      time: timeStr,
+      location: locationStr,
       isBookmarked: false,
       isAdded: false,
       topicId: topicId,
-      participantsCount: 0,
-      description: '', // Loaded dynamically in detail screen
-      keywords: '',
-      venueAddress: '',
-      summitTitle: '',
+      participantsCount: int.tryParse(json['participants_count']?.toString() ?? '0') ?? 0,
+      description: json['background_introduction']?.toString() ?? json['description']?.toString() ?? '',
+      keywords: json['keywords']?.toString(),
+      venueAddress: sessDetails?['address']?.toString() ?? json['venue_address']?.toString() ?? json['address']?.toString(),
+      summitTitle: json['summit_title']?.toString(),
       coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
       coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
       coordinatorEmail: json['coordinator_email']?.toString(),
       speakerProfileImage: cleanSpeakerProfileImage,
+      startTime: startTime,
+      endTime: endTime,
+      scheduleDate: scheduleDateStr,
     );
   }
 
@@ -538,8 +601,12 @@ class SessionsProvider extends ChangeNotifier {
         ? '$designation, $clinicName'
         : (designation.isNotEmpty ? designation : (clinicName.isNotEmpty ? clinicName : 'Speaker'));
 
+    final sessDetails = (json['session_details'] is Map)
+        ? json['session_details'] as Map<String, dynamic>
+        : null;
+
     String displayDate = '';
-    final scheduleDateStr = json['schedule_date']?.toString() ?? '';
+    final scheduleDateStr = sessDetails?['schedule_date']?.toString() ?? json['schedule_date']?.toString() ?? '';
     if (scheduleDateStr.isNotEmpty) {
       try {
         final dt = DateTime.tryParse(scheduleDateStr);
@@ -557,20 +624,28 @@ class SessionsProvider extends ChangeNotifier {
       }
     }
 
-    final startTime = json['start_time']?.toString() ?? '';
-    final endTime = json['end_time']?.toString() ?? '';
+    final startTime = sessDetails?['start_time']?.toString() ?? json['start_time']?.toString() ?? '';
+    final endTime = sessDetails?['end_time']?.toString() ?? json['end_time']?.toString() ?? '';
+    final slotLabel = sessDetails?['slot_label']?.toString() ?? json['slot_label']?.toString() ?? '';
+    final slotName = sessDetails?['slot_name']?.toString() ?? json['slot_name']?.toString() ?? '';
+
     String timeStr = '';
     if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
       timeStr = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
-    } else {
-      final slotName = json['slot_name']?.toString() ?? '';
-      timeStr = slotName.isNotEmpty ? slotName : '';
+    } else if (slotLabel.isNotEmpty) {
+      timeStr = slotLabel;
+    } else if (slotName.isNotEmpty) {
+      timeStr = slotName;
     }
-    final hallName = json['hall_name']?.toString() ?? '';
-    final venueName = json['venue_name']?.toString() ?? '';
+
+    final hallLabel = sessDetails?['hall_label']?.toString() ?? json['hall_label']?.toString() ?? '';
+    final hallName = sessDetails?['hall_name']?.toString() ?? json['hall_name']?.toString() ?? '';
+    final displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+
+    final venueName = sessDetails?['venue_name']?.toString() ?? json['venue_name']?.toString() ?? '';
     final locationStr = venueName.isNotEmpty
-        ? (hallName.isNotEmpty ? '$hallName, $venueName' : venueName)
-        : hallName;
+        ? (displayHall.isNotEmpty ? '$displayHall, $venueName' : venueName)
+        : displayHall;
 
     final isBookmarked = json['is_bookmarked'] == true || json['is_bookmarked'] == 'true' || json['is_bookmarked'] == 1 || json['is_bookmarked'] == '1';
     final bookmarkId = int.tryParse(json['bookmark_id']?.toString() ?? '');
@@ -605,7 +680,7 @@ class SessionsProvider extends ChangeNotifier {
       thumbnail: json['thumbnail']?.toString(),
       keywords: json['keywords']?.toString(),
       acceptedFilePath: json['accepted_file_path']?.toString(),
-      venueAddress: json['venue_address']?.toString(),
+      venueAddress: sessDetails?['address']?.toString() ?? json['venue_address']?.toString() ?? json['address']?.toString(),
       summitTitle: json['summit_title']?.toString(),
       coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
       coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),

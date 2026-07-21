@@ -4,6 +4,34 @@ import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 import '../main.dart';
 
+class BoothItem {
+  final String boothId;
+  final String boothNumber;
+  final String boothLabel;
+  final String boothCapacity;
+  final String status;
+
+  const BoothItem({
+    required this.boothId,
+    required this.boothNumber,
+    required this.boothLabel,
+    required this.boothCapacity,
+    this.status = '1',
+  });
+
+  factory BoothItem.fromJson(Map<String, dynamic> json) {
+    final num = json['booth_number']?.toString() ?? '';
+    final label = json['booth_label']?.toString() ?? '';
+    return BoothItem(
+      boothId: json['booth_id']?.toString() ?? '',
+      boothNumber: num,
+      boothLabel: label.isNotEmpty ? label : (num.isNotEmpty ? 'Booth $num' : 'Booth'),
+      boothCapacity: json['booth_capacity']?.toString() ?? '0',
+      status: json['status']?.toString() ?? '1',
+    );
+  }
+}
+
 class Exhibitor {
   final String id;
   final String name;
@@ -19,6 +47,7 @@ class Exhibitor {
   final String? logoUrl;
   final String? bannerUrl;
   final String? brochureUrl;
+  final List<BoothItem> booths;
 
   const Exhibitor({
     required this.id,
@@ -35,6 +64,7 @@ class Exhibitor {
     this.logoUrl,
     this.bannerUrl,
     this.brochureUrl,
+    this.booths = const [],
   });
 }
 
@@ -177,6 +207,45 @@ class ExploreProvider with ChangeNotifier {
               }
             }
 
+            String boothCode = '';
+            String boothZone = '';
+            final List<BoothItem> parsedBooths = [];
+
+            final boothsList = item['booths'] as List<dynamic>?;
+            if (boothsList != null && boothsList.isNotEmpty) {
+              final boothNumbers = <String>[];
+              final boothLabels = <String>[];
+
+              for (var b in boothsList) {
+                if (b is Map<String, dynamic>) {
+                  parsedBooths.add(BoothItem.fromJson(b));
+                  final num = b['booth_number']?.toString().trim();
+                  final label = b['booth_label']?.toString().trim();
+
+                  if (num != null && num.isNotEmpty && !boothNumbers.contains(num)) {
+                    boothNumbers.add(num);
+                  }
+                  if (label != null && label.isNotEmpty && !boothLabels.contains(label)) {
+                    boothLabels.add(label);
+                  }
+                }
+              }
+
+              if (boothNumbers.isNotEmpty) {
+                boothCode = boothNumbers.join(', ');
+              }
+              if (boothLabels.isNotEmpty) {
+                boothZone = boothLabels.join(', ');
+              }
+            }
+
+            if (boothCode.isEmpty) {
+              boothCode = 'Booth $sponsorId';
+            }
+            if (boothZone.isEmpty) {
+              boothZone = category.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall';
+            }
+
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);
 
@@ -185,8 +254,8 @@ class ExploreProvider with ChangeNotifier {
                 id: sponsorId,
                 name: companyName,
                 category: category,
-                boothCode: 'Booth $sponsorId',
-                boothZone: category.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall',
+                boothCode: boothCode,
+                boothZone: boothZone,
                 initials: initials,
                 bg: bg,
                 description: description.isEmpty ? 'Exhibitor & Sponsor' : description,
@@ -200,6 +269,7 @@ class ExploreProvider with ChangeNotifier {
                 logoUrl: logoUrl,
                 bannerUrl: bannerUrl,
                 brochureUrl: brochureUrl,
+                booths: parsedBooths,
               ),
             );
           }
@@ -294,6 +364,58 @@ class ExploreProvider with ChangeNotifier {
         _isLoadingSpeakers = false;
       }
       _speakersError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  List<BoothItem> _summitBooths = [];
+  bool _isLoadingBooths = false;
+  String? _boothsError;
+
+  List<BoothItem> get summitBooths => _summitBooths;
+  bool get isLoadingBooths => _isLoadingBooths;
+  String? get boothsError => _boothsError;
+
+  Future<bool> fetchSummitBooths(String summitId, String accessToken) async {
+    if (summitId.isEmpty || accessToken.isEmpty) return false;
+    _isLoadingBooths = true;
+    _boothsError = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.fetchSummitBooths(
+        summitId: summitId,
+        accessToken: accessToken,
+      );
+
+      _isLoadingBooths = false;
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return false;
+      }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          final List list = (data['data'] is List) ? data['data'] : (data['data']['booths'] ?? []);
+          _summitBooths = list
+              .whereType<Map<String, dynamic>>()
+              .map((b) => BoothItem.fromJson(b))
+              .toList();
+          notifyListeners();
+          return true;
+        } else {
+          _boothsError = data['message'] ?? 'Failed to fetch summit booths';
+        }
+      } else {
+        _boothsError = 'Server error: ${response.statusCode}';
+      }
+      notifyListeners();
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch summit booths failed', e, stack);
+      _isLoadingBooths = false;
+      _boothsError = e.toString();
       notifyListeners();
       return false;
     }

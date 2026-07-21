@@ -129,12 +129,16 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                     size: 18,
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    '${exhibitor.boothCode.toUpperCase()}  •  ${exhibitor.boothZone.toUpperCase()}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                  Expanded(
+                    child: Text(
+                      '${exhibitor.boothCode.toUpperCase()}  •  ${exhibitor.boothZone.toUpperCase()}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -403,7 +407,7 @@ class ExhibitorFloorPlanPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
 
-    final codeClean = boothCode.toLowerCase();
+    final codeClean = boothCode.toLowerCase().replaceAll('-', ' ').replaceAll('_', ' ');
     final isBooth1 = codeClean.contains('booth 1');
     final isBooth2 = codeClean.contains('booth 2');
     final isBooth3 = codeClean.contains('booth 3');

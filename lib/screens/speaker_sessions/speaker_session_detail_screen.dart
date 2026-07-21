@@ -6,6 +6,7 @@ import '../../providers/connections_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
+import '../../providers/gallery_provider.dart';
 import '../../utils/time_formatter.dart';
 
 class SpeakerSessionDetailScreen extends StatefulWidget {
@@ -144,61 +145,102 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
     String timeText = widget.time;
     String dateText = widget.date;
 
-    if (sessionData != null) {
-      final hallName = sessionData['hall_name']?.toString() ?? '';
-      final venueName = sessionData['venue_name']?.toString() ?? '';
-      if (venueName.isNotEmpty) {
-        locationText = hallName.isNotEmpty ? '$hallName, $venueName' : venueName;
-      } else if (hallName.isNotEmpty) {
-        locationText = hallName;
-      }
+    final sessionDetails = (topicDetails != null && topicDetails['session_details'] is Map)
+        ? topicDetails['session_details'] as Map<String, dynamic>
+        : (sessionData != null && sessionData['session_details'] is Map)
+            ? sessionData['session_details'] as Map<String, dynamic>
+            : null;
 
-      final scheduleDateStr = sessionData['schedule_date']?.toString() ?? '';
-      if (scheduleDateStr.isNotEmpty) {
-        try {
-          final dt = DateTime.tryParse(scheduleDateStr);
-          if (dt != null) {
-            final months = [
-              'January', 'February', 'March', 'April', 'May', 'June',
-              'July', 'August', 'September', 'October', 'November', 'December'
-            ];
-            dateText = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
-          } else {
-            dateText = scheduleDateStr;
-          }
-        } catch (_) {
+    final String hallLabel = sessionDetails?['hall_label']?.toString() ??
+        topicDetails?['hall_label']?.toString() ??
+        sessionData?['hall_label']?.toString() ??
+        '';
+
+    final String hallName = sessionDetails?['hall_name']?.toString() ??
+        topicDetails?['hall_name']?.toString() ??
+        sessionData?['hall_name']?.toString() ??
+        '';
+
+    final String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+
+    final String slotLabel = sessionDetails?['slot_label']?.toString() ??
+        topicDetails?['slot_label']?.toString() ??
+        sessionData?['slot_label']?.toString() ??
+        '';
+
+    final String slotName = sessionDetails?['slot_name']?.toString() ??
+        topicDetails?['slot_name']?.toString() ??
+        sessionData?['slot_name']?.toString() ??
+        '';
+
+    final String venueName = sessionDetails?['venue_name']?.toString() ??
+        topicDetails?['venue_name']?.toString() ??
+        sessionData?['venue_name']?.toString() ??
+        '';
+
+    final String scheduleDateStr = sessionDetails?['schedule_date']?.toString() ??
+        topicDetails?['schedule_date']?.toString() ??
+        sessionData?['schedule_date']?.toString() ??
+        '';
+
+    final String startTime = sessionDetails?['start_time']?.toString() ??
+        topicDetails?['start_time']?.toString() ??
+        sessionData?['start_time']?.toString() ??
+        '';
+
+    final String endTime = sessionDetails?['end_time']?.toString() ??
+        topicDetails?['end_time']?.toString() ??
+        sessionData?['end_time']?.toString() ??
+        '';
+
+    if (venueName.isNotEmpty) {
+      locationText = displayHall.isNotEmpty ? '$displayHall, $venueName' : venueName;
+    } else if (displayHall.isNotEmpty) {
+      locationText = displayHall;
+    }
+
+    if (scheduleDateStr.isNotEmpty) {
+      try {
+        final dt = DateTime.tryParse(scheduleDateStr);
+        if (dt != null) {
+          final months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+          ];
+          dateText = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+        } else {
           dateText = scheduleDateStr;
         }
+      } catch (_) {
+        dateText = scheduleDateStr;
       }
+    }
 
-      final startTime = sessionData['start_time']?.toString() ?? '';
-      final endTime = sessionData['end_time']?.toString() ?? '';
-      if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
-        timeText = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
-      } else {
-        final slotName = sessionData['slot_name']?.toString() ?? '';
-        if (slotName.isNotEmpty) {
-          timeText = slotName;
-        }
-      }
+    if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+      timeText = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
+    } else if (slotLabel.isNotEmpty) {
+      timeText = slotLabel;
+    } else if (slotName.isNotEmpty) {
+      timeText = slotName;
     }
 
     final sessionLocation = locationText.toLowerCase();
 
-    bool checkHighlight(String hallName) {
-      final nameLower = hallName.toLowerCase();
-      if (sessionLocation.contains(nameLower)) return true;
-      if (nameLower == 'hall 1' && (sessionLocation.contains('hall a') || sessionLocation.contains('room a'))) return true;
-      if (nameLower == 'hall 2' && (sessionLocation.contains('hall b') || sessionLocation.contains('room b'))) return true;
-      if (nameLower == 'hall 3' && (sessionLocation.contains('hall c') || sessionLocation.contains('room c'))) return true;
-      if (nameLower == 'hall 4' && (sessionLocation.contains('hall d') || sessionLocation.contains('room d'))) return true;
+    bool checkHighlight(String hName, String hLabel) {
+      final nameLower = hName.toLowerCase();
+      final labelLower = hLabel.toLowerCase();
+      if (sessionLocation.contains(nameLower) || (labelLower.isNotEmpty && sessionLocation.contains(labelLower))) return true;
+      if (nameLower == 'hall 1' && (sessionLocation.contains('hall a') || sessionLocation.contains('room a') || sessionLocation.contains('hall 1'))) return true;
+      if (nameLower == 'hall 2' && (sessionLocation.contains('hall b') || sessionLocation.contains('room b') || sessionLocation.contains('hall 2'))) return true;
+      if (nameLower == 'hall 3' && (sessionLocation.contains('hall c') || sessionLocation.contains('room c') || sessionLocation.contains('hall 3'))) return true;
+      if (nameLower == 'hall 4' && (sessionLocation.contains('hall d') || sessionLocation.contains('room d') || sessionLocation.contains('hall 4'))) return true;
       return false;
     }
 
     String highlightedText = 'No Hall highlighted';
     for (var hall in halls) {
-      if (checkHighlight(hall.hallName)) {
-        highlightedText = '${hall.hallName} highlighted';
+      if (checkHighlight(hall.hallName, hall.hallLabel)) {
+        highlightedText = '${hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName} highlighted';
         break;
       }
     }
@@ -611,7 +653,8 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                 itemCount: halls.length,
                 itemBuilder: (context, index) {
                   final hall = halls[index];
-                  final isHighlighted = checkHighlight(hall.hallName);
+                  final isHighlighted = checkHighlight(hall.hallName, hall.hallLabel);
+                  final displayName = hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName;
                   String subtitle = 'Venue Hall';
                   if (hall.hallName.toLowerCase().contains('1') || hall.hallName.toLowerCase().contains('a')) {
                     subtitle = 'Auditorium';
@@ -622,7 +665,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                   } else if (hall.hallName.toLowerCase().contains('4') || hall.hallName.toLowerCase().contains('d')) {
                     subtitle = 'Breakout';
                   }
-                  return _buildMapHall(hall.hallName, subtitle, isHighlighted);
+                  return _buildMapHall(displayName, subtitle, isHighlighted);
                 },
               ),
             ),
@@ -659,17 +702,28 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ],
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _buildGalleryThumb(context, 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&auto=format&fit=crop'),
-                  _buildGalleryThumb(context, 'https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=400&auto=format&fit=crop'),
-                  _buildGalleryThumb(context, 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop'),
-                ],
-              ),
+            Builder(
+              builder: (context) {
+                final galProvider = Provider.of<GalleryProvider>(context);
+                final List<String> galleryPhotos = [];
+                for (var g in galProvider.sessions) {
+                  galleryPhotos.addAll(g.photos);
+                }
+                final displayPhotos = galleryPhotos.take(3).toList();
+                
+                return SizedBox(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: displayPhotos.isEmpty ? 3 : displayPhotos.length,
+                    itemBuilder: (context, index) {
+                      final url = index < displayPhotos.length ? displayPhotos[index] : '';
+                      return _buildGalleryThumb(context, url);
+                    },
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 30),
           ],
@@ -817,7 +871,17 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
           border: Border.all(color: Colors.grey.shade100),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Image.network(url, fit: BoxFit.cover),
+        child: url.isNotEmpty
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (c, o, s) => const Center(
+                  child: Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                ),
+              )
+            : const Center(
+                child: Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              ),
       ),
     );
   }

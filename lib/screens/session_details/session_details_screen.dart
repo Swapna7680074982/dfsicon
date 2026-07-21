@@ -6,6 +6,7 @@ import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/gallery_provider.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../../utils/time_formatter.dart';
 
@@ -281,9 +282,17 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     );
   }
 
+  bool get _hasMedia {
+    final thumb = widget.session.thumbnail?.trim();
+    final file = widget.session.acceptedFilePath?.trim();
+    final hasThumb = thumb != null && thumb.isNotEmpty && thumb != 'null' && thumb != 'NA';
+    final hasFile = file != null && file.isNotEmpty && file != 'null' && file != 'NA';
+    return hasThumb || hasFile;
+  }
+
   String _getThumbnailUrl(String? path) {
     if (path == null || path.isEmpty) {
-      return 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop';
+      return '';
     }
     if (path.startsWith('http')) {
       return path;
@@ -345,15 +354,50 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
 
     final sessionData = connProvider.sessionData;
     if (sessionData != null) {
-      final hallName = sessionData['hall_name']?.toString() ?? '';
-      final venueName = sessionData['venue_name']?.toString() ?? '';
+      final sessionDetails = (sessionData['session_details'] is Map)
+          ? sessionData['session_details'] as Map<String, dynamic>
+          : null;
+
+      final String hallLabel = sessionDetails?['hall_label']?.toString() ??
+          sessionData['hall_label']?.toString() ??
+          '';
+
+      final String hallName = sessionDetails?['hall_name']?.toString() ??
+          sessionData['hall_name']?.toString() ??
+          '';
+
+      final String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+
+      final String slotLabel = sessionDetails?['slot_label']?.toString() ??
+          sessionData['slot_label']?.toString() ??
+          '';
+
+      final String slotName = sessionDetails?['slot_name']?.toString() ??
+          sessionData['slot_name']?.toString() ??
+          '';
+
+      final String venueName = sessionDetails?['venue_name']?.toString() ??
+          sessionData['venue_name']?.toString() ??
+          '';
+
+      final String scheduleDateStr = sessionDetails?['schedule_date']?.toString() ??
+          sessionData['schedule_date']?.toString() ??
+          '';
+
+      final String startTime = sessionDetails?['start_time']?.toString() ??
+          sessionData['start_time']?.toString() ??
+          '';
+
+      final String endTime = sessionDetails?['end_time']?.toString() ??
+          sessionData['end_time']?.toString() ??
+          '';
+
       if (venueName.isNotEmpty) {
-        locationText = hallName.isNotEmpty ? '$hallName, $venueName' : venueName;
-      } else if (hallName.isNotEmpty) {
-        locationText = hallName;
+        locationText = displayHall.isNotEmpty ? '$displayHall, $venueName' : venueName;
+      } else if (displayHall.isNotEmpty) {
+        locationText = displayHall;
       }
 
-      final scheduleDateStr = sessionData['schedule_date']?.toString() ?? '';
       if (scheduleDateStr.isNotEmpty) {
         try {
           final dt = DateTime.tryParse(scheduleDateStr);
@@ -371,15 +415,12 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         }
       }
 
-      final startTime = sessionData['start_time']?.toString() ?? '';
-      final endTime = sessionData['end_time']?.toString() ?? '';
       if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
         timeText = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
-      } else {
-        final slotName = sessionData['slot_name']?.toString() ?? '';
-        if (slotName.isNotEmpty) {
-          timeText = slotName;
-        }
+      } else if (slotLabel.isNotEmpty) {
+        timeText = slotLabel;
+      } else if (slotName.isNotEmpty) {
+        timeText = slotName;
       }
     }
 
@@ -402,20 +443,21 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
 
     final sessionLocation = locationText.toLowerCase();
 
-    bool checkHighlight(String hallName) {
-      final nameLower = hallName.toLowerCase();
-      if (sessionLocation.contains(nameLower)) return true;
-      if (nameLower == 'hall 1' && (sessionLocation.contains('hall a') || sessionLocation.contains('room a'))) return true;
-      if (nameLower == 'hall 2' && (sessionLocation.contains('hall b') || sessionLocation.contains('room b'))) return true;
-      if (nameLower == 'hall 3' && (sessionLocation.contains('hall c') || sessionLocation.contains('room c'))) return true;
-      if (nameLower == 'hall 4' && (sessionLocation.contains('hall d') || sessionLocation.contains('room d'))) return true;
+    bool checkHighlight(String hName, String hLabel) {
+      final nameLower = hName.toLowerCase();
+      final labelLower = hLabel.toLowerCase();
+      if (sessionLocation.contains(nameLower) || (labelLower.isNotEmpty && sessionLocation.contains(labelLower))) return true;
+      if (nameLower == 'hall 1' && (sessionLocation.contains('hall a') || sessionLocation.contains('room a') || sessionLocation.contains('hall 1'))) return true;
+      if (nameLower == 'hall 2' && (sessionLocation.contains('hall b') || sessionLocation.contains('room b') || sessionLocation.contains('hall 2'))) return true;
+      if (nameLower == 'hall 3' && (sessionLocation.contains('hall c') || sessionLocation.contains('room c') || sessionLocation.contains('hall 3'))) return true;
+      if (nameLower == 'hall 4' && (sessionLocation.contains('hall d') || sessionLocation.contains('room d') || sessionLocation.contains('hall 4'))) return true;
       return false;
     }
 
     String highlightedText = 'No Hall highlighted';
     for (var hall in halls) {
-      if (checkHighlight(hall.hallName)) {
-        highlightedText = '${hall.hallName} highlighted';
+      if (checkHighlight(hall.hallName, hall.hallLabel)) {
+        highlightedText = '${hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName} highlighted';
         break;
       }
     }
@@ -444,72 +486,82 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    title: const Text(
-                      'Session Recording',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            if (_hasMedia) ...[
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      title: const Text(
+                        'Session Recording',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                      content: const Text(
+                        'It will be uploaded after session recording is done.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
-                    content: const Text(
-                      'It will be uploaded after session recording is done.',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'OK',
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  );
+                },
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    color: Colors.black12,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        _getThumbnailUrl(widget.session.thumbnail ?? widget.session.acceptedFilePath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.slideshow, color: Colors.white54, size: 48),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: const BoxDecoration(
+                            color: Colors.white38,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                );
-              },
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  color: Colors.black12,
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      _getThumbnailUrl(widget.session.thumbnail),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Image.network(
-                        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Center(
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: const BoxDecoration(
-                          color: Colors.white38,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
+            ],
             Row(
               children: [
                 Container(
@@ -1068,7 +1120,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 itemCount: halls.length,
                 itemBuilder: (context, index) {
                   final hall = halls[index];
-                  final isHighlighted = checkHighlight(hall.hallName);
+                  final isHighlighted = checkHighlight(hall.hallName, hall.hallLabel);
+                  final displayName = hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName;
                   String subtitle = 'Venue Hall';
                   if (hall.hallName.toLowerCase().contains('1') || hall.hallName.toLowerCase().contains('a')) {
                     subtitle = 'Auditorium';
@@ -1079,7 +1132,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                   } else if (hall.hallName.toLowerCase().contains('4') || hall.hallName.toLowerCase().contains('d')) {
                     subtitle = 'Breakout';
                   }
-                  return _buildMapHall(hall.hallName, subtitle, isHighlighted);
+                  return _buildMapHall(displayName, subtitle, isHighlighted);
                 },
               ),
             ),
@@ -1116,83 +1169,56 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               ],
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GalleryTab(isStandalone: true),
+            Builder(
+              builder: (context) {
+                final galProvider = Provider.of<GalleryProvider>(context);
+                final List<String> galleryPhotos = [];
+                for (var g in galProvider.sessions) {
+                  galleryPhotos.addAll(g.photos);
+                }
+                final displayPhotos = galleryPhotos.take(3).toList();
+                
+                return Row(
+                  children: List.generate(3, (index) {
+                    final hasImage = index < displayPhotos.length;
+                    final imgUrl = hasImage ? displayPhotos[index] : '';
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: index < 2 ? 12.0 : 0.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const GalleryTab(isStandalone: true),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            height: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: const Color(0xFF1E3A8A).withAlpha(30),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: hasImage && imgUrl.isNotEmpty
+                                ? Image.network(
+                                    imgUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (c, o, s) => const Center(
+                                      child: Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                                    ),
+                                  )
+                                : const Center(
+                                    child: Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                                  ),
+                          ),
                         ),
-                      );
-                    },
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        color: Colors.black12,
                       ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&auto=format&fit=crop',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GalleryTab(isStandalone: true),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        color: Colors.black12,
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=400&auto=format&fit=crop',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GalleryTab(isStandalone: true),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        color: Colors.black12,
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                    );
+                  }),
+                );
+              },
             ),
             const SizedBox(height: 24),
           ],

@@ -54,14 +54,14 @@ class AuthProvider with ChangeNotifier {
   String get userName => _profileData['full_name'] ?? _userName;
   bool get isSpeaker => userRole.toUpperCase() == 'SK';
 
-  String get email => _profileData['email'] ?? (isSpeaker ? 'sarah.ahmed@example.com' : 'alex.kumar@hotmail.com');
+  String get email => _profileData['email'] ?? '';
   String get mobile => _profileData['mobile'] ?? _phoneNumber;
-  String get specialization => _profileData['specialization'] ?? (isSpeaker ? 'Senior Pathologist' : 'Sr. Surgeon');
-  String get qualification => _profileData['qualification'] ?? (isSpeaker ? 'MD' : 'MS');
-  String get experienceYears => _profileData['experience_years'] ?? '10';
-  String get hospitalClinicName => _profileData['organisation_name'] ?? _profileData['hospital_clinic_name'] ?? (isSpeaker ? 'National Pathology Institute' : 'Medcare Hospitals');
-  String get medicalRegistrationNumber => _profileData['medical_registration_number'] ?? '123456';
-  String get designation => _profileData['designation'] ?? (isSpeaker ? 'Chief Speaker' : 'Sr. Consultant');
+  String get specialization => _profileData['specialization'] ?? '';
+  String get qualification => _profileData['qualification'] ?? '';
+  String get experienceYears => _profileData['experience_years'] ?? '';
+  String get hospitalClinicName => _profileData['organisation_name'] ?? _profileData['hospital_clinic_name'] ?? '';
+  String get medicalRegistrationNumber => _profileData['medical_registration_number'] ?? '';
+  String get designation => _profileData['designation'] ?? '';
   
   String get gender => _profileData['gender'] ?? '';
   String get state => _profileData['state'] ?? '';

@@ -267,30 +267,7 @@ class HomeProvider with ChangeNotifier {
 
   List<HomeStat> get stats => _stats;
 
-  final List<HomeSession> _featuredSessions = [
-    HomeSession(
-      title: 'AI-Powered Diagnostics: Transforming Clinical Decision-Making',
-      speaker: 'Dr. Sarah Chen',
-      speakerInitials: 'SC',
-      speakerBg: const Color(0xFF6366F1),
-      time: '09:00 AM',
-      hall: 'Hall A',
-      gradientStart: '0xFF4F46E5',
-      gradientEnd: '0xFF818CF8',
-      imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&auto=format&fit=crop',
-    ),
-    HomeSession(
-      title: 'Electronic Health Records: Achieving True Interoperability',
-      speaker: 'Dr. Marcus Johnson',
-      speakerInitials: 'MJ',
-      speakerBg: const Color(0xFFEC4899),
-      time: '10:30 AM',
-      hall: 'Hall B',
-      gradientStart: '0xFFDB2777',
-      gradientEnd: '0xFFF472B6',
-      imageUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&auto=format&fit=crop',
-    ),
-  ];
+  final List<HomeSession> _featuredSessions = [];
 
   List<HomeSession> get featuredSessions => _featuredSessions;
 
@@ -306,7 +283,7 @@ class HomeProvider with ChangeNotifier {
       colorStart: '0xFFF59E0B',
       colorEnd: '0xFFFCD34D',
       icon: Icons.museum_outlined,
-      imageUrl: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600',
+      imageUrl: '',
     ),
     HomeSightsee(
       title: 'Skyline Observation Deck',
@@ -315,7 +292,7 @@ class HomeProvider with ChangeNotifier {
       colorStart: '0xFFEF4444',
       colorEnd: '0xFFFCA5A5',
       icon: Icons.apartment_outlined,
-      imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
+      imageUrl: '',
     ),
   ];
 
@@ -378,6 +355,26 @@ class HomeProvider with ChangeNotifier {
               }
             }
 
+            String boothCode = '';
+            final boothsList = item['booths'] as List<dynamic>?;
+            if (boothsList != null && boothsList.isNotEmpty) {
+              final boothNumbers = <String>[];
+              for (var b in boothsList) {
+                if (b is Map) {
+                  final num = b['booth_number']?.toString().trim();
+                  if (num != null && num.isNotEmpty && !boothNumbers.contains(num)) {
+                    boothNumbers.add(num);
+                  }
+                }
+              }
+              if (boothNumbers.isNotEmpty) {
+                boothCode = boothNumbers.join(', ');
+              }
+            }
+            if (boothCode.isEmpty) {
+              boothCode = 'Booth $sponsorId';
+            }
+
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);
 
@@ -387,7 +384,7 @@ class HomeProvider with ChangeNotifier {
                 color: bg,
                 title: companyName,
                 subtitle: category,
-                booth: 'Booth $sponsorId',
+                booth: boothCode,
                 imageUrl: logoUrl,
               ),
             );
