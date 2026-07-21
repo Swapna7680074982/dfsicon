@@ -371,9 +371,8 @@ class HomeProvider with ChangeNotifier {
                 boothCode = boothNumbers.join(', ');
               }
             }
-            if (boothCode.isEmpty) {
-              boothCode = 'Booth $sponsorId';
-            }
+
+
 
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);

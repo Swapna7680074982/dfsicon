@@ -283,12 +283,8 @@ class ExploreProvider with ChangeNotifier {
               }
             }
 
-            if (boothCode.isEmpty) {
-              boothCode = 'Booth $sponsorId';
-            }
-            if (boothZone.isEmpty) {
-              boothZone = category.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall';
-            }
+
+
 
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);

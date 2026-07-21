@@ -51,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
             : '1';
         exploreProvider.fetchSponsors(summitId, auth.accessToken);
+        exploreProvider.fetchSummitBooths(summitId, auth.accessToken);
         sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
         sessionsProvider.fetchConfirmedSessions(auth.accessToken);
         workshopsProvider.fetchMyWorkshops(auth.accessToken);

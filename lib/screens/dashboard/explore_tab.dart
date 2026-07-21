@@ -28,16 +28,24 @@ class _ExploreTabState extends State<ExploreTab> {
     });
   }
 
-  Future<void> _fetchSponsors() async {
+  Future<void> _fetchSponsors({bool force = false}) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final explore = Provider.of<ExploreProvider>(context, listen: false);
-    // Skip fetch if data was already pre-fetched (e.g., from dashboard initState)
-    if (explore.exhibitors.isNotEmpty) return;
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     final String summitId = homeProvider.summits.isNotEmpty
         ? homeProvider.summits.first['summit_id']?.toString() ?? ''
         : '';
-    await explore.fetchSponsors(summitId, auth.accessToken);
+    
+    final futures = <Future>[];
+    if (force || explore.exhibitors.isEmpty) {
+      futures.add(explore.fetchSponsors(summitId, auth.accessToken));
+    }
+    if (force || explore.summitBooths.isEmpty) {
+      futures.add(explore.fetchSummitBooths(summitId, auth.accessToken));
+    }
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
   }
 
   @override

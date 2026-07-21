@@ -444,29 +444,31 @@ class HomeTab extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 12,
-                color: AppColors.textLight,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  booth,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+          if (booth.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 12,
+                  color: AppColors.textLight,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    booth,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -822,7 +824,10 @@ class HomeTab extends StatelessWidget {
       final String summitId = homeProvider.summits.isNotEmpty
           ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
           : '1';
-      await exploreProvider.fetchSponsors(summitId, authProvider.accessToken);
+      await Future.wait([
+        exploreProvider.fetchSponsors(summitId, authProvider.accessToken),
+        exploreProvider.fetchSummitBooths(summitId, authProvider.accessToken),
+      ]);
 
       if (context.mounted) {
         Navigator.of(context).pop();
@@ -853,7 +858,7 @@ class HomeTab extends StatelessWidget {
         name: homeExhibitor.title,
         category: homeExhibitor.subtitle,
         boothCode: homeExhibitor.booth,
-        boothZone: homeExhibitor.subtitle.toLowerCase() == 'featured' ? 'Featured Zone' : 'Exhibition Hall',
+        boothZone: '',
         initials: homeExhibitor.initials,
         bg: homeExhibitor.color,
         description: '',
