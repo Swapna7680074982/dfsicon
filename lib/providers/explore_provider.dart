@@ -293,6 +293,18 @@ class ExploreProvider with ChangeNotifier {
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);
 
+            final List<String> parsedProducts = [];
+            final rawProducts = item['products'] ?? item['products_services'] ?? item['services'];
+            if (rawProducts is List) {
+              for (var p in rawProducts) {
+                if (p != null && p.toString().trim().isNotEmpty) {
+                  parsedProducts.add(p.toString().trim());
+                }
+              }
+            } else if (rawProducts is String && rawProducts.trim().isNotEmpty) {
+              parsedProducts.addAll(rawProducts.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+            }
+
             fetchedList.add(
               Exhibitor(
                 id: sponsorId,
@@ -302,14 +314,10 @@ class ExploreProvider with ChangeNotifier {
                 boothZone: boothZone,
                 initials: initials,
                 bg: bg,
-                description: description.isEmpty ? 'Exhibitor & Sponsor' : description,
-                products: const [
-                  'Healthcare Infrastructure',
-                  'Clinical Operations Management',
-                  'Vibrant Medical Technologies',
-                ],
-                website: website.isEmpty ? 'heterohcl.com' : website,
-                email: email.isEmpty ? 'sponsors@heterohcl.com' : email,
+                description: description,
+                products: parsedProducts,
+                website: website,
+                email: email,
                 logoUrl: logoUrl,
                 bannerUrl: bannerUrl,
                 brochureUrl: brochureUrl,

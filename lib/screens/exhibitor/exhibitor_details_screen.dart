@@ -145,129 +145,130 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(240),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.tileBorder, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    exhibitor.description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(240),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.tileBorder, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'PRODUCTS & SERVICES',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  ...exhibitor.products.map((p) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 6),
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              p,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
+            if (exhibitor.description.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(240),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.tileBorder, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exhibitor.description,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                        height: 1.5,
                       ),
-                    );
-                  }),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final String? url = exhibitor.brochureUrl;
-                        if (url != null && url.isNotEmpty) {
-                          final Uri uri = Uri.parse(url);
-                          try {
-                            await launchUrl(uri, mode: LaunchMode.externalApplication);
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to open brochure: $e'),
-                                  behavior: SnackBarBehavior.floating,
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                            }
-                          }
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('No brochure available for ${exhibitor.name}.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.download, size: 18),
-                      label: const Text(
-                        'DOWNLOAD BROCHURE',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (exhibitor.products.isNotEmpty || (exhibitor.brochureUrl != null && exhibitor.brochureUrl!.isNotEmpty)) ...[
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(240),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.tileBorder, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (exhibitor.products.isNotEmpty) ...[
+                      const Text(
+                        'PRODUCTS & SERVICES',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: Color(0xFFD1CBEF), width: 1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      const SizedBox(height: 14),
+                      ...exhibitor.products.map((p) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 6),
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  p,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                    if (exhibitor.brochureUrl != null && exhibitor.brochureUrl!.isNotEmpty) ...[
+                      if (exhibitor.products.isNotEmpty) const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final String? url = exhibitor.brochureUrl;
+                            if (url != null && url.isNotEmpty) {
+                              final Uri uri = Uri.parse(url);
+                              try {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to open brochure: $e'),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.download, size: 18),
+                          label: const Text(
+                            'DOWNLOAD BROCHURE',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: Color(0xFFD1CBEF), width: 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  ],
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 24),
             Consumer<ExploreProvider>(
               builder: (context, expProvider, child) {
@@ -417,38 +418,43 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(240),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.tileBorder, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'CONTACT',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+            if (exhibitor.website.isNotEmpty || exhibitor.email.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(240),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.tileBorder, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'CONTACT',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildContactRow(
-                    icon: Icons.language,
-                    text: exhibitor.website,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildContactRow(
-                    icon: Icons.email_outlined,
-                    text: exhibitor.email,
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    if (exhibitor.website.isNotEmpty)
+                      _buildContactRow(
+                        icon: Icons.language,
+                        text: exhibitor.website,
+                      ),
+                    if (exhibitor.website.isNotEmpty && exhibitor.email.isNotEmpty)
+                      const SizedBox(height: 14),
+                    if (exhibitor.email.isNotEmpty)
+                      _buildContactRow(
+                        icon: Icons.email_outlined,
+                        text: exhibitor.email,
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 30),
           ],
         ),
