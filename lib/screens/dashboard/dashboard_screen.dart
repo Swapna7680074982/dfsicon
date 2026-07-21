@@ -38,9 +38,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
       
       if (auth.isSpeaker) {
-        // Speakers only need summits for profile/event name info.
-        // Other speaker data is fetched in their respective tabs.
         await homeProvider.fetchSummits(auth.accessToken);
+        final String summitId = homeProvider.summits.isNotEmpty
+            ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+            : '1';
+        sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
+        sessionsProvider.fetchMyConfirmedSessions(auth.accessToken);
       } else {
         // Delegate flow
         await homeProvider.fetchSummits(auth.accessToken);

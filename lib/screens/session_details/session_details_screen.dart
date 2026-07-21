@@ -472,11 +472,11 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
-            'SESSION DETAILS',
+            'Session Details',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 22,
+              fontSize: 18,
             ),
           ),
           centerTitle: true,
@@ -603,7 +603,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             Text(
               widget.session.title.toUpperCase(),
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
                 height: 1.3,
@@ -803,7 +803,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'ABOUT THIS SESSION',
+              'About This Session',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -823,7 +823,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ),
             const SizedBox(height: 28),
             const Text(
-              'SPEAKER',
+              'Speaker',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -955,7 +955,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'PARTICIPANTS',
+                    'Participants',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1016,7 +1016,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                             Icon(Icons.people_outline, size: 16, color: AppColors.textSecondary),
                             SizedBox(width: 6),
                             Text(
-                              'VIEW PARTICIPANTS',
+                              'View Participants',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -1031,7 +1031,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 ),
             ] else ...[
               const Text(
-                'PARTICIPANTS',
+                'Participants',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1088,7 +1088,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             ],
             const SizedBox(height: 28),
             const Text(
-              'CONVENTION CENTER MAP',
+              'Convention Center Map',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1122,17 +1122,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                   final hall = halls[index];
                   final isHighlighted = checkHighlight(hall.hallName, hall.hallLabel);
                   final displayName = hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName;
-                  String subtitle = 'Venue Hall';
-                  if (hall.hallName.toLowerCase().contains('1') || hall.hallName.toLowerCase().contains('a')) {
-                    subtitle = 'Auditorium';
-                  } else if (hall.hallName.toLowerCase().contains('2') || hall.hallName.toLowerCase().contains('b')) {
-                    subtitle = 'Conference';
-                  } else if (hall.hallName.toLowerCase().contains('3') || hall.hallName.toLowerCase().contains('c')) {
-                    subtitle = 'Workshop';
-                  } else if (hall.hallName.toLowerCase().contains('4') || hall.hallName.toLowerCase().contains('d')) {
-                    subtitle = 'Breakout';
-                  }
-                  return _buildMapHall(displayName, subtitle, isHighlighted);
+                  return _buildMapHall(displayName, '', isHighlighted);
                 },
               ),
             ),
@@ -1282,25 +1272,37 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
       child: Stack(
         children: [
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isHighlighted ? Colors.green.shade800 : Colors.grey.shade400,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isHighlighted ? Colors.green.shade800 : AppColors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isHighlighted ? Colors.green.shade700 : Colors.grey.shade400,
-                  ),
-                ),
-              ],
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isHighlighted ? Colors.green.shade700 : AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           if (isHighlighted)

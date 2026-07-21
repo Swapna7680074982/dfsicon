@@ -272,31 +272,67 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                         ],
                         const SizedBox(height: 24),
                         if (expProvider.summitBooths.isNotEmpty) ...[
-                          const Text(
-                            'Summit Exhibition Booths',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.storefront_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Summit Exhibition Booths',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withAlpha(15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${expProvider.summitBooths.length} Booths',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           Wrap(
                             spacing: 10,
                             runSpacing: 10,
                             children: expProvider.summitBooths.map((booth) {
+                              final cleanBoothNum = booth.boothNumber.replaceAll('#', '').trim();
+                              final displayBoothNum = cleanBoothNum.isNotEmpty ? '$cleanBoothNum' : 'Booth';
+
                               return Container(
                                 width: (MediaQuery.of(context).size.width - 50) / 2,
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(240),
+                                  color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.primary.withAlpha(50), width: 1),
+                                  border: Border.all(color: AppColors.primary.withAlpha(35), width: 1),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withAlpha(10),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
                                     ),
                                   ],
                                 ),
@@ -305,12 +341,36 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(
-                                          Icons.storefront_rounded,
-                                          size: 18,
-                                          color: AppColors.primary,
+                                        Container(
+                                          width: 26,
+                                          height: 26,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withAlpha(15),
+                                            borderRadius: BorderRadius.circular(7),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: booth.logo != null && booth.logo!.isNotEmpty
+                                              ? ClipRRect(
+                                                  borderRadius: BorderRadius.circular(5),
+                                                  child: Image.network(
+                                                    booth.logo!,
+                                                    width: 18,
+                                                    height: 18,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (c, o, s) => const Icon(
+                                                      Icons.storefront_rounded,
+                                                      size: 16,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
+                                                )
+                                              : const Icon(
+                                                  Icons.storefront_rounded,
+                                                  size: 16,
+                                                  color: AppColors.primary,
+                                                ),
                                         ),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             booth.boothLabel,
@@ -318,6 +378,7 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                               color: AppColors.textPrimary,
+                                              height: 1.2,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -327,23 +388,66 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      'Booth #${booth.boothNumber}',
+                                      displayBoothNum,
                                       style: const TextStyle(
                                         fontSize: 12,
+                                        fontWeight: FontWeight.w500,
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
-                                    if (booth.boothCapacity != '0' && booth.boothCapacity.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
+                                    if (booth.companyName != null && booth.companyName!.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        booth.companyName!,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                    if (booth.sponsorType != null && booth.sponsorType!.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withAlpha(15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
                                         child: Text(
-                                          'Capacity: ${booth.boothCapacity}',
+                                          booth.sponsorType!,
                                           style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.textLight,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                    ],
+                                    if (booth.boothCapacity != '0' && booth.boothCapacity.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.groups_outlined,
+                                            size: 12,
+                                            color: AppColors.textLight,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Capacity: ${booth.boothCapacity}',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: AppColors.textLight,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
                                 ),
                               );

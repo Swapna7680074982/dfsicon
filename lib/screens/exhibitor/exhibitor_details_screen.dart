@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../providers/explore_provider.dart';
@@ -268,47 +269,153 @@ class ExhibitorDetailsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(240),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.tileBorder, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'BOOTH LOCATION',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+            Consumer<ExploreProvider>(
+              builder: (context, expProvider, child) {
+                final booths = expProvider.summitBooths.isNotEmpty
+                    ? expProvider.summitBooths
+                    : (exhibitor.booths.isNotEmpty
+                        ? exhibitor.booths
+                        : [
+                            BoothItem(
+                              boothId: '1',
+                              boothNumber: exhibitor.boothCode,
+                              boothLabel: exhibitor.boothZone,
+                              boothCapacity: '0',
+                              companyName: exhibitor.name,
+                              logo: exhibitor.logoUrl,
+                              isOccupied: true,
+                            ),
+                          ]);
+
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(240),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.tileBorder, width: 1),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Convention Center / Floor Plan / ${exhibitor.boothCode}'.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'BOOTH LOCATION & BLUEPRINT',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Convention Center / ${exhibitor.boothCode}'.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.6,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                        itemCount: booths.length,
+                        itemBuilder: (context, index) {
+                          final b = booths[index];
+                          final isCurrentExhibitor = (b.sponsorId != null && b.sponsorId == exhibitor.id) ||
+                              (b.companyName != null && b.companyName!.toLowerCase() == exhibitor.name.toLowerCase()) ||
+                              exhibitor.boothCode.toLowerCase().contains(b.boothNumber.toLowerCase());
+
+                          final logoPath = (b.logo != null && b.logo!.isNotEmpty) ? b.logo : (isCurrentExhibitor ? exhibitor.logoUrl : null);
+
+                          return Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isCurrentExhibitor ? const Color(0xFFEEF2FF) : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isCurrentExhibitor ? const Color(0xFF6366F1) : Colors.grey.shade300,
+                                width: isCurrentExhibitor ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (logoPath != null && logoPath.isNotEmpty)
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.network(
+                                          logoPath,
+                                          width: 22,
+                                          height: 22,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, o, s) => Icon(
+                                            Icons.storefront_rounded,
+                                            size: 18,
+                                            color: isCurrentExhibitor ? const Color(0xFF6366F1) : AppColors.primary,
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      Icon(
+                                        Icons.storefront_rounded,
+                                        size: 18,
+                                        color: isCurrentExhibitor ? const Color(0xFF6366F1) : AppColors.textLight,
+                                      ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        b.boothNumber.isNotEmpty ? b.boothNumber : b.boothLabel,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: isCurrentExhibitor ? const Color(0xFF1E1B4B) : AppColors.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  b.boothLabel,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isCurrentExhibitor ? const Color(0xFF4338CA) : AppColors.textSecondary,
+                                    fontWeight: isCurrentExhibitor ? FontWeight.w600 : FontWeight.normal,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (b.companyName != null && b.companyName!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    b.companyName!,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: isCurrentExhibitor ? const Color(0xFF6366F1) : AppColors.textLight,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 240,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade100, width: 1),
-                    ),
-                    child: CustomPaint(
-                      painter: ExhibitorFloorPlanPainter(boothCode: exhibitor.boothCode),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
             const SizedBox(height: 24),
             Container(
@@ -378,141 +485,4 @@ class ExhibitorDetailsScreen extends StatelessWidget {
   }
 }
 
-class ExhibitorFloorPlanPainter extends CustomPainter {
-  final String boothCode;
 
-  const ExhibitorFloorPlanPainter({required this.boothCode});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paintLine = Paint()
-      ..color = Colors.grey.shade300
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final fillHighlight = Paint()
-      ..color = const Color(0xFFEEF2FF)
-      ..style = PaintingStyle.fill;
-
-    final borderHighlight = Paint()
-      ..color = const Color(0xFF6366F1)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    final fillOther = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
-
-    final codeClean = boothCode.toLowerCase().replaceAll('-', ' ').replaceAll('_', ' ');
-    final isBooth1 = codeClean.contains('booth 1');
-    final isBooth2 = codeClean.contains('booth 2');
-    final isBooth3 = codeClean.contains('booth 3');
-    final isBooth4 = codeClean.contains('booth 4');
-    final isBooth5 = codeClean.contains('booth 5');
-    final isBooth6 = codeClean.contains('booth 6');
-
-    final hallARect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 16, (size.width - 48) * 0.45, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(hallARect, isBooth1 ? fillHighlight : fillOther);
-    canvas.drawRRect(hallARect, isBooth1 ? borderHighlight : paintLine);
-
-    final hallBRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.45, 16, (size.width - 48) * 0.55, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(hallBRect, isBooth2 ? fillHighlight : fillOther);
-    canvas.drawRRect(hallBRect, isBooth2 ? borderHighlight : paintLine);
-
-    final roomCRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 88, (size.width - 48) * 0.3, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(roomCRect, isBooth3 ? fillHighlight : fillOther);
-    canvas.drawRRect(roomCRect, isBooth3 ? borderHighlight : paintLine);
-
-    final lobbyRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.3, 88, (size.width - 48) * 0.7, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(lobbyRect, fillOther);
-    canvas.drawRRect(lobbyRect, paintLine);
-
-    final roomDRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(16, 160, (size.width - 48) * 0.33, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(roomDRect, isBooth4 ? fillHighlight : fillOther);
-    canvas.drawRRect(roomDRect, isBooth4 ? borderHighlight : paintLine);
-
-    final booth5Rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(24 + (size.width - 48) * 0.33, 160, (size.width - 48) * 0.33, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(booth5Rect, isBooth5 ? fillHighlight : fillOther);
-    canvas.drawRRect(booth5Rect, isBooth5 ? borderHighlight : paintLine);
-
-    final booth6Rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(32 + (size.width - 48) * 0.66, 160, (size.width - 48) * 0.34, 60),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(booth6Rect, isBooth6 ? fillHighlight : fillOther);
-    canvas.drawRRect(booth6Rect, isBooth6 ? borderHighlight : paintLine);
-
-    _drawCenterText(canvas, textPainter, 'Booth 1', Offset(16 + (size.width - 48) * 0.225, 46), isHighlighted: isBooth1);
-    _drawCenterText(canvas, textPainter, 'Booth 2', Offset(24 + (size.width - 48) * 0.725, 46), isHighlighted: isBooth2);
-    _drawCenterText(canvas, textPainter, 'Booth 3', Offset(16 + (size.width - 48) * 0.15, 118), isHighlighted: isBooth3);
-    _drawCenterText(canvas, textPainter, 'Lobby', Offset(24 + (size.width - 48) * 0.65, 118));
-    _drawCenterText(canvas, textPainter, 'Booth 4', Offset(16 + (size.width - 48) * 0.165, 190), isHighlighted: isBooth4);
-    _drawCenterText(canvas, textPainter, 'Booth 5', Offset(24 + (size.width - 48) * 0.495, 190), isHighlighted: isBooth5);
-    _drawCenterText(canvas, textPainter, 'Booth 6', Offset(32 + (size.width - 48) * 0.83, 190), isHighlighted: isBooth6);
-
-    final dotPaint = Paint()
-      ..color = const Color(0xFF6366F1)
-      ..style = PaintingStyle.fill;
-    final outerDotPaint = Paint()
-      ..color = const Color(0xFF6366F1).withAlpha(40)
-      ..style = PaintingStyle.fill;
-
-    Offset? targetOffset;
-    if (isBooth1) {
-      targetOffset = Offset(16 + (size.width - 48) * 0.225, 46);
-    } else if (isBooth2) {
-      targetOffset = Offset(24 + (size.width - 48) * 0.725, 46);
-    } else if (isBooth3) {
-      targetOffset = Offset(16 + (size.width - 48) * 0.15, 118);
-    } else if (isBooth4) {
-      targetOffset = Offset(16 + (size.width - 48) * 0.165, 190);
-    } else if (isBooth5) {
-      targetOffset = Offset(24 + (size.width - 48) * 0.495, 190);
-    } else if (isBooth6) {
-      targetOffset = Offset(32 + (size.width - 48) * 0.83, 190);
-    }
-
-    if (targetOffset != null) {
-      canvas.drawCircle(Offset(targetOffset.dx, targetOffset.dy + 12), 10, outerDotPaint);
-      canvas.drawCircle(Offset(targetOffset.dx, targetOffset.dy + 12), 4, dotPaint);
-    }
-  }
-
-  void _drawCenterText(Canvas canvas, TextPainter tp, String text, Offset center, {bool isHighlighted = false}) {
-    tp.text = TextSpan(
-      text: text,
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
-        color: isHighlighted ? const Color(0xFF2B1F7D) : AppColors.textSecondary,
-      ),
-    );
-    tp.layout();
-    tp.paint(canvas, Offset(center.dx - tp.width / 2, center.dy - tp.height / 2));
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

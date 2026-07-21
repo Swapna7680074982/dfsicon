@@ -147,18 +147,28 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
 
     final sessionDetails = (topicDetails != null && topicDetails['session_details'] is Map)
         ? topicDetails['session_details'] as Map<String, dynamic>
-        : (sessionData != null && sessionData['session_details'] is Map)
-            ? sessionData['session_details'] as Map<String, dynamic>
-            : null;
+        : (topicDetails != null && topicDetails['session'] is Map)
+            ? topicDetails['session'] as Map<String, dynamic>
+            : (sessionData != null && sessionData['session_details'] is Map)
+                ? sessionData['session_details'] as Map<String, dynamic>
+                : (sessionData != null && sessionData['session'] is Map)
+                    ? sessionData['session'] as Map<String, dynamic>
+                    : null;
 
     final String hallLabel = sessionDetails?['hall_label']?.toString() ??
         topicDetails?['hall_label']?.toString() ??
+        (topicDetails?['hall'] is Map ? topicDetails!['hall']['hall_label']?.toString() : null) ??
         sessionData?['hall_label']?.toString() ??
+        (sessionData?['hall'] is Map ? sessionData!['hall']['hall_label']?.toString() : null) ??
         '';
 
     final String hallName = sessionDetails?['hall_name']?.toString() ??
         topicDetails?['hall_name']?.toString() ??
+        (topicDetails?['hall'] is Map ? topicDetails!['hall']['hall_name']?.toString() : null) ??
+        (topicDetails?['hall'] is String ? topicDetails!['hall'].toString() : null) ??
         sessionData?['hall_name']?.toString() ??
+        (sessionData?['hall'] is Map ? sessionData!['hall']['hall_name']?.toString() : null) ??
+        (sessionData?['hall'] is String ? sessionData!['hall'].toString() : null) ??
         '';
 
     final String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
@@ -255,7 +265,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'SESSION DETAILS',
+          'Session Details',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -348,7 +358,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
             const SizedBox(height: 28),
             if (coordinatorName.trim().isNotEmpty && coordinatorName.trim().toUpperCase() != 'NOT ASSIGNED') ...[
               const Text(
-                'COORDINATOR DETAILS',
+                'Coordinator Details',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -419,7 +429,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ),
             ] else ...[
               const Text(
-                'SPEAKER DETAILS',
+                'Speaker Details',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -515,7 +525,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
             ],
             const SizedBox(height: 28),
             const Text(
-              'SESSION DESCRIPTION',
+              'Session Description',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -550,7 +560,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'PARTICIPANTS',
+                      'Participants',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -560,7 +570,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                     Row(
                       children: [
                         Text(
-                          '${connProvider.participantsCount} ATTENDING',
+                          '${connProvider.participantsCount} attending',
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
@@ -621,7 +631,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ),
             const SizedBox(height: 28),
             const Text(
-              'CONVENTION CENTER MAP',
+              'Convention Center Map',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -655,17 +665,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                   final hall = halls[index];
                   final isHighlighted = checkHighlight(hall.hallName, hall.hallLabel);
                   final displayName = hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName;
-                  String subtitle = 'Venue Hall';
-                  if (hall.hallName.toLowerCase().contains('1') || hall.hallName.toLowerCase().contains('a')) {
-                    subtitle = 'Auditorium';
-                  } else if (hall.hallName.toLowerCase().contains('2') || hall.hallName.toLowerCase().contains('b')) {
-                    subtitle = 'Conference';
-                  } else if (hall.hallName.toLowerCase().contains('3') || hall.hallName.toLowerCase().contains('c')) {
-                    subtitle = 'Workshop';
-                  } else if (hall.hallName.toLowerCase().contains('4') || hall.hallName.toLowerCase().contains('d')) {
-                    subtitle = 'Breakout';
-                  }
-                  return _buildMapHall(displayName, subtitle, isHighlighted);
+                  return _buildMapHall(displayName, '', isHighlighted);
                 },
               ),
             ),
@@ -747,25 +747,37 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       child: Stack(
         children: [
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isHighlighted ? Colors.green.shade800 : Colors.grey.shade400,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isHighlighted ? Colors.green.shade800 : AppColors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isHighlighted ? Colors.green.shade700 : Colors.grey.shade400,
-                  ),
-                ),
-              ],
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isHighlighted ? Colors.green.shade700 : AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           if (isHighlighted)

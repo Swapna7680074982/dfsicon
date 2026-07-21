@@ -552,50 +552,86 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                           ),
                           const SizedBox(width: 14),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                            child: Builder(
+                              builder: (context) {
+                                final topicMap = myTopics.first;
+                                final statusStr = (topicMap['status'] ?? '').toString();
+                                final hallLoc = _getHallLocationString(topicMap, sessionsProvider);
+                                final hasHall = statusStr == 'Confirmed' || hallLoc.isNotEmpty;
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEEECF9),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'ID: ${myTopics.first['topic_id']}',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEEECF9),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            'ID: ${topicMap['topic_id']}',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
                                         ),
+                                        const SizedBox(width: 8),
+                                        _buildStatusBadge(topicMap['status'] ?? 'Approved'),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      (topicMap['title'] ?? '').toString(),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    _buildStatusBadge(myTopics.first['status'] ?? 'Approved'),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${(topicMap['category_of_submission'] ?? 'Oral Presentation').toString()} · ${TimeFormatter.formatString(topicMap['created_on']?.toString() ?? '')}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textLight,
+                                      ),
+                                    ),
+                                    if (hasHall) ...[
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.meeting_room_outlined,
+                                            size: 14,
+                                            color: AppColors.primary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              hallLoc.isNotEmpty
+                                                  ? (hallLoc.toLowerCase().startsWith('hall') ? hallLoc : 'Hall: $hallLoc')
+                                                  : 'Hall: Confirmed & Assigned',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.primary,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  (myTopics.first['title'] ?? '').toString(),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${(myTopics.first['category_of_submission'] ?? 'Oral Presentation').toString()} · ${TimeFormatter.formatString(myTopics.first['created_on']?.toString() ?? '')}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textLight,
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -788,6 +824,51 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
         ),
       ),
     );
+  }
+
+  String _getHallLocationString(Map<String, dynamic> topicData, SessionsProvider? sessionsProv) {
+    final sessDetails = (topicData['session_details'] is Map)
+        ? topicData['session_details'] as Map<String, dynamic>
+        : null;
+    final hallMap = (topicData['hall'] is Map) ? topicData['hall'] as Map<String, dynamic> : null;
+
+    final String hallLabel = sessDetails?['hall_label']?.toString() ??
+        topicData['hall_label']?.toString() ??
+        hallMap?['hall_label']?.toString() ??
+        '';
+
+    final String hallName = sessDetails?['hall_name']?.toString() ??
+        topicData['hall_name']?.toString() ??
+        hallMap?['hall_name']?.toString() ??
+        (topicData['hall'] is String ? topicData['hall'].toString() : null) ??
+        '';
+
+    final String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+    final String venueName = sessDetails?['venue_name']?.toString() ?? topicData['venue_name']?.toString() ?? '';
+
+    if (displayHall.isNotEmpty && venueName.isNotEmpty) {
+      return '$displayHall, $venueName';
+    } else if (displayHall.isNotEmpty) {
+      return displayHall;
+    } else if (venueName.isNotEmpty) {
+      return venueName;
+    }
+
+    if (sessionsProv != null) {
+      final topicIdStr = topicData['topic_id']?.toString() ?? topicData['abstract_id']?.toString() ?? '';
+      if (topicIdStr.isNotEmpty) {
+        try {
+          final match = sessionsProv.mySessions.firstWhere(
+            (s) => s.topicId == topicIdStr || s.id.toString() == topicIdStr,
+          );
+          if (match.location.isNotEmpty) {
+            return match.location;
+          }
+        } catch (_) {}
+      }
+    }
+
+    return '';
   }
 
   Widget _buildStatusBadge(String status) {

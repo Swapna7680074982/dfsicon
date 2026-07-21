@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 import '../main.dart';
+import '../constants/api_urls.dart';
 
 class BoothItem {
   final String boothId;
@@ -10,6 +11,15 @@ class BoothItem {
   final String boothLabel;
   final String boothCapacity;
   final String status;
+  final String? assignmentId;
+  final String? sponsorId;
+  final String? companyName;
+  final String? sponsorType;
+  final String? boothType;
+  final String? sizeSqft;
+  final String? price;
+  final String? logo;
+  final bool isOccupied;
 
   const BoothItem({
     required this.boothId,
@@ -17,17 +27,51 @@ class BoothItem {
     required this.boothLabel,
     required this.boothCapacity,
     this.status = '1',
+    this.assignmentId,
+    this.sponsorId,
+    this.companyName,
+    this.sponsorType,
+    this.boothType,
+    this.sizeSqft,
+    this.price,
+    this.logo,
+    this.isOccupied = false,
   });
 
   factory BoothItem.fromJson(Map<String, dynamic> json) {
     final num = json['booth_number']?.toString() ?? '';
     final label = json['booth_label']?.toString() ?? '';
+    final rawLogo = json['logo']?.toString() ?? json['company_logo']?.toString() ?? json['sponsor_logo']?.toString();
+    String? cleanLogo = rawLogo;
+    if (cleanLogo != null) {
+      cleanLogo = cleanLogo.trim();
+      if (cleanLogo.isEmpty || cleanLogo == 'null' || cleanLogo == 'NA') {
+        cleanLogo = null;
+      } else if (!cleanLogo.startsWith('http')) {
+        cleanLogo = '${ApiUrls.domain}/$cleanLogo'.replaceAll('//dfs-icon', '/dfs-icon');
+      }
+    }
+
+    final isOcc = json['is_occupied'] == true ||
+        json['is_occupied'] == 'true' ||
+        json['is_occupied'] == 1 ||
+        json['is_occupied'] == '1';
+
     return BoothItem(
       boothId: json['booth_id']?.toString() ?? '',
       boothNumber: num,
-      boothLabel: label.isNotEmpty ? label : (num.isNotEmpty ? 'Booth $num' : 'Booth'),
-      boothCapacity: json['booth_capacity']?.toString() ?? '0',
+      boothLabel: label.isNotEmpty ? label : (num.isNotEmpty ? num : 'Booth'),
+      boothCapacity: json['booth_capacity']?.toString() ?? json['size_sqft']?.toString() ?? '0',
       status: json['status']?.toString() ?? '1',
+      assignmentId: json['assignment_id']?.toString(),
+      sponsorId: json['sponsor_id']?.toString(),
+      companyName: json['company_name']?.toString() ?? json['organisation']?.toString(),
+      sponsorType: json['sponsor_type']?.toString() ?? json['sponsor_type_id']?.toString() ?? json['sponsor_title']?.toString(),
+      boothType: json['booth_type']?.toString(),
+      sizeSqft: json['size_sqft']?.toString(),
+      price: json['price']?.toString(),
+      logo: cleanLogo,
+      isOccupied: isOcc,
     );
   }
 }
@@ -395,9 +439,24 @@ class ExploreProvider with ChangeNotifier {
         return false;
       }
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == true && data['data'] != null) {
-          final List list = (data['data'] is List) ? data['data'] : (data['data']['booths'] ?? []);
+        dynamic data;
+        try {
+          data = json.decode(response.body);
+        } catch (_) {
+          final trimmed = response.body.trim();
+          final idx = trimmed.indexOf('{');
+          if (idx != -1) {
+            data = json.decode(trimmed.substring(idx));
+          }
+        }
+        if (data != null && data['status'] == true) {
+          final List list = (data['data'] is List)
+              ? data['data']
+              : (data['data'] is Map && data['data']['booths'] is List)
+                  ? data['data']['booths']
+                  : (data['booths'] is List)
+                      ? data['booths']
+                      : [];
           _summitBooths = list
               .whereType<Map<String, dynamic>>()
               .map((b) => BoothItem.fromJson(b))
@@ -405,7 +464,7 @@ class ExploreProvider with ChangeNotifier {
           notifyListeners();
           return true;
         } else {
-          _boothsError = data['message'] ?? 'Failed to fetch summit booths';
+          _boothsError = data?['message'] ?? 'Failed to fetch summit booths';
         }
       } else {
         _boothsError = 'Server error: ${response.statusCode}';

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
+import '../../providers/sessions_provider.dart';
 import 'abstract_detail_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
@@ -293,8 +294,56 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   }
 
 
+  String _getHallLocationString(Map<String, dynamic> topicData, SessionsProvider? sessionsProv) {
+    final sessDetails = (topicData['session_details'] is Map)
+        ? topicData['session_details'] as Map<String, dynamic>
+        : null;
+    final hallMap = (topicData['hall'] is Map) ? topicData['hall'] as Map<String, dynamic> : null;
+
+    final String hallLabel = sessDetails?['hall_label']?.toString() ??
+        topicData['hall_label']?.toString() ??
+        hallMap?['hall_label']?.toString() ??
+        '';
+
+    final String hallName = sessDetails?['hall_name']?.toString() ??
+        topicData['hall_name']?.toString() ??
+        hallMap?['hall_name']?.toString() ??
+        (topicData['hall'] is String ? topicData['hall'].toString() : null) ??
+        '';
+
+    final String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+    final String venueName = sessDetails?['venue_name']?.toString() ?? topicData['venue_name']?.toString() ?? '';
+
+    if (displayHall.isNotEmpty && venueName.isNotEmpty) {
+      return '$displayHall, $venueName';
+    } else if (displayHall.isNotEmpty) {
+      return displayHall;
+    } else if (venueName.isNotEmpty) {
+      return venueName;
+    }
+
+    if (sessionsProv != null) {
+      final topicIdStr = topicData['topic_id']?.toString() ?? topicData['abstract_id']?.toString() ?? '';
+      if (topicIdStr.isNotEmpty) {
+        try {
+          final match = sessionsProv.mySessions.firstWhere(
+            (s) => s.topicId == topicIdStr || s.id.toString() == topicIdStr,
+          );
+          if (match.location.isNotEmpty) {
+            return match.location;
+          }
+        } catch (_) {}
+      }
+    }
+
+    return '';
+  }
+
   Widget _buildAbstractItemCard(BuildContext context, Map<String, dynamic> abs) {
     final status = (abs['status'] ?? 'Approved').toString();
+    final sessionsProv = Provider.of<SessionsProvider>(context, listen: false);
+    final hallLoc = _getHallLocationString(abs, sessionsProv);
+
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
@@ -430,6 +479,33 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                       color: AppColors.textLight,
                     ),
                   ),
+                  if (status == 'Confirmed' || hallLoc.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.meeting_room_outlined,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            hallLoc.isNotEmpty
+                                ? (hallLoc.toLowerCase().startsWith('hall') ? hallLoc : 'Hall: $hallLoc')
+                                : 'Hall: Confirmed & Assigned',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

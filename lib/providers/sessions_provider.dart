@@ -447,10 +447,19 @@ class SessionsProvider extends ChangeNotifier {
 
     final sessDetails = (json['session_details'] is Map)
         ? json['session_details'] as Map<String, dynamic>
-        : null;
+        : (json['session'] is Map)
+            ? json['session'] as Map<String, dynamic>
+            : null;
 
-    final hallLabel = sessDetails?['hall_label']?.toString() ?? json['hall_label']?.toString() ?? '';
-    final hallName = sessDetails?['hall_name']?.toString() ?? json['hall_name']?.toString() ?? '';
+    final hallLabel = sessDetails?['hall_label']?.toString() ??
+        json['hall_label']?.toString() ??
+        (json['hall'] is Map ? json['hall']['hall_label']?.toString() : null) ??
+        '';
+    final hallName = sessDetails?['hall_name']?.toString() ??
+        json['hall_name']?.toString() ??
+        (json['hall'] is Map ? json['hall']['hall_name']?.toString() : null) ??
+        (json['hall'] is String ? json['hall'].toString() : null) ??
+        '';
     final displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
 
     final slotLabel = sessDetails?['slot_label']?.toString() ?? json['slot_label']?.toString() ?? '';
@@ -638,8 +647,15 @@ class SessionsProvider extends ChangeNotifier {
       timeStr = slotName;
     }
 
-    final hallLabel = sessDetails?['hall_label']?.toString() ?? json['hall_label']?.toString() ?? '';
-    final hallName = sessDetails?['hall_name']?.toString() ?? json['hall_name']?.toString() ?? '';
+    final hallLabel = sessDetails?['hall_label']?.toString() ??
+        json['hall_label']?.toString() ??
+        (json['hall'] is Map ? json['hall']['hall_label']?.toString() : null) ??
+        '';
+    final hallName = sessDetails?['hall_name']?.toString() ??
+        json['hall_name']?.toString() ??
+        (json['hall'] is Map ? json['hall']['hall_name']?.toString() : null) ??
+        (json['hall'] is String ? json['hall'].toString() : null) ??
+        '';
     final displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
 
     final venueName = sessDetails?['venue_name']?.toString() ?? json['venue_name']?.toString() ?? '';

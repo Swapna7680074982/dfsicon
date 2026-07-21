@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
+import '../../providers/sessions_provider.dart';
 import 'edit_topic_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
@@ -65,6 +66,8 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
     final details = abstractProvider.selectedTopicDetails;
     final isLoading = abstractProvider.isLoadingTopicDetails;
 
+    final sessionsProv = Provider.of<SessionsProvider>(context);
+
     // Fallbacks from parameters
     final String title = details != null ? (details['title'] ?? widget.initialTitle).toString() : widget.initialTitle;
     final String status = details != null ? (details['status'] ?? widget.initialStatus).toString() : widget.initialStatus;
@@ -84,6 +87,59 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
     final List<dynamic> attachedFiles = details != null && details['files'] != null
         ? details['files'] as List<dynamic>
         : [];
+
+    final sessDetails = (details != null && details['session_details'] is Map)
+        ? details['session_details'] as Map<String, dynamic>
+        : null;
+    final hallMap = (details != null && details['hall'] is Map)
+        ? details['hall'] as Map<String, dynamic>
+        : null;
+
+    final String hallLabel = sessDetails?['hall_label']?.toString() ??
+        details?['hall_label']?.toString() ??
+        hallMap?['hall_label']?.toString() ??
+        '';
+
+    final String hallName = sessDetails?['hall_name']?.toString() ??
+        details?['hall_name']?.toString() ??
+        hallMap?['hall_name']?.toString() ??
+        (details != null && details['hall'] is String ? details['hall'].toString() : null) ??
+        '';
+
+    String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
+    final String venueName = sessDetails?['venue_name']?.toString() ?? details?['venue_name']?.toString() ?? '';
+    final String venueAddress = sessDetails?['address']?.toString() ?? details?['address']?.toString() ?? details?['venue_address']?.toString() ?? '';
+    final String scheduleDateStr = sessDetails?['schedule_date']?.toString() ?? details?['schedule_date']?.toString() ?? '';
+    final String startTime = sessDetails?['start_time']?.toString() ?? details?['start_time']?.toString() ?? '';
+    final String endTime = sessDetails?['end_time']?.toString() ?? details?['end_time']?.toString() ?? '';
+    final String slotLabel = sessDetails?['slot_label']?.toString() ?? details?['slot_label']?.toString() ?? '';
+
+    SessionItem? matchedSession;
+    try {
+      matchedSession = sessionsProv.mySessions.firstWhere(
+        (s) => s.topicId == widget.abstractId || s.id.toString() == widget.abstractId,
+      );
+    } catch (_) {}
+
+    if (displayHall.isEmpty && matchedSession != null) {
+      displayHall = matchedSession.location;
+    }
+
+    String timeStr = '';
+    if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+      timeStr = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
+    } else if (slotLabel.isNotEmpty) {
+      timeStr = slotLabel;
+    } else if (matchedSession != null && matchedSession.time.isNotEmpty) {
+      timeStr = matchedSession.time;
+    }
+
+    String dateStr = '';
+    if (scheduleDateStr.isNotEmpty) {
+      dateStr = TimeFormatter.formatString(scheduleDateStr);
+    } else if (matchedSession != null && matchedSession.date.isNotEmpty) {
+      dateStr = matchedSession.date;
+    }
 
     Color badgeBgColor;
     Color badgeTextColor;
@@ -271,6 +327,49 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    // Confirmed Session & Hall Details Section
+                    if (status == 'Confirmed' || displayHall.isNotEmpty) ...[
+                      _buildSectionCard(
+                        title: 'Confirmed Session & Hall Details',
+                        content: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHallDetailRow(
+                              Icons.meeting_room_outlined,
+                              'Hall / Location',
+                              displayHall.isNotEmpty ? displayHall : 'Confirmed Hall Assigned',
+                              isHighlight: true,
+                            ),
+                            if (dateStr.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              _buildHallDetailRow(
+                                Icons.calendar_month_outlined,
+                                'Schedule Date',
+                                dateStr,
+                              ),
+                            ],
+                            if (timeStr.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              _buildHallDetailRow(
+                                Icons.access_time_outlined,
+                                'Session Time',
+                                timeStr,
+                              ),
+                            ],
+                            if (venueName.isNotEmpty || venueAddress.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              _buildHallDetailRow(
+                                Icons.business_outlined,
+                                'Venue',
+                                venueName.isNotEmpty && venueAddress.isNotEmpty ? '$venueName ($venueAddress)' : (venueName.isNotEmpty ? venueName : venueAddress),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     
                     // Contributing Authors Section
                     if (author1.isNotEmpty || author2.isNotEmpty) ...[
@@ -595,6 +694,40 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
         Text(
           name.toUpperCase(),
           style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHallDetailRow(IconData icon, String label, String value, {bool isHighlight = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: isHighlight ? AppColors.primary : AppColors.textLight),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textLight,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+                  color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
