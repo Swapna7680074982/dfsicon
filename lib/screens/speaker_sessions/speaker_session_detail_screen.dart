@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
 import '../../providers/gallery_provider.dart';
+import '../../widgets/venue_media_widget.dart';
 import '../../utils/time_formatter.dart';
 
 class SpeakerSessionDetailScreen extends StatefulWidget {
@@ -643,6 +644,12 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               highlightedText,
               style: const TextStyle(fontSize: 12, color: AppColors.textLight),
             ),
+            if (sessProvider.venueMedia.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              VenueMediaWidget(
+                mediaList: sessProvider.venueMedia,
+              ),
+            ],
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),

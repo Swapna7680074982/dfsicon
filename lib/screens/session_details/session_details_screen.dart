@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/gallery_provider.dart';
 import '../../widgets/event_qr_modal.dart';
+import '../../widgets/venue_media_widget.dart';
 import '../../utils/time_formatter.dart';
 
 class SessionDetailsScreen extends StatefulWidget {
@@ -1049,6 +1050,12 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               highlightedText,
               style: const TextStyle(fontSize: 12, color: AppColors.textLight),
             ),
+            if (sessProvider.venueMedia.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              VenueMediaWidget(
+                mediaList: sessProvider.venueMedia,
+              ),
+            ],
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),

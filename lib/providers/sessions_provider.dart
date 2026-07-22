@@ -126,12 +126,49 @@ class HallItem {
   }
 }
 
+class VenueMediaItem {
+  final String mediaId;
+  final String mediaUrl;
+  final String mimeType;
+
+  VenueMediaItem({
+    required this.mediaId,
+    required this.mediaUrl,
+    required this.mimeType,
+  });
+
+  factory VenueMediaItem.fromJson(Map<String, dynamic> json) {
+    String rawUrl = json['media_url']?.toString() ?? json['url']?.toString() ?? '';
+    if (rawUrl.contains('/./')) {
+      rawUrl = rawUrl.replaceAll('/./', '/');
+    }
+    String cleanedUrl = rawUrl;
+    if (rawUrl.isNotEmpty && !rawUrl.startsWith('http')) {
+      if (rawUrl.startsWith('./')) {
+        cleanedUrl = 'https://services.heterohcl.com/dfs-icon/${rawUrl.substring(2)}';
+      } else if (rawUrl.startsWith('/')) {
+        cleanedUrl = 'https://services.heterohcl.com/dfs-icon/${rawUrl.substring(1)}';
+      } else {
+        cleanedUrl = 'https://services.heterohcl.com/dfs-icon/$rawUrl';
+      }
+    }
+
+    return VenueMediaItem(
+      mediaId: json['media_id']?.toString() ?? '',
+      mediaUrl: cleanedUrl,
+      mimeType: json['mime_type']?.toString() ?? 'image/jpeg',
+    );
+  }
+}
+
 class SessionsProvider extends ChangeNotifier {
   VenueInfo? _venueInfo;
   List<HallItem> _halls = [];
+  List<VenueMediaItem> _venueMedia = [];
 
   VenueInfo? get venueInfo => _venueInfo;
   List<HallItem> get halls => _halls;
+  List<VenueMediaItem> get venueMedia => _venueMedia;
 
   String _searchQuery = '';
   bool _showOnlyBookmarked = false;
@@ -155,6 +192,7 @@ class SessionsProvider extends ChangeNotifier {
   void clear() {
     _venueInfo = null;
     _halls = [];
+    _venueMedia = [];
     _searchQuery = '';
     _showOnlyBookmarked = false;
     _isLoading = false;
@@ -360,6 +398,13 @@ class SessionsProvider extends ChangeNotifier {
           _halls = hallsJson
               .whereType<Map<String, dynamic>>()
               .map((h) => HallItem.fromJson(h))
+              .toList();
+
+          final List mediaJson = data['data']['media'] ?? (venueJson is Map ? venueJson['media'] : null) ?? [];
+          _venueMedia = mediaJson
+              .whereType<Map<String, dynamic>>()
+              .map((m) => VenueMediaItem.fromJson(m))
+              .where((m) => m.mediaUrl.isNotEmpty)
               .toList();
 
           notifyListeners();

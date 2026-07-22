@@ -11,6 +11,7 @@ import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../../widgets/event_qr_modal.dart';
+import '../../widgets/venue_media_widget.dart';
 import '../profile/profile_screen.dart';
 // import '../sightseeing/sightseeing_list_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -1171,6 +1172,13 @@ class HomeTab extends StatelessWidget {
                                   ],
                                 ),
                               ),
+                              if (sessionsProvider.venueMedia.isNotEmpty) ...[
+                                const SizedBox(height: 20),
+                                VenueMediaWidget(
+                                  mediaList: sessionsProvider.venueMedia,
+                                  title: 'Venue photos',
+                                ),
+                              ],
                               const SizedBox(height: 24),
                               Row(
                                 mainAxisAlignment:

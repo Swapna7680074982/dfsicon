@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_provider.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/workshops_provider.dart';
+import '../../widgets/venue_media_widget.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_sessions/speaker_session_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -42,10 +44,18 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
 
   Future<void> _fetchData({bool forceRefresh = false}) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
     final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
     final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
+
+    await homeProvider.fetchSummits(auth.accessToken);
+    final String summitId = homeProvider.summits.isNotEmpty
+        ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+        : '1';
+
     await Future.wait([
+      sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
       abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
       sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
       workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
@@ -343,6 +353,16 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ],
                   ),
                 ),
+
+                if (sessionsProvider.venueMedia.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                    child: VenueMediaWidget(
+                      mediaList: sessionsProvider.venueMedia,
+                      title: 'Venue photos',
+                    ),
+                  ),
+                ],
 
                 // 1. MY SESSIONS SECTION
                 Padding(
