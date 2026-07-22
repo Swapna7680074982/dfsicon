@@ -433,64 +433,6 @@ class _SessionsTabState extends State<SessionsTab> {
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 16),
-                                        const Divider(height: 1, color: AppColors.tileBorder),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            const Text(
-                                              'ADD TO SCHEDULE',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.textSecondary,
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 36,
-                                              child: OutlinedButton(
-                                                onPressed: () {
-                                                  sessionsProvider.toggleAdded(session.id);
-                                                },
-                                                style: OutlinedButton.styleFrom(
-                                                  backgroundColor: session.isAdded
-                                                      ? AppColors.primary
-                                                      : Colors.white,
-                                                  foregroundColor: session.isAdded
-                                                      ? Colors.white
-                                                      : AppColors.primary,
-                                                  side: const BorderSide(
-                                                    color: AppColors.primary,
-                                                    width: 1.5,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    if (session.isAdded) ...[
-                                                      const Icon(Icons.check, size: 12, color: Colors.white),
-                                                      const SizedBox(width: 4),
-                                                    ],
-                                                    Text(
-                                                      session.isAdded ? 'ADDED' : '+ ADD',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: session.isAdded
-                                                            ? Colors.white
-                                                            : AppColors.primary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
                                       ],
                                     ),
                                   ),

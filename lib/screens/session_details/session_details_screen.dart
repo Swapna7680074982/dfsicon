@@ -335,10 +335,6 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
         .isBookmarked;
 
-    final isAdded = sessProvider.sessions
-        .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
-        .isAdded;
-
     final halls = sessProvider.halls.isNotEmpty
         ? sessProvider.halls
         : [
@@ -700,58 +696,11 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                                 ),
                           const SizedBox(width: 8),
                           Text(
-                            isBookmarked ? 'Saved' : 'Save',
+                            isBookmarked ? 'Bookmarked' : 'Bookmark',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      sessProvider.toggleAdded(widget.session.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            isAdded
-                                ? 'Removed from calendar schedule'
-                                : 'Added to calendar schedule!',
-                          ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: isAdded ? const Color(0xFFEEF2FF) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isAdded ? const Color(0xFF818CF8) : AppColors.tileBorder,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            color: isAdded ? AppColors.primary : AppColors.textSecondary,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Calendar',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: isAdded ? AppColors.primary : AppColors.textSecondary,
                             ),
                           ),
                         ],

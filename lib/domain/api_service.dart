@@ -215,26 +215,6 @@ class ApiService {
     return response;
   }
 
-  static Future<http.Response> fetchMyConfirmedSessions({
-    required String accessToken,
-  }) async {
-    final url = Uri.parse(ApiUrls.myConfirmedSessions);
-    final headers = {
-      'Authorization': 'Bearer $accessToken',
-      'Content-Type': 'application/json',
-    };
-
-    CustomLogger.logRequest('GET', url.toString(), headers: headers);
-
-    final response = await http.get(
-      url,
-      headers: headers,
-    );
-
-    CustomLogger.logResponse('GET', url.toString(), response.statusCode, response.body);
-    return response;
-  }
-
   static Future<http.Response> submitAbstract({
     required String summitId,
     required String title,
