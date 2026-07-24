@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
+            VALUE "CompanyName", "com.hhcl" "\0"
             VALUE "FileDescription", "dfsicon" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "dfsicon" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.hhcl. All rights reserved." "\0"
             VALUE "OriginalFilename", "dfsicon.exe" "\0"
             VALUE "ProductName", "dfsicon" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

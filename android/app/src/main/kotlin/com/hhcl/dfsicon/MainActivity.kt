@@ -1,4 +1,4 @@
-package com.example.dfsicon
+package com.hhcl.dfsicon
 
 import io.flutter.embedding.android.FlutterActivity
 
