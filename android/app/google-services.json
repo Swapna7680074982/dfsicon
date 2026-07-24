@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "379168348019",
+    "project_id": "dfscion-8248c",
+    "storage_bucket": "dfscion-8248c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:379168348019:android:5d349e33615fb6e9c51706",
+        "android_client_info": {
+          "package_name": "com.hhcl.dfsicon"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJ1bpvaaBcfyIx-81iIDJz6G9utLWEFvo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

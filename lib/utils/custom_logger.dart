@@ -36,4 +36,10 @@ class CustomLogger {
       debugPrint('❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌');
     }
   }
+
+  static void logInfo(String message) {
+    if (kDebugMode) {
+      debugPrint('ℹ️ [INFO] $message');
+    }
+  }
 }

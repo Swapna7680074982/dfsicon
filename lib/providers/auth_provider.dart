@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 import 'package:dfsicon/main.dart';
+import 'package:dfsicon/services/fcm_service.dart';
 
 class AuthProvider with ChangeNotifier {
   String _phoneNumber = '';
@@ -26,16 +27,18 @@ class AuthProvider with ChangeNotifier {
   String _refreshToken = '';
   Map<String, dynamic> _profileData = {};
 
-  // Default meta fields for request bodies
-  static const Map<String, String> _defaultMeta = {
-    "device_id": "ANDROID_123",
-    "device_name": "Samsung S24",
-    "device_type": "Android",
-    "app_version": "1.0.0",
-    "latitude": "",
-    "longitude": "",
-    "fcmToken": ""
-  };
+  Future<Map<String, String>> _getMeta() async {
+    final token = await FcmService.getFcmToken();
+    return {
+      "device_id": "ANDROID_123",
+      "device_name": Platform.isAndroid ? "Android Device" : (Platform.isIOS ? "iOS Device" : "Device"),
+      "device_type": Platform.isAndroid ? "Android" : (Platform.isIOS ? "iOS" : "Unknown"),
+      "app_version": "1.0.0",
+      "latitude": "",
+      "longitude": "",
+      "fcmToken": token
+    };
+  }
 
   // Getters
   String get phoneNumber => _phoneNumber;
@@ -125,9 +128,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     
     try {
+      final meta = await _getMeta();
       final response = await ApiService.sendOtp(
         phoneNumber: _phoneNumber,
-        meta: _defaultMeta,
+        meta: meta,
       );
 
       _isSendingOtp = false;
@@ -183,10 +187,11 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      final meta = await _getMeta();
       final response = await ApiService.verifyOtp(
         phoneNumber: _phoneNumber,
         otpCode: _otpCode,
-        meta: _defaultMeta,
+        meta: meta,
       );
 
       final data = json.decode(response.body);
@@ -219,9 +224,10 @@ class AuthProvider with ChangeNotifier {
   Future<bool> refreshSessionToken() async {
     if (_refreshToken.isEmpty) return false;
     try {
+      final meta = await _getMeta();
       final response = await ApiService.refreshSessionToken(
         refreshToken: _refreshToken,
-        meta: _defaultMeta,
+        meta: meta,
       );
 
       if (response.statusCode == 200) {
@@ -262,9 +268,10 @@ class AuthProvider with ChangeNotifier {
 
     try {
       if (savedRefreshToken.isNotEmpty) {
+        final meta = await _getMeta();
         await ApiService.logout(
           refreshToken: savedRefreshToken,
-          meta: _defaultMeta,
+          meta: meta,
         );
       }
       return true;

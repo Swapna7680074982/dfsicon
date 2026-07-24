@@ -14,10 +14,12 @@ import 'providers/workshops_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/photo/photo_upload_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/fcm_service.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FcmService.initialize();
   runApp(const MyApp());
 }
 
