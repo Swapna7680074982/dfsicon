@@ -33,4 +33,6 @@ class ApiUrls {
   static const String myProfile = '$baseUrl/utility/my_profile';
   static const String updateProfile = '$baseUrl/utility/update_profile';
   static const String updatePrivacySettings = '$baseUrl/utility/update_privacy_settings';
+  static const String myNotifications = '$baseUrl/utility/my_notifications';
+  static const String markNotificationRead = '$baseUrl/utility/mark_notification_read';
 }

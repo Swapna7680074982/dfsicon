@@ -12,6 +12,7 @@ import '../../widgets/venue_media_widget.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_sessions/speaker_session_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../../providers/notifications_provider.dart';
 import '../profile/profile_screen.dart';
 import '../workshops/workshops_list_screen.dart';
 import '../workshops/workshop_details_screen.dart';
@@ -143,45 +144,50 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                           ),
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const NotificationsScreen(),
+                              Consumer<NotificationsProvider>(
+                                builder: (context, notifProvider, child) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const NotificationsScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withAlpha(25),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Stack(
+                                        children: [
+                                          const Icon(
+                                            Icons.notifications_none_outlined,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                          if (notifProvider.unreadCount > 0)
+                                            Positioned(
+                                              top: 2,
+                                              right: 2,
+                                              child: Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFF10B981),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 },
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withAlpha(25),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Stack(
-                                    children: [
-                                      const Icon(
-                                        Icons.notifications_none_outlined,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                      Positioned(
-                                        top: 2,
-                                        right: 2,
-                                        child: Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF10B981),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
                               const SizedBox(width: 12),
                               GestureDetector(

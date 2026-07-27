@@ -794,6 +794,52 @@ class ApiService {
     return response;
   }
 
+  static Future<http.Response> fetchMyNotifications({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myNotifications);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> markNotificationRead({
+    required String accessToken,
+    String? notificationId,
+  }) async {
+    final url = Uri.parse(ApiUrls.markNotificationRead);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'notification_id': notificationId ?? '',
+    };
+    final requestBody = json.encode(bodyMap);
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // Helper
   static String _getMimeTypeForExtension(String fileExtension) {
     String mimeType = 'application/octet-stream';
