@@ -35,6 +35,8 @@ class SpeakerHomeTab extends StatefulWidget {
 }
 
 class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -44,23 +46,39 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
   }
 
   Future<void> _fetchData({bool forceRefresh = false}) async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
     final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
     final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
 
-    await homeProvider.fetchSummits(auth.accessToken);
-    final String summitId = homeProvider.summits.isNotEmpty
-        ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
-        : '1';
+    try {
+      await homeProvider.fetchSummits(auth.accessToken);
+      final String summitId = homeProvider.summits.isNotEmpty
+          ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+          : '1';
 
-    await Future.wait([
-      sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
-      abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
-      sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-      workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
-    ]);
+      await Future.wait([
+        sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+        abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
+        sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+        workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
+      ]);
+    } catch (e) {
+      // Handle error gracefully
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   String _getInitials(String name) {
@@ -360,61 +378,62 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                   ),
                 ),
 
-                if (sessionsProvider.venueMedia.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                    child: VenueMediaWidget(
-                      mediaList: sessionsProvider.venueMedia,
-                      title: 'Venue photos',
-                    ),
-                  ),
-                ],
-
-                // 1. MY SESSIONS SECTION
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'My Sessions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: widget.onNavigateToSessions,
-                        child: Row(
-                          children: const [
-                            Text(
-                              'VIEW ALL',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios_outlined,
-                              size: 12,
-                              color: AppColors.primary,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (sessionsProvider.isLoading)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24.0),
+                if (_isLoading) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 80.0),
+                    child: Center(
                       child: CircularProgressIndicator(color: AppColors.primary),
                     ),
-                  )
-                else if (mySessions.isEmpty)
+                  ),
+                ] else ...[
+                  if (sessionsProvider.venueMedia.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: VenueMediaWidget(
+                        mediaList: sessionsProvider.venueMedia,
+                        title: 'Venue photos',
+                      ),
+                    ),
+                  ],
+
+                  // 1. MY SESSIONS SECTION
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'My Sessions',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: widget.onNavigateToSessions,
+                          child: Row(
+                            children: const [
+                              Text(
+                                'VIEW ALL',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_ios_outlined,
+                                size: 12,
+                                color: AppColors.primary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (mySessions.isEmpty)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(24),
@@ -503,14 +522,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ],
                   ),
                 ),
-                if (abstractProvider.isLoadingTopicsList)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24.0),
-                      child: CircularProgressIndicator(color: AppColors.primary),
-                    ),
-                  )
-                else if (myTopics.isEmpty)
+                if (myTopics.isEmpty)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(24),
@@ -717,14 +729,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ],
                   ),
                 ),
-                if (workshopsProvider.isLoading)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24.0),
-                      child: CircularProgressIndicator(color: AppColors.primary),
-                    ),
-                  )
-                else if (myWorkshops.isEmpty)
+                if (myWorkshops.isEmpty)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(24),
@@ -843,6 +848,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                 }
               ),
             ],
+          ],
                 const SizedBox(height: 36),
               ],
             ),

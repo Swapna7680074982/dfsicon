@@ -295,6 +295,7 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('access_token');
     await prefs.remove('refresh_token');
     await prefs.remove('profile_data');
+    await FcmService.deleteFcmToken();
   }
 
   Future<bool> fetchMyProfile() async {
@@ -402,10 +403,12 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> registerDeviceToken() async {
+  Future<bool> registerDeviceToken({bool forceRecreate = true}) async {
     if (_accessToken.isEmpty) return false;
     try {
-      final fcmToken = await FcmService.getFcmToken();
+      final fcmToken = forceRecreate
+          ? await FcmService.recreateFcmToken()
+          : await FcmService.getFcmToken();
       if (fcmToken.isEmpty) return false;
 
       final response = await ApiService.registerFcmToken(

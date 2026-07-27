@@ -67,4 +67,24 @@ class FcmService {
     }
     return await fetchToken();
   }
+
+  /// Deletes the cached FCM token and forces Firebase to delete the token instance
+  static Future<void> deleteFcmToken() async {
+    try {
+      _cachedFcmToken = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('fcm_token');
+      await FirebaseMessaging.instance.deleteToken();
+      CustomLogger.logInfo('FCM Token deleted successfully from Firebase');
+    } catch (e, stack) {
+      CustomLogger.logError('Failed to delete FCM token', e, stack);
+    }
+  }
+
+  /// Recreates a brand new FCM Token by deleting the existing token first
+  static Future<String> recreateFcmToken() async {
+    await deleteFcmToken();
+    return await fetchToken();
+  }
 }
+
