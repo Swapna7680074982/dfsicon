@@ -132,7 +132,7 @@ class NotificationsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchNotifications(String accessToken) async {
+  Future<void> fetchNotifications(String accessToken, {bool clearPrevious = true}) async {
     if (accessToken.isEmpty) {
       _errorMessage = 'No access token found';
       notifyListeners();
@@ -141,6 +141,10 @@ class NotificationsProvider with ChangeNotifier {
 
     _isLoading = true;
     _errorMessage = null;
+    if (clearPrevious) {
+      _notifications = [];
+      _unreadCount = 0;
+    }
     notifyListeners();
 
     try {

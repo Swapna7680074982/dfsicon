@@ -6,6 +6,7 @@ import '../../providers/home_provider.dart';
 import '../../providers/explore_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/workshops_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
@@ -36,7 +37,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
       final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
       final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
-      
+      final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
+
+      auth.registerDeviceToken();
+      notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
+
       if (auth.isSpeaker) {
         await homeProvider.fetchSummits(auth.accessToken);
         final String summitId = homeProvider.summits.isNotEmpty

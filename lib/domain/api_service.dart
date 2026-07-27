@@ -840,6 +840,35 @@ class ApiService {
     return response;
   }
 
+  static Future<http.Response> registerFcmToken({
+    required String fcmToken,
+    required String accessToken,
+    String? deviceType,
+    String? deviceId,
+  }) async {
+    final url = Uri.parse(ApiUrls.registerToken);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "fcm_token": fcmToken,
+      "device_type": deviceType ?? (Platform.isAndroid ? "android" : (Platform.isIOS ? "ios" : "android")),
+      "device_id": deviceId ?? "android_123",
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // Helper
   static String _getMimeTypeForExtension(String fileExtension) {
     String mimeType = 'application/octet-stream';

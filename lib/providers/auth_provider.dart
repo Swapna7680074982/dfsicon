@@ -202,6 +202,7 @@ class AuthProvider with ChangeNotifier {
           _profileData = data['use_profile'] ?? {};
           
           await _saveSession();
+          registerDeviceToken();
 
           _isVerifying = false;
           notifyListeners();
@@ -401,6 +402,30 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> registerDeviceToken() async {
+    if (_accessToken.isEmpty) return false;
+    try {
+      final fcmToken = await FcmService.getFcmToken();
+      if (fcmToken.isEmpty) return false;
+
+      final response = await ApiService.registerFcmToken(
+        fcmToken: fcmToken,
+        accessToken: _accessToken,
+        deviceType: Platform.isAndroid ? "android" : (Platform.isIOS ? "ios" : "android"),
+        deviceId: "android_123",
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['status'] == true;
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('Register FCM Token failed', e, stack);
+      return false;
+    }
+  }
+
   Future<bool> tryAutoLogin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -416,6 +441,7 @@ class AuthProvider with ChangeNotifier {
       _profileData = json.decode(profileStr) as Map<String, dynamic>;
       final success = await refreshSessionToken();
       if (success) {
+        registerDeviceToken();
         notifyListeners();
         return true;
       } else {

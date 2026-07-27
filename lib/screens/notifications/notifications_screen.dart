@@ -77,7 +77,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       body: Consumer<NotificationsProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading && provider.notifications.isEmpty) {
+          if (provider.isLoading) {
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             );
