@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/network_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
@@ -1031,49 +1032,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                                         ),
                                       ),
                                       const SizedBox(width: 10),
-                                      p.isConnected
-                                          ? Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFECFDF5),
-                                                borderRadius: BorderRadius.circular(16),
-                                              ),
-                                              child: Row(
-                                                children: const [
-                                                  Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
-                                                  SizedBox(width: 4),
-                                                  Text(
-                                                    'CONNECTED',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Color(0xFF10B981),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : OutlinedButton.icon(
-                                              onPressed: () {
-                                                connProvider.toggleConnect(p.id);
-                                              },
-                                              icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
-                                              label: const Text(
-                                                'CONNECT',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                side: const BorderSide(color: AppColors.primary),
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                                minimumSize: Size.zero,
-                                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                              ),
-                                            ),
+                                      _buildConnectionButton(p, widget.topicId),
                                     ],
                                   ),
                                 );
@@ -1085,6 +1044,167 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildConnectionButton(ParticipantItem p, String? topicId) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
+    final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+
+    if (p.isConnecting) {
+      return Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+        ),
+      );
+    }
+
+    final bool isConnected = p.isConnected || p.action == 'CONNECTED' || p.connectionStatus == 'CONNECTED';
+    final bool isRequested = p.action == 'REQUESTED' || p.connectionStatus == 'PENDING';
+    final bool isAccept = p.action == 'ACCEPT';
+
+    if (isConnected) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
+            SizedBox(width: 4),
+            Text(
+              'CONNECTED',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF10B981),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isRequested) {
+      return OutlinedButton.icon(
+        onPressed: () async {
+          if (p.connectionId != null) {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (c) => AlertDialog(
+                title: const Text('Cancel Request'),
+                content: Text('Do you want to cancel the connection request sent to ${p.name}?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('No')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              await connProvider.cancelConnectionRequest(
+                connectionId: p.connectionId!,
+                targetUserId: p.id,
+                accessToken: auth.accessToken,
+              );
+            }
+          }
+        },
+        icon: const Icon(Icons.access_time, size: 12, color: Color(0xFFD97706)),
+        label: const Text(
+          'REQUESTED',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFB45309),
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: const Color(0xFFFFFBEB),
+          side: const BorderSide(color: Color(0xFFFCD34D)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      );
+    }
+
+    if (isAccept) {
+      return OutlinedButton.icon(
+        onPressed: () async {
+          if (p.connectionId != null) {
+            await connProvider.respondConnectionRequest(
+              connectionId: p.connectionId!,
+              targetUserId: p.id,
+              action: 'ACCEPT',
+              accessToken: auth.accessToken,
+            );
+            if (mounted) {
+              netProvider.fetchConversations(accessToken: auth.accessToken);
+              netProvider.fetchMyConnections(accessToken: auth.accessToken);
+            }
+          }
+        },
+        icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
+        label: const Text(
+          'ACCEPT',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: const Color(0xFFEEF2FF),
+          side: const BorderSide(color: AppColors.primary),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: () async {
+        final success = await connProvider.sendConnectionRequest(
+          targetUserId: p.id,
+          assignmentId: topicId ?? widget.topicId,
+          accessToken: auth.accessToken,
+        );
+        if (success && mounted) {
+          netProvider.fetchPendingRequests(accessToken: auth.accessToken);
+          netProvider.fetchConversations(accessToken: auth.accessToken);
+        }
+      },
+      icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
+      label: const Text(
+        'CONNECT',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: AppColors.primary),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
     );
   }
 }

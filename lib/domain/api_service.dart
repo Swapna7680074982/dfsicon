@@ -641,36 +641,6 @@ class ApiService {
     return response;
   }
 
-  static Future<http.Response> viewSessionParticipants({
-    String? assignmentId,
-    String? topicId,
-    required String accessToken,
-  }) async {
-    final url = Uri.parse(ApiUrls.viewSessionParticipants);
-    final headers = {
-      'Authorization': 'Bearer $accessToken',
-      'Content-Type': 'application/json',
-    };
-    final requestBodyMap = <String, dynamic>{};
-    if (assignmentId != null) {
-      requestBodyMap['assignment_id'] = assignmentId;
-    }
-    if (topicId != null) {
-      requestBodyMap['topic_id'] = topicId;
-    }
-    final requestBody = json.encode(requestBodyMap);
-
-    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
-
-    final response = await http.post(
-      url,
-      headers: headers,
-      body: requestBody,
-    );
-
-    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
-    return response;
-  }
 
   static Future<http.Response> fetchSummitStats({
     required String accessToken,
@@ -903,6 +873,7 @@ class ApiService {
   // 1. Session Participants API
   static Future<http.Response> fetchNetworkSessionParticipants({
     dynamic assignmentId,
+    dynamic topicId,
     String? search,
     int page = 1,
     int limit = 20,
@@ -918,6 +889,10 @@ class ApiService {
       'limit': limit,
     };
     if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
+    if (topicId != null) bodyMap['topic_id'] = topicId;
+    if (bodyMap['assignment_id'] == null && topicId != null) {
+      bodyMap['assignment_id'] = topicId;
+    }
     if (search != null && search.isNotEmpty) bodyMap['search'] = search;
 
     final requestBody = json.encode(bodyMap);
@@ -1288,7 +1263,7 @@ class ApiService {
   static Future<http.Response> fetchNetworkConversations({
     String? type, // "DIRECT" or "GROUP"
     String? search,
-    required String accessToken, 
+    required String accessToken,
   }) async {
     final url = Uri.parse(ApiUrls.conversations);
     final headers = {

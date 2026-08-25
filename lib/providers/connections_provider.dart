@@ -12,10 +12,12 @@ class ParticipantItem {
   final Color bg;
   bool isConnected;
   final String? profileImage;
-  final int? connectionId;
-  final String connectionStatus;
-  final String action;
+  int? connectionId;
+  String connectionStatus;
+  String action;
   final int? conversationId;
+  final bool isSpeaker;
+  bool isConnecting;
 
   ParticipantItem({
     required this.id,
@@ -29,6 +31,8 @@ class ParticipantItem {
     this.connectionStatus = 'NONE',
     this.action = 'CONNECT',
     this.conversationId,
+    this.isSpeaker = false,
+    this.isConnecting = false,
   });
 }
 
@@ -83,9 +87,10 @@ class ConnectionsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // First try Networking Session Participants API if assignmentId is present
+      // Call Networking Session Participants API
       final response = await ApiService.fetchNetworkSessionParticipants(
-        assignmentId: assignmentId ?? topicId,
+        assignmentId: assignmentId,
+        topicId: topicId,
         accessToken: accessToken,
       );
 
@@ -120,6 +125,7 @@ class ConnectionsProvider extends ChangeNotifier {
 
             final String connStatus = item['connection_status']?.toString() ?? 'NONE';
             final String actionStr = item['action']?.toString() ?? 'CONNECT';
+            final bool isSpeaker = item['is_speaker'] == true || item['is_speaker'] == 1 || item['is_speaker'] == '1' || item['role_code'] == 'SK';
 
             return ParticipantItem(
               id: userId,
@@ -133,60 +139,17 @@ class ConnectionsProvider extends ChangeNotifier {
               connectionStatus: connStatus,
               action: actionStr,
               conversationId: item['conversation_id'] is int ? item['conversation_id'] : int.tryParse(item['conversation_id']?.toString() ?? ''),
+              isSpeaker: isSpeaker,
             );
           }).toList();
 
-          notifyListeners();
-          return true;
-        }
-      }
-
-      // Fallback to utility viewSessionParticipants
-      final fallbackResponse = await ApiService.viewSessionParticipants(
-        assignmentId: assignmentId,
-        topicId: topicId,
-        accessToken: accessToken,
-      );
-
-      if (fallbackResponse.statusCode == 200) {
-        final data = json.decode(fallbackResponse.body);
-        if (data['status'] == true && data['data'] != null) {
-          _sessionData = data['data']['session'] as Map<String, dynamic>?;
-          final List list = data['data']['participants'] ?? [];
-          _participantsCount = data['data']['participants_count'] as int? ?? list.length;
-          _participants = list.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final item = entry.value;
-            final String delegateId = item['delegate_id']?.toString() ?? idx.toString();
-            final String fullName = item['full_name']?.toString() ?? 'Participant';
-            final String designation = item['designation']?.toString() ?? '';
-            final String organisation = item['organisation']?.toString() ?? '';
-            final String title = designation.isNotEmpty && organisation.isNotEmpty
-                ? '$designation, $organisation'
-                : (designation.isNotEmpty ? designation : (organisation.isNotEmpty ? organisation : 'Attendee'));
-
-            String? profileImage = item['profile_image']?.toString();
-            if (profileImage != null && profileImage.contains('/./')) {
-              profileImage = profileImage.replaceAll('/./', '/');
-            }
-
-            return ParticipantItem(
-              id: delegateId,
-              name: fullName,
-              title: title,
-              initials: _getInitials(fullName),
-              bg: _getColorForIndex(idx),
-              isConnected: false,
-              profileImage: (profileImage != null && profileImage.isNotEmpty && profileImage != 'null') ? profileImage : null,
-            );
-          }).toList();
           notifyListeners();
           return true;
         } else {
-          _errorMessage = data['message'] ?? 'Failed to load participants';
+          _errorMessage = data['message'] ?? 'Failed to load session participants';
         }
       } else {
-        _errorMessage = 'Server error: ${fallbackResponse.statusCode}';
+        _errorMessage = 'Server error: ${response.statusCode}';
       }
       notifyListeners();
       return false;
@@ -195,6 +158,164 @@ class ConnectionsProvider extends ChangeNotifier {
       _isLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> sendConnectionRequest({
+    required String targetUserId,
+    String? assignmentId,
+    required String accessToken,
+  }) async {
+    if (accessToken.isEmpty) return false;
+    final index = _participants.indexWhere((p) => p.id == targetUserId);
+    if (index != -1) {
+      _participants[index].isConnecting = true;
+      notifyListeners();
+    }
+
+    try {
+      final response = await ApiService.sendNetworkRequest(
+        assignmentId: assignmentId,
+        targetId: targetUserId,
+        accessToken: accessToken,
+      );
+
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          if (index != -1) {
+            _participants[index].action = 'REQUESTED';
+            _participants[index].connectionStatus = 'PENDING';
+            if (data['connection_id'] != null) {
+              _participants[index].connectionId = data['connection_id'] is int
+                  ? data['connection_id']
+                  : int.tryParse(data['connection_id'].toString());
+            }
+          }
+          notifyListeners();
+          return true;
+        }
+      }
+      if (index != -1) {
+        notifyListeners();
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('ConnectionsProvider.sendConnectionRequest failed', e, stack);
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+        notifyListeners();
+      }
+      return false;
+    }
+  }
+
+  Future<bool> cancelConnectionRequest({
+    required int connectionId,
+    required String targetUserId,
+    required String accessToken,
+  }) async {
+    if (accessToken.isEmpty) return false;
+    final index = _participants.indexWhere((p) => p.id == targetUserId);
+    if (index != -1) {
+      _participants[index].isConnecting = true;
+      notifyListeners();
+    }
+
+    try {
+      final response = await ApiService.cancelNetworkRequest(
+        connectionId: connectionId,
+        accessToken: accessToken,
+      );
+
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          if (index != -1) {
+            _participants[index].action = 'CONNECT';
+            _participants[index].connectionStatus = 'NONE';
+            _participants[index].isConnected = false;
+            _participants[index].connectionId = null;
+          }
+          notifyListeners();
+          return true;
+        }
+      }
+      if (index != -1) {
+        notifyListeners();
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('ConnectionsProvider.cancelConnectionRequest failed', e, stack);
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+        notifyListeners();
+      }
+      return false;
+    }
+  }
+
+  Future<bool> respondConnectionRequest({
+    required int connectionId,
+    required String targetUserId,
+    required String action,
+    required String accessToken,
+  }) async {
+    if (accessToken.isEmpty) return false;
+    final index = _participants.indexWhere((p) => p.id == targetUserId);
+    if (index != -1) {
+      _participants[index].isConnecting = true;
+      notifyListeners();
+    }
+
+    try {
+      final response = await ApiService.respondNetworkRequest(
+        connectionId: connectionId,
+        action: action,
+        accessToken: accessToken,
+      );
+
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          if (index != -1) {
+            if (action == 'ACCEPT') {
+              _participants[index].action = 'CONNECTED';
+              _participants[index].connectionStatus = 'CONNECTED';
+              _participants[index].isConnected = true;
+            } else {
+              _participants[index].action = 'CONNECT';
+              _participants[index].connectionStatus = 'NONE';
+              _participants[index].isConnected = false;
+            }
+          }
+          notifyListeners();
+          return true;
+        }
+      }
+      if (index != -1) {
+        notifyListeners();
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('ConnectionsProvider.respondConnectionRequest failed', e, stack);
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+        notifyListeners();
+      }
       return false;
     }
   }

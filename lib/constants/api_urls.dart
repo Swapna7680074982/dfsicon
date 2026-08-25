@@ -27,7 +27,6 @@ class ApiUrls {
   static const String bookmarkSession = '$baseUrl/delegate/bookmark_session';
   static const String unbookmarkSession = '$baseUrl/delegate/unbookmark_session';
   static const String myBookmarks = '$baseUrl/delegate/my_bookmarks';
-  static const String viewSessionParticipants = '$baseUrl/utility/view_session_participants';
   static const String summitStats = '$baseUrl/utility/summit_stats';
   static const String invitedSpeakers = '$baseUrl/utility/invited_speakers';
   static const String myProfile = '$baseUrl/utility/my_profile';

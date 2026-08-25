@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../gallery/gallery_tab.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/network_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/gallery_provider.dart';
@@ -21,7 +22,6 @@ class SessionDetailsScreen extends StatefulWidget {
 }
 
 class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
-  bool _isSpeakerConnected = false;
   bool _isSavingBookmark = false;
 
   @override
@@ -34,20 +34,12 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
 
   void _loadParticipants() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final sessProvider = Provider.of<SessionsProvider>(context, listen: false);
     final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
-
-    final isBookmarked = sessProvider.sessions
-        .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
-        .isBookmarked;
-
-    if (isBookmarked) {
-      final assignmentId = widget.session.assignmentId ?? widget.session.id.toString();
-      connProvider.fetchSessionParticipants(
-        assignmentId: assignmentId,
-        accessToken: auth.accessToken,
-      );
-    }
+    final assignmentId = widget.session.assignmentId ?? widget.session.id.toString();
+    connProvider.fetchSessionParticipants(
+      assignmentId: assignmentId,
+      accessToken: auth.accessToken,
+    );
   }
 
   void _showParticipantsSheet(BuildContext context) {
@@ -209,54 +201,11 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                                                 ],
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
-                                            SizedBox(
-                                              height: 36,
-                                              child: OutlinedButton(
-                                                onPressed: () {
-                                                  connProvider.toggleConnect(p.id);
-                                                },
-                                                style: OutlinedButton.styleFrom(
-                                                  backgroundColor: p.isConnected
-                                                      ? const Color(0xFFECFDF5)
-                                                      : Colors.white,
-                                                  foregroundColor: p.isConnected
-                                                      ? const Color(0xFF10B981)
-                                                      : AppColors.primary,
-                                                  side: BorderSide(
-                                                    color: p.isConnected
-                                                        ? const Color(0xFFA7F3D0)
-                                                        : AppColors.primary,
-                                                    width: 1.5,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    if (p.isConnected) ...[
-                                                      const Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
-                                                      const SizedBox(width: 4),
-                                                    ],
-                                                    Text(
-                                                      p.isConnected ? 'Connected' : 'Connect',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: p.isConnected
-                                                            ? const Color(0xFF047857)
-                                                            : AppColors.primary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
+                                             const SizedBox(width: 12),
+                                             _buildConnectionButton(p, widget.session.assignmentId ?? widget.session.id.toString()),
+                                           ],
+                                         ),
+                                       );
                                     },
                                   ),
                       ),
@@ -457,6 +406,15 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         highlightedText = '${hall.hallLabel.isNotEmpty ? hall.hallLabel : hall.hallName} highlighted';
         break;
       }
+    }
+
+    ParticipantItem? speakerParticipant;
+    try {
+      speakerParticipant = connProvider.participants.firstWhere(
+        (p) => p.isSpeaker || p.name.toLowerCase() == widget.session.speakerName.toLowerCase(),
+      );
+    } catch (_) {
+      speakerParticipant = null;
     }
 
     return Scaffold(
@@ -850,52 +808,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  SizedBox(
-                    height: 36,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setState(() {
-                          _isSpeakerConnected = !_isSpeakerConnected;
-                        });
-                      },
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: _isSpeakerConnected
-                            ? const Color(0xFFECFDF5)
-                            : Colors.white,
-                        foregroundColor: _isSpeakerConnected
-                            ? const Color(0xFF10B981)
-                            : AppColors.primary,
-                        side: BorderSide(
-                          color: _isSpeakerConnected
-                              ? const Color(0xFFA7F3D0)
-                              : AppColors.primary,
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                      ),
-                      child: Row(
-                        children: [
-                          if (_isSpeakerConnected) ...[
-                            const Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
-                            const SizedBox(width: 4),
-                          ],
-                          Text(
-                            _isSpeakerConnected ? 'Connected' : 'Connect',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: _isSpeakerConnected
-                                  ? const Color(0xFF047857)
-                                  : AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  if (speakerParticipant != null)
+                    _buildConnectionButton(speakerParticipant, widget.session.assignmentId ?? widget.session.id.toString()),
                 ],
               ),
             ),
@@ -1288,6 +1202,180 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildConnectionButton(ParticipantItem p, String? assignmentId) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
+    final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+
+    if (p.isConnecting) {
+      return Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+        ),
+      );
+    }
+
+    final bool isConnected = p.isConnected || p.action == 'CONNECTED' || p.connectionStatus == 'CONNECTED';
+    final bool isRequested = p.action == 'REQUESTED' || p.connectionStatus == 'PENDING';
+    final bool isAccept = p.action == 'ACCEPT';
+
+    if (isConnected) {
+      return Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFA7F3D0), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
+            SizedBox(width: 4),
+            Text(
+              'Connected',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF047857),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isRequested) {
+      return SizedBox(
+        height: 36,
+        child: OutlinedButton(
+          onPressed: () async {
+            if (p.connectionId != null) {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (c) => AlertDialog(
+                  title: const Text('Cancel Request'),
+                  content: Text('Do you want to cancel the connection request sent to ${p.name}?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('No')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(c, true),
+                      child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true && mounted) {
+                await connProvider.cancelConnectionRequest(
+                  connectionId: p.connectionId!,
+                  targetUserId: p.id,
+                  accessToken: auth.accessToken,
+                );
+              }
+            }
+          },
+          style: OutlinedButton.styleFrom(
+            backgroundColor: const Color(0xFFFFFBEB),
+            foregroundColor: const Color(0xFFD97706),
+            side: const BorderSide(color: Color(0xFFFCD34D), width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.access_time, size: 14, color: Color(0xFFD97706)),
+              SizedBox(width: 4),
+              Text(
+                'Requested',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isAccept) {
+      return SizedBox(
+        height: 36,
+        child: OutlinedButton(
+          onPressed: () async {
+            if (p.connectionId != null) {
+              await connProvider.respondConnectionRequest(
+                connectionId: p.connectionId!,
+                targetUserId: p.id,
+                action: 'ACCEPT',
+                accessToken: auth.accessToken,
+              );
+              if (mounted) {
+                netProvider.fetchConversations(accessToken: auth.accessToken);
+                netProvider.fetchMyConnections(accessToken: auth.accessToken);
+              }
+            }
+          },
+          style: OutlinedButton.styleFrom(
+            backgroundColor: const Color(0xFFEEF2FF),
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+          ),
+          child: const Text(
+            'Accept',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 36,
+      child: OutlinedButton(
+        onPressed: () async {
+          final success = await connProvider.sendConnectionRequest(
+            targetUserId: p.id,
+            assignmentId: assignmentId ?? widget.session.assignmentId ?? widget.session.id.toString(),
+            accessToken: auth.accessToken,
+          );
+          if (success && mounted) {
+            netProvider.fetchPendingRequests(accessToken: auth.accessToken);
+            netProvider.fetchConversations(accessToken: auth.accessToken);
+          }
+        },
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+        ),
+        child: const Text(
+          'Connect',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
       ),
     );
   }
