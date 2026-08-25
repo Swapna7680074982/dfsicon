@@ -40,17 +40,33 @@ class AuthProvider with ChangeNotifier {
     };
   }
 
+  bool _isLoggingInPassword = false;
+
   // Getters
   String get phoneNumber => _phoneNumber;
   bool get otpSent => _otpSent;
   String get otpCode => _otpCode;
   bool get isVerifying => _isVerifying;
   bool get isSendingOtp => _isSendingOtp;
+  bool get isLoggingInPassword => _isLoggingInPassword;
   int get resendSeconds => _resendSeconds;
   
   String get accessToken => _accessToken;
   String get refreshToken => _refreshToken;
   Map<String, dynamic> get profileData => _profileData;
+
+  String get citizenType => (_profileData['citizen_type'] ?? '').toString();
+  bool get isForeignUser {
+    final type = citizenType.toUpperCase();
+    if (type == 'FOREIGN') return true;
+    if (type == 'INDIAN') return false;
+    // Fallback: check if mobile number is non-Indian (length > 10 and doesn't start with 0)
+    final mob = mobile.trim();
+    if (mob.length > 10 && !mob.startsWith('0')) {
+      return true;
+    }
+    return false;
+  }
 
   // Dynamic profile fields with mock fallbacks
   String get userId => (_profileData['user_id'] ?? _profileData['id'] ?? '').toString();
@@ -122,7 +138,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // API Call: Send OTP
-  Future<String?> sendOtp() async {
+  Future<String?> sendOtp({String citizenType = 'INDIAN'}) async {
     if (!isPhoneValid) return 'Invalid phone number';
     
     _isSendingOtp = true;
@@ -132,6 +148,7 @@ class AuthProvider with ChangeNotifier {
       final meta = await _getMeta();
       final response = await ApiService.sendOtp(
         phoneNumber: _phoneNumber,
+        citizenType: citizenType,
         meta: meta,
       );
 
@@ -169,7 +186,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // API Call: Resend OTP
-  Future<String?> resendOtp() async {
+  Future<String?> resendOtp({String citizenType = 'INDIAN'}) async {
     if (_resendSeconds > 0) return 'Please wait for the timer';
     
     _otpCode = '';
@@ -177,11 +194,11 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     _startTimer();
 
-    return await sendOtp();
+    return await sendOtp(citizenType: citizenType);
   }
 
   // API Call: Verify OTP
-  Future<String?> verifyOtp() async {
+  Future<String?> verifyOtp({String citizenType = 'INDIAN'}) async {
     if (!isOtpComplete) return 'Please enter the complete OTP';
 
     _isVerifying = true;
@@ -192,6 +209,7 @@ class AuthProvider with ChangeNotifier {
       final response = await ApiService.verifyOtp(
         phoneNumber: _phoneNumber,
         otpCode: _otpCode,
+        citizenType: citizenType,
         meta: meta,
       );
 
@@ -200,7 +218,8 @@ class AuthProvider with ChangeNotifier {
         if (data['status'] == true) {
           _accessToken = data['access_token'] ?? '';
           _refreshToken = data['refresh_token'] ?? '';
-          _profileData = data['use_profile'] ?? {};
+          _profileData = Map<String, dynamic>.from(data['use_profile'] ?? data['user_profile'] ?? {});
+          _profileData['citizen_type'] = citizenType;
           
           await _saveSession();
           registerDeviceToken();
@@ -218,6 +237,127 @@ class AuthProvider with ChangeNotifier {
       CustomLogger.logError('Verify OTP failed', e, stack);
       _isVerifying = false;
       notifyListeners();
+      return e.toString();
+    }
+  }
+
+  // API Call: Foreign Citizen Password Login
+  Future<String?> loginPassword({
+    required String mobile,
+    required String password,
+    String citizenType = 'FOREIGN',
+  }) async {
+    if (mobile.trim().isEmpty) return 'Mobile number is required';
+    if (password.isEmpty) return 'Password is required';
+
+    _isLoggingInPassword = true;
+    notifyListeners();
+
+    try {
+      final meta = await _getMeta();
+      final response = await ApiService.loginPassword(
+        mobile: mobile.trim(),
+        password: password,
+        citizenType: citizenType,
+        meta: meta,
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        if (data['status'] == true) {
+          _accessToken = data['access_token'] ?? '';
+          _refreshToken = data['refresh_token'] ?? '';
+          _profileData = Map<String, dynamic>.from(data['use_profile'] ?? data['user_profile'] ?? {});
+          _profileData['citizen_type'] = citizenType;
+
+          await _saveSession();
+          registerDeviceToken();
+
+          _isLoggingInPassword = false;
+          notifyListeners();
+          return null;
+        }
+      }
+
+      _isLoggingInPassword = false;
+      notifyListeners();
+      return data['message'] ?? 'Login failed';
+    } catch (e, stack) {
+      CustomLogger.logError('Password Login failed', e, stack);
+      _isLoggingInPassword = false;
+      notifyListeners();
+      return e.toString();
+    }
+  }
+
+  // API Call: Foreign Citizen Change Password
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    if (_accessToken.isEmpty) return 'Not authenticated';
+    if (currentPassword.isEmpty) return 'Current password is required';
+    if (newPassword.isEmpty) return 'New password is required';
+    if (newPassword != confirmPassword) return 'New password and confirm password do not match';
+
+    try {
+      final response = await ApiService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+        accessToken: _accessToken,
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        if (data['status'] == true) {
+          return null; // Success
+        }
+      } else if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return 'Session expired. Please login again.';
+      }
+
+      return data['message'] ?? 'Failed to change password';
+    } catch (e, stack) {
+      CustomLogger.logError('Change password failed', e, stack);
+      return e.toString();
+    }
+  }
+
+  // API Call: Delete Account
+  Future<String?> deleteAccount({
+    bool confirm = true,
+  }) async {
+    if (_accessToken.isEmpty) return 'Not authenticated';
+
+    try {
+      final response = await ApiService.deleteAccount(
+        confirm: confirm,
+        accessToken: _accessToken,
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201 || data['status'] == true) {
+        // Account deleted successfully
+        _phoneNumber = '';
+        _otpSent = false;
+        _otpCode = '';
+        _accessToken = '';
+        _refreshToken = '';
+        _profileData = {};
+        _userRole = 'DL';
+        _userName = 'Alex Kumar';
+
+        await _clearSession();
+        notifyListeners();
+        return null; // Success
+      }
+
+      return data['message'] ?? 'Failed to delete account';
+    } catch (e, stack) {
+      CustomLogger.logError('Delete account failed', e, stack);
       return e.toString();
     }
   }
@@ -310,7 +450,13 @@ class AuthProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true && data['data'] != null) {
+          final savedCitizenType = _profileData['citizen_type'];
           _profileData = Map<String, dynamic>.from(data['data']);
+          if ((!_profileData.containsKey('citizen_type') || _profileData['citizen_type'] == null || _profileData['citizen_type'].toString().isEmpty) &&
+              savedCitizenType != null &&
+              savedCitizenType.toString().isNotEmpty) {
+            _profileData['citizen_type'] = savedCitizenType;
+          }
           await _saveSession();
           notifyListeners();
           return true;

@@ -24,13 +24,15 @@ class ApiService {
 
   static Future<http.Response> sendOtp({
     required String phoneNumber,
+    String citizenType = "INDIAN",
     Map<String, String> meta = defaultMeta,
   }) async {
     final url = Uri.parse(ApiUrls.sendOtp);
     final headers = {'Content-Type': 'application/json'};
     final requestBody = json.encode({
       "credentials": {
-        "mobile": phoneNumber
+        "mobile": phoneNumber,
+        "citizen_type": citizenType
       },
       "meta": meta
     });
@@ -50,6 +52,7 @@ class ApiService {
   static Future<http.Response> verifyOtp({
     required String phoneNumber,
     required String otpCode,
+    String citizenType = "INDIAN",
     Map<String, String> meta = defaultMeta,
   }) async {
     final url = Uri.parse(ApiUrls.verifyOtp);
@@ -57,9 +60,93 @@ class ApiService {
     final requestBody = json.encode({
       "credentials": {
         "mobile": phoneNumber,
-        "otp": otpCode
+        "otp": otpCode,
+        "citizen_type": citizenType
       },
       "meta": meta
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> loginPassword({
+    required String mobile,
+    required String password,
+    String citizenType = "FOREIGN",
+    Map<String, String> meta = defaultMeta,
+  }) async {
+    final url = Uri.parse(ApiUrls.loginPassword);
+    final headers = {'Content-Type': 'application/json'};
+    final requestBody = json.encode({
+      "credentials": {
+        "mobile": mobile,
+        "password": password,
+        "citizen_type": citizenType
+      },
+      "meta": meta
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.changePassword);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "current_password": currentPassword,
+      "new_password": newPassword,
+      "confirm_password": confirmPassword,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> deleteAccount({
+    bool confirm = true,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.deleteAccount);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "confirm": confirm,
     });
 
     CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);

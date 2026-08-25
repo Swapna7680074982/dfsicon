@@ -4,6 +4,9 @@ class ApiUrls {
 
   static const String sendOtp = '$baseUrl/auth/send_otp';
   static const String verifyOtp = '$baseUrl/auth/verify_otp';
+  static const String loginPassword = '$baseUrl/auth/login_password';
+  static const String changePassword = '$baseUrl/auth/change_password';
+  static const String deleteAccount = '$baseUrl/auth/delete_account';
   static const String refreshToken = '$baseUrl/auth/refresh_token';
   static const String logout = '$baseUrl/auth/logout';
 

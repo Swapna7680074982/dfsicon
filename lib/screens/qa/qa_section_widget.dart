@@ -956,8 +956,17 @@ class _QaSectionWidgetState extends State<QaSectionWidget> {
                 else
                   Column(
                     children: [
-                      ...displayQuestions.map((q) => _buildQuestionCard(context, q)).toList(),
-                      const SizedBox(height: 4),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 220),
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: displayQuestions.map((q) => _buildQuestionCard(context, q)).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
