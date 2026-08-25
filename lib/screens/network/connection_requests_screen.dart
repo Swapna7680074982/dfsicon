@@ -1,13 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/network_provider.dart';
 
-class ConnectionRequestsScreen extends StatelessWidget {
+class ConnectionRequestsScreen extends StatefulWidget {
   const ConnectionRequestsScreen({super.key});
 
   @override
+  State<ConnectionRequestsScreen> createState() => _ConnectionRequestsScreenState();
+}
+
+class _ConnectionRequestsScreenState extends State<ConnectionRequestsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  Future<void> _loadData() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+    if (auth.accessToken.isNotEmpty) {
+      await netProvider.fetchPendingRequests(accessToken: auth.accessToken);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     final netProvider = Provider.of<NetworkProvider>(context);
 
     return Scaffold(
@@ -49,130 +72,202 @@ class ConnectionRequestsScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: netProvider.requests.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.person_add_disabled_outlined,
-                    size: 48,
-                    color: AppColors.textLight,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'No connection requests pending',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(20),
-              itemCount: netProvider.requests.length,
-              itemBuilder: (context, index) {
-                final req = netProvider.requests[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.tileBorder, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: req.bg,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          req.initials,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: req.initials == 'TN'
-                                ? AppColors.textPrimary
-                                : AppColors.primary,
-                          ),
-                        ),
+      body: netProvider.isLoadingRequests && netProvider.requests.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : netProvider.requests.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.person_add_disabled_outlined,
+                        size: 48,
+                        color: AppColors.textLight,
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              req.name,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              req.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          netProvider.acceptRequest(req.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Connected with ${req.name}!'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.person_add_alt_1_outlined, size: 14),
-                            SizedBox(width: 4),
-                            Text(
-                              'Accept',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      SizedBox(height: 12),
+                      Text(
+                        'No connection requests pending',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  color: AppColors.primary,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    padding: const EdgeInsets.all(20),
+                    itemCount: netProvider.requests.length,
+                    itemBuilder: (context, index) {
+                      final req = netProvider.requests[index];
+                      final initials = NetworkProvider.getInitials(req.fullName);
+                      final bg = NetworkProvider.getAvatarBg(req.connectionId);
+                      final subtitleText = [
+                        req.designation,
+                        req.organisationName,
+                        if (req.topicTitle != null) req.topicTitle
+                      ].where((s) => s != null && s.isNotEmpty).join(' • ');
+
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.tileBorder, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            ClipOval(
+                              child: req.profileImage != null && req.profileImage!.isNotEmpty
+                                  ? Image.network(
+                                      req.profileImage!,
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        width: 48,
+                                        height: 48,
+                                        color: bg,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          initials,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      width: 48,
+                                      height: 48,
+                                      color: bg,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        initials,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    req.fullName,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if (subtitleText.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subtitleText,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final success = await netProvider.respondConnectionRequest(
+                                      connectionId: req.connectionId,
+                                      action: 'ACCEPT',
+                                      accessToken: authProvider.accessToken,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(success ? 'Connected with ${req.fullName}!' : 'Action failed'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Accept',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                OutlinedButton(
+                                  onPressed: () async {
+                                    final success = await netProvider.respondConnectionRequest(
+                                      connectionId: req.connectionId,
+                                      action: 'REJECT',
+                                      accessToken: authProvider.accessToken,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(success ? 'Request declined' : 'Action failed'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                    side: const BorderSide(color: Colors.red, width: 1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Decline',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
     );
   }
 }

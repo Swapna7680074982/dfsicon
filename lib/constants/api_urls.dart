@@ -36,4 +36,23 @@ class ApiUrls {
   static const String myNotifications = '$baseUrl/utility/my_notifications';
   static const String markNotificationRead = '$baseUrl/utility/mark_notification_read';
   static const String registerToken = '$baseUrl/auth/register_token';
+
+  // Networking Module APIs
+  static const String sessionParticipants = '$baseUrl/networking/session_participants';
+  static const String sendRequest = '$baseUrl/networking/send_request';
+  static const String pendingRequests = '$baseUrl/networking/pending_requests';
+  static const String respondRequest = '$baseUrl/networking/respond_request';
+  static const String disconnect = '$baseUrl/networking/disconnect';
+  static const String cancelRequest = '$baseUrl/networking/cancel_request';
+  static const String myConnections = '$baseUrl/networking/my_connections';
+  static const String sendMessage = '$baseUrl/networking/send_message';
+  static const String messages = '$baseUrl/networking/messages';
+  static const String markRead = '$baseUrl/networking/mark_read';
+  static const String unreadCount = '$baseUrl/networking/unread_count';
+  static const String createGroup = '$baseUrl/networking/create_group';
+  static const String groupDetails = '$baseUrl/networking/group_details';
+  static const String addMembers = '$baseUrl/networking/add_members';
+  static const String removeMember = '$baseUrl/networking/remove_member';
+  static const String leaveGroup = '$baseUrl/networking/leave_group';
+  static const String conversations = '$baseUrl/networking/conversations';
 }

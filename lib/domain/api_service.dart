@@ -895,4 +895,414 @@ class ApiService {
     }
     return mimeType;
   }
+
+  // ==========================================
+  // Networking Module APIs
+  // ==========================================
+
+  // 1. Session Participants API
+  static Future<http.Response> fetchNetworkSessionParticipants({
+    dynamic assignmentId,
+    String? search,
+    int page = 1,
+    int limit = 20,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.sessionParticipants);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'page': page,
+      'limit': limit,
+    };
+    if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
+    if (search != null && search.isNotEmpty) bodyMap['search'] = search;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 2. Send Request API
+  static Future<http.Response> sendNetworkRequest({
+    dynamic assignmentId,
+    required dynamic targetId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.sendRequest);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'target_id': targetId,
+    };
+    if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 3. Pending Requests API
+  static Future<http.Response> fetchNetworkPendingRequests({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.pendingRequests);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers);
+    final response = await http.post(url, headers: headers, body: json.encode({}));
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 4. Respond Request API (action = "ACCEPT" or "REJECT")
+  static Future<http.Response> respondNetworkRequest({
+    required dynamic connectionId,
+    required String action,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.respondRequest);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'connection_id': connectionId,
+      'action': action,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 5. Disconnect API
+  static Future<http.Response> disconnectNetworkConnection({
+    required dynamic connectionId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.disconnect);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'connection_id': connectionId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 6. Cancel Request API
+  static Future<http.Response> cancelNetworkRequest({
+    required dynamic connectionId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.cancelRequest);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'connection_id': connectionId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 7. My Connections API
+  static Future<http.Response> fetchMyNetworkConnections({
+    dynamic assignmentId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myConnections);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {};
+    if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 8. Send Message API - Text
+  static Future<http.Response> sendNetworkMessageText({
+    required dynamic conversationId,
+    required String body,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.sendMessage);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'conversation_id': conversationId,
+      'body': body,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 8. Send Message API - Attachment (Multipart)
+  static Future<http.Response> sendNetworkMessageAttachment({
+    required dynamic conversationId,
+    String? body,
+    required File attachmentFile,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.sendMessage);
+    final request = http.MultipartRequest('POST', url);
+
+    request.headers['Authorization'] = 'Bearer $accessToken';
+    request.fields['conversation_id'] = conversationId.toString();
+    if (body != null && body.isNotEmpty) {
+      request.fields['body'] = body;
+    }
+
+    final fileExtension = attachmentFile.path.split('.').last.toLowerCase();
+    final mimeTypeStr = _getMimeTypeForExtension(fileExtension);
+    final mimeParts = mimeTypeStr.split('/');
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'attachment',
+        attachmentFile.path,
+        contentType: MediaType(mimeParts[0], mimeParts[1]),
+      ),
+    );
+
+    CustomLogger.logRequest('POST (Multipart)', url.toString(), headers: request.headers, body: request.fields.toString());
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    CustomLogger.logResponse('POST (Multipart)', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 9. Messages API
+  static Future<http.Response> fetchNetworkMessages({
+    required dynamic conversationId,
+    dynamic beforeId,
+    int limit = 30,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.messages);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'conversation_id': conversationId,
+      'limit': limit,
+    };
+    if (beforeId != null) bodyMap['before_id'] = beforeId;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 10. Mark as Read API
+  static Future<http.Response> markNetworkRead({
+    required dynamic conversationId,
+    dynamic uptoMessageId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.markRead);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'conversation_id': conversationId,
+    };
+    if (uptoMessageId != null) bodyMap['upto_message_id'] = uptoMessageId;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 11. Un-read Count API
+  static Future<http.Response> fetchNetworkUnreadCount({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.unreadCount);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers);
+    final response = await http.post(url, headers: headers, body: json.encode({}));
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 12. Create Group API
+  static Future<http.Response> createNetworkGroup({
+    dynamic assignmentId,
+    required String groupName,
+    String? groupDescription,
+    required List<int> memberIds,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.createGroup);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'group_name': groupName,
+      'member_ids': memberIds,
+    };
+    if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
+    if (groupDescription != null && groupDescription.isNotEmpty) {
+      bodyMap['group_description'] = groupDescription;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 13. Group Details API
+  static Future<http.Response> fetchNetworkGroupDetails({
+    required dynamic conversationId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.groupDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'conversation_id': conversationId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 14. Add Member(s) in Group API
+  static Future<http.Response> addNetworkGroupMembers({
+    required dynamic conversationId,
+    required List<int> memberIds,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.addMembers);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'conversation_id': conversationId,
+      'member_ids': memberIds,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 15. Remove Member(s) in Group API
+  static Future<http.Response> removeNetworkGroupMember({
+    required dynamic conversationId,
+    required List<int> memberIds,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.removeMember);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'conversation_id': conversationId,
+      'member_ids': memberIds,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 16. Leave Group API
+  static Future<http.Response> leaveNetworkGroup({
+    required dynamic conversationId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.leaveGroup);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'conversation_id': conversationId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 17. Conversations API
+  static Future<http.Response> fetchNetworkConversations({
+    String? type, // "DIRECT" or "GROUP"
+    String? search,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.conversations);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {};
+    if (type != null && type.isNotEmpty) bodyMap['type'] = type;
+    if (search != null && search.isNotEmpty) bodyMap['search'] = search;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }

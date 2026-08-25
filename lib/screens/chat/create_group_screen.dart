@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../domain/networking_models.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/network_provider.dart';
-import '../../providers/connections_provider.dart';
 import 'group_chat_screen.dart';
 
 class CreateGroupScreen extends StatefulWidget {
@@ -17,14 +18,18 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
-  final List<ParticipantItem> _selectedParticipants = [];
+  final List<MyConnectionItem> _selectedParticipants = [];
   String _searchQuery = '';
   bool _isCreateEnabled = false;
+  bool _isCreating = false;
 
   @override
   void initState() {
     super.initState();
     _nameController.addListener(_updateCreateState);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadConnections();
+    });
   }
 
   @override
@@ -35,22 +40,84 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     super.dispose();
   }
 
+  Future<void> _loadConnections() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+    if (auth.accessToken.isNotEmpty) {
+      await netProvider.fetchMyConnections(accessToken: auth.accessToken);
+    }
+  }
+
   void _updateCreateState() {
     setState(() {
       _isCreateEnabled = _nameController.text.trim().isNotEmpty;
     });
   }
 
+  Future<void> _handleCreateGroup() async {
+    if (!_isCreateEnabled || _isCreating) return;
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+
+    setState(() {
+      _isCreating = true;
+    });
+
+    final groupName = _nameController.text.trim();
+    final description = _descController.text.trim();
+    final memberIds = _selectedParticipants.map((p) => p.userId).toList();
+
+    final newConvId = await netProvider.createGroup(
+      groupName: groupName,
+      groupDescription: description,
+      memberIds: memberIds,
+      accessToken: auth.accessToken,
+    );
+
+    setState(() {
+      _isCreating = false;
+    });
+
+    if (mounted) {
+      if (newConvId != null) {
+        final newConv = netProvider.conversations.firstWhere(
+          (c) => c.conversationId == newConvId,
+          orElse: () => ConversationItem(
+            conversationId: newConvId,
+            type: 'GROUP',
+            title: groupName,
+            subtitle: description,
+            memberCount: memberIds.length + 1,
+            isOwner: true,
+          ),
+        );
+
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => GroupChatScreen(conversation: newConv),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to create group')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final connProvider = Provider.of<ConnectionsProvider>(context);
     final netProvider = Provider.of<NetworkProvider>(context);
 
-    final allConnections = connProvider.participants;
+    final allConnections = netProvider.myConnections;
 
     final filteredConnections = allConnections.where((p) {
-      final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      final isAlreadySelected = _selectedParticipants.any((sp) => sp.id == p.id);
+      final matchesSearch = p.fullName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (p.organisationName != null && p.organisationName!.toLowerCase().contains(_searchQuery.toLowerCase()));
+      final isAlreadySelected = _selectedParticipants.any((sp) => sp.userId == p.userId);
       return matchesSearch && !isAlreadySelected;
     }).toList();
 
@@ -78,24 +145,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               child: SizedBox(
                 height: 36,
                 child: ElevatedButton(
-                  onPressed: _isCreateEnabled
-                      ? () {
-                          final groupName = _nameController.text.trim();
-                          final description = _descController.text.trim();
-                          final participantNames = _selectedParticipants.map((p) => p.name).toList();
-
-                          netProvider.createGroupChat(groupName, description, participantNames);
-                          final newGroup = netProvider.conversations.first;
-
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => GroupChatScreen(conversation: newGroup),
-                            ),
-                          );
-                        }
-                      : null,
+                  onPressed: _isCreateEnabled && !_isCreating ? _handleCreateGroup : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: Colors.grey.shade200,
@@ -107,13 +157,19 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                   ),
-                  child: const Text(
-                    'Create',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isCreating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Create',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -146,7 +202,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'All Hands',
+                  hintText: 'e.g. MedCore Health Team',
                   hintStyle: TextStyle(
                     color: AppColors.textLight,
                     fontSize: 14,
@@ -189,7 +245,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Participants (${_selectedParticipants.length})',
+                  'Selected Members (${_selectedParticipants.length})',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -210,7 +266,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 ),
                 alignment: Alignment.center,
                 child: const Text(
-                  'No participants selected yet',
+                  'No members selected yet',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -226,6 +282,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   itemCount: _selectedParticipants.length,
                   itemBuilder: (context, index) {
                     final p = _selectedParticipants[index];
+                    final initials = NetworkProvider.getInitials(p.fullName);
+                    final bg = NetworkProvider.getAvatarBg(p.userId);
+
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -237,26 +296,38 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: p.bg,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              p.initials,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
+                          ClipOval(
+                            child: p.profileImage != null && p.profileImage!.isNotEmpty
+                                ? Image.network(
+                                    p.profileImage!,
+                                    width: 24,
+                                    height: 24,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 24,
+                                      height: 24,
+                                      color: bg,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        initials,
+                                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 24,
+                                    height: 24,
+                                    color: bg,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      initials,
+                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                    ),
+                                  ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            p.name,
+                            p.fullName,
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -284,7 +355,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               ),
             const SizedBox(height: 24),
             const Text(
-              'Add Participants',
+              'Add Members from Connections',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -325,82 +396,114 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredConnections.length,
-              itemBuilder: (context, index) {
-                final p = filteredConnections[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.tileBorder, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: p.bg,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          p.initials,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+            netProvider.isLoadingConnections && allConnections.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : filteredConnections.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32.0),
+                        child: Center(
+                          child: Text(
+                            allConnections.isEmpty ? 'No connections found' : 'No matching connections',
+                            style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.name,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: filteredConnections.length,
+                        itemBuilder: (context, index) {
+                          final p = filteredConnections[index];
+                          final initials = NetworkProvider.getInitials(p.fullName);
+                          final bg = NetworkProvider.getAvatarBg(p.userId);
+                          final subtitleText = [p.designation, p.organisationName].where((s) => s != null && s.isNotEmpty).join(', ');
+
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.tileBorder, width: 1),
                             ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Connected attendee',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
+                            child: Row(
+                              children: [
+                                ClipOval(
+                                  child: p.profileImage != null && p.profileImage!.isNotEmpty
+                                      ? Image.network(
+                                          p.profileImage!,
+                                          width: 44,
+                                          height: 44,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            width: 44,
+                                            height: 44,
+                                            color: bg,
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              initials,
+                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 44,
+                                          height: 44,
+                                          color: bg,
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            initials,
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p.fullName,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      if (subtitleText.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          subtitleText,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedParticipants.add(p);
+                                      _searchController.clear();
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.add_circle_outline,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedParticipants.add(p);
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
+                          );
                         },
-                        icon: const Icon(
-                          Icons.add_circle_outline,
-                          color: AppColors.primary,
-                        ),
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
             const SizedBox(height: 40),
           ],
         ),
