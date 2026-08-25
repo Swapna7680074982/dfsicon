@@ -53,6 +53,7 @@ class AuthProvider with ChangeNotifier {
   Map<String, dynamic> get profileData => _profileData;
 
   // Dynamic profile fields with mock fallbacks
+  String get userId => (_profileData['user_id'] ?? _profileData['id'] ?? '').toString();
   String get userRole => _profileData['role_code'] ?? _userRole;
   String get userName => _profileData['full_name'] ?? _userName;
   bool get isSpeaker => userRole.toUpperCase() == 'SK';

@@ -470,6 +470,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                               coordinatorEmail: s.coordinatorEmail ?? '',
                               description: s.description,
                               topicId: s.topicId,
+                              assignmentId: s.assignmentId,
                             ),
                           ),
                         );

@@ -117,146 +117,161 @@ class _ConnectionRequestsScreenState extends State<ConnectionRequestsScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppColors.tileBorder, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ClipOval(
-                              child: req.profileImage != null && req.profileImage!.isNotEmpty
-                                  ? Image.network(
-                                      req.profileImage!,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        width: 48,
-                                        height: 48,
-                                        color: bg,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          initials,
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                            Row(
+                              children: [
+                                ClipOval(
+                                  child: req.profileImage != null && req.profileImage!.isNotEmpty
+                                      ? Image.network(
+                                          req.profileImage!,
+                                          width: 48,
+                                          height: 48,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            width: 48,
+                                            height: 48,
+                                            color: bg,
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              initials,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 48,
+                                          height: 48,
+                                          color: bg,
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            initials,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 48,
-                                      height: 48,
-                                      color: bg,
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        initials,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        req.fullName,
                                         style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                          color: AppColors.textPrimary,
                                         ),
                                       ),
-                                    ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    req.fullName,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
+                                      if (subtitleText.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          subtitleText,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  if (subtitleText.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      subtitleText,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Column(
+                            const SizedBox(height: 14),
+                            Row(
                               children: [
-                                ElevatedButton(
-                                  onPressed: () async {
-                                    final success = await netProvider.respondConnectionRequest(
-                                      connectionId: req.connectionId,
-                                      action: 'ACCEPT',
-                                      accessToken: authProvider.accessToken,
-                                    );
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      final success = await netProvider.respondConnectionRequest(
+                                        connectionId: req.connectionId,
+                                        action: 'ACCEPT',
+                                        accessToken: authProvider.accessToken,
+                                      );
+                                      messenger.showSnackBar(
                                         SnackBar(
                                           content: Text(success ? 'Connected with ${req.fullName}!' : 'Action failed'),
                                           duration: const Duration(seconds: 2),
                                         ),
                                       );
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                    },
+                                    icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
+                                    label: const Text(
+                                      'Accept',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: const Text(
-                                    'Accept',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                OutlinedButton(
-                                  onPressed: () async {
-                                    final success = await netProvider.respondConnectionRequest(
-                                      connectionId: req.connectionId,
-                                      action: 'REJECT',
-                                      accessToken: authProvider.accessToken,
-                                    );
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      final success = await netProvider.respondConnectionRequest(
+                                        connectionId: req.connectionId,
+                                        action: 'REJECT',
+                                        accessToken: authProvider.accessToken,
+                                      );
+                                      messenger.showSnackBar(
                                         SnackBar(
                                           content: Text(success ? 'Request declined' : 'Action failed'),
                                           duration: const Duration(seconds: 2),
                                         ),
                                       );
-                                    }
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red, width: 1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                    },
+                                    icon: const Icon(Icons.close_rounded, size: 16, color: Color(0xFFDC2626)),
+                                    label: const Text(
+                                      'Decline',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFDC2626),
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: const Text(
-                                    'Decline',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFEE2E2),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        side: const BorderSide(color: Color(0xFFFECDD3), width: 1),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
                                 ),

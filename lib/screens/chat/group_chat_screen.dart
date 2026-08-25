@@ -388,9 +388,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            if (msg.body != null && msg.body!.isNotEmpty)
+                                            if (msg.displayText.isNotEmpty)
                                               Text(
-                                                msg.body!,
+                                                msg.displayText,
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color: msg.isMine ? Colors.white : AppColors.textPrimary,
@@ -398,7 +398,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                                 ),
                                               ),
                                             if (msg.attachmentUrl != null && msg.attachmentUrl!.isNotEmpty) ...[
-                                              if (msg.body != null && msg.body!.isNotEmpty) const SizedBox(height: 8),
+                                              if (msg.displayText.isNotEmpty) const SizedBox(height: 8),
                                               Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
@@ -516,140 +516,82 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
   }
 
-  void _showGroupMembersBottomSheet(BuildContext context, GroupDetailsData? details) {
-    String searchQuery = '';
+  void _showAddMembersModal(BuildContext context, GroupDetailsData details) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+
+    if (netProvider.myConnections.isEmpty) {
+      netProvider.fetchMyConnections(accessToken: auth.accessToken);
+    }
+
+    final List<int> selectedMemberIds = [];
+    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateSheet) {
-            final members = details?.members ?? [];
-            final filteredMembers = members.where((m) {
-              return m.fullName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                  (m.organisationName != null && m.organisationName!.toLowerCase().contains(searchQuery.toLowerCase()));
-            }).toList();
+      builder: (ctx) {
+        return Consumer<NetworkProvider>(
+          builder: (ctx, netProvider, child) {
+            return StatefulBuilder(
+              builder: (ctx, setStateModal) {
+                final existingMemberUserIds = details.members.map((m) => m.userId).toSet();
+                final availableConnections = netProvider.myConnections
+                    .where((c) => !existingMemberUserIds.contains(c.userId))
+                    .toList();
 
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
+                final filteredConnections = availableConnections.where((c) {
+                  final query = searchQuery.toLowerCase();
+                  return c.fullName.toLowerCase().contains(query) ||
+                      (c.organisationName != null && c.organisationName!.toLowerCase().contains(query));
+                }).toList();
+
+                return Container(
+                  height: MediaQuery.of(ctx).size.height * 0.75,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: NetworkProvider.getAvatarBg(widget.conversation.conversationId),
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            NetworkProvider.getInitials(details?.groupName ?? widget.conversation.title),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 44,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                details?.groupName ?? widget.conversation.title,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Add Members',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${details?.memberCount ?? widget.conversation.memberCount} members',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, color: AppColors.textLight),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(height: 1, thickness: 1),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        if (details?.groupDescription != null && details!.groupDescription!.isNotEmpty) ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF9F9FB),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey.shade100, width: 1),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Description',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textSecondary,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  details.groupDescription!,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textPrimary,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, color: AppColors.textLight),
+                              onPressed: () => Navigator.pop(ctx),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        Container(
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Container(
                           decoration: BoxDecoration(
                             color: Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(30),
@@ -663,13 +605,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                               Expanded(
                                 child: TextField(
                                   onChanged: (val) {
-                                    setStateSheet(() {
+                                    setStateModal(() {
                                       searchQuery = val;
                                     });
                                   },
                                   decoration: const InputDecoration(
                                     border: InputBorder.none,
-                                    hintText: 'Search members...',
+                                    hintText: 'Search connections...',
                                     hintStyle: TextStyle(
                                       color: AppColors.textLight,
                                       fontSize: 14,
@@ -680,149 +622,573 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Text(
-                              'Members (${filteredMembers.length})',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: netProvider.isLoadingConnections
+                            ? const Center(child: CircularProgressIndicator())
+                            : filteredConnections.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      availableConnections.isEmpty
+                                          ? 'All your connections are already in this group.'
+                                          : 'No connections match search.',
+                                      style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                    itemCount: filteredConnections.length,
+                                    itemBuilder: (ctx, index) {
+                                      final conn = filteredConnections[index];
+                                      final isSelected = selectedMemberIds.contains(conn.userId);
+                                      final initials = NetworkProvider.getInitials(conn.fullName);
+                                      final avatarBg = NetworkProvider.getAvatarBg(conn.userId);
+
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? AppColors.primary.withAlpha(10) : Colors.white,
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(
+                                            color: isSelected ? AppColors.primary : AppColors.tileBorder,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: CheckboxListTile(
+                                          value: isSelected,
+                                          activeColor: AppColors.primary,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          title: Text(
+                                            conn.fullName,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          subtitle: conn.designation != null || conn.organisationName != null
+                                              ? Text(
+                                                  conn.designation ?? conn.organisationName ?? '',
+                                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                                )
+                                              : null,
+                                          secondary: ClipOval(
+                                            child: conn.profileImage != null && conn.profileImage!.isNotEmpty
+                                                ? Image.network(
+                                                    conn.profileImage!,
+                                                    width: 40,
+                                                    height: 40,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, __, ___) => Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      color: avatarBg,
+                                                      alignment: Alignment.center,
+                                                      child: Text(
+                                                        initials,
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    color: avatarBg,
+                                                    alignment: Alignment.center,
+                                                    child: Text(
+                                                      initials,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                          ),
+                                          onChanged: (val) {
+                                            setStateModal(() {
+                                              if (val == true) {
+                                                selectedMemberIds.add(conn.userId);
+                                              } else {
+                                                selectedMemberIds.remove(conn.userId);
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                      ),
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (filteredMembers.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 32.0),
-                            child: Center(
+                              onPressed: selectedMemberIds.isEmpty
+                                  ? null
+                                  : () async {
+                                      final success = await netProvider.addGroupMembers(
+                                        conversationId: details.conversationId,
+                                        memberIds: selectedMemberIds,
+                                        accessToken: auth.accessToken,
+                                      );
+                                      if (ctx.mounted) {
+                                        Navigator.pop(ctx);
+                                        if (success) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Member(s) added successfully'),
+                                              backgroundColor: Colors.black87,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Failed to add members'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
                               child: Text(
-                                'No members found',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade400,
+                                'Add Members ${selectedMemberIds.isNotEmpty ? "(${selectedMemberIds.length})" : ""}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          )
-                        else
-                          ...filteredMembers.map((member) {
-                            final memberInitials = NetworkProvider.getInitials(member.fullName);
-                            final memberBg = NetworkProvider.getAvatarBg(member.userId);
-                            final isOwner = member.role.toUpperCase() == 'OWNER';
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 
-                            return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 6),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.tileBorder, width: 1),
-                              ),
-                              child: Row(
-                                children: [
-                                  ClipOval(
-                                    child: member.profileImage != null && member.profileImage!.isNotEmpty
-                                        ? Image.network(
-                                            member.profileImage!,
-                                            width: 42,
-                                            height: 42,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => Container(
-                                              width: 42,
-                                              height: 42,
-                                              color: memberBg,
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                memberInitials,
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                        : Container(
-                                            width: 42,
-                                            height: 42,
-                                            color: memberBg,
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              memberInitials,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          member.fullName,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          member.designation ?? member.organisationName ?? (member.isMe ? 'You' : 'Member'),
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isOwner)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withAlpha(25),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Text(
-                                        'OWNER',
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    )
-                                  else if (details?.isOwner == true && !member.isMe)
-                                    IconButton(
-                                      icon: const Icon(Icons.person_remove_outlined, color: Colors.red, size: 20),
-                                      onPressed: () async {
-                                        final success = await netProvider.removeGroupMember(
-                                          conversationId: widget.conversation.conversationId,
-                                          memberIds: [member.userId],
-                                          accessToken: auth.accessToken,
-                                        );
-                                        if (success && mounted) {
-                                          setStateSheet(() {});
-                                        }
-                                      },
-                                    ),
-                                ],
-                              ),
-                            );
-                          }),
-                      ],
+  void _showGroupMembersBottomSheet(BuildContext context, GroupDetailsData? initialDetails) {
+    String searchQuery = '';
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Consumer<NetworkProvider>(
+          builder: (sheetContext, netProvider, child) {
+            final details = netProvider.getGroupDetails(widget.conversation.conversationId) ?? initialDetails;
+
+            return StatefulBuilder(
+              builder: (sheetContext, setStateSheet) {
+                final members = details?.members ?? [];
+                final filteredMembers = members.where((m) {
+                  return m.fullName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                      (m.organisationName != null && m.organisationName!.toLowerCase().contains(searchQuery.toLowerCase()));
+                }).toList();
+
+                return Container(
+                  height: MediaQuery.of(sheetContext).size.height * 0.78,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
                     ),
                   ),
-                ],
-              ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 44,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: NetworkProvider.getAvatarBg(widget.conversation.conversationId),
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                NetworkProvider.getInitials(details?.groupName ?? widget.conversation.title),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    details?.groupName ?? widget.conversation.title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${details?.memberCount ?? widget.conversation.memberCount} members',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, color: AppColors.textLight),
+                              onPressed: () => Navigator.pop(sheetContext),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, thickness: 1),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          physics: const BouncingScrollPhysics(),
+                          children: [
+                            if (details?.groupDescription != null && details!.groupDescription!.isNotEmpty) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF9F9FB),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.grey.shade100, width: 1),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Description',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textSecondary,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      details.groupDescription!,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textPrimary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: Colors.grey.shade200, width: 1),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.search, color: AppColors.textLight, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextField(
+                                      onChanged: (val) {
+                                        setStateSheet(() {
+                                          searchQuery = val;
+                                        });
+                                      },
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'Search members...',
+                                        hintStyle: TextStyle(
+                                          color: AppColors.textLight,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Members (${filteredMembers.length})',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (details != null && (details.isOwner || !details.isReadOnly))
+                                  InkWell(
+                                    onTap: () => _showAddMembersModal(sheetContext, details),
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withAlpha(20),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.person_add_alt_1_outlined, size: 16, color: AppColors.primary),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Add Members',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            if (filteredMembers.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 32.0),
+                                child: Center(
+                                  child: Text(
+                                    'No members found',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              ...filteredMembers.map((member) {
+                                final memberInitials = NetworkProvider.getInitials(member.fullName);
+                                final memberBg = NetworkProvider.getAvatarBg(member.userId);
+                                final isOwner = member.role.toUpperCase() == 'OWNER' || member.userId == details?.ownerId;
+
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: AppColors.tileBorder, width: 1),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipOval(
+                                        child: member.profileImage != null && member.profileImage!.isNotEmpty
+                                            ? Image.network(
+                                                member.profileImage!,
+                                                width: 42,
+                                                height: 42,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  width: 42,
+                                                  height: 42,
+                                                  color: memberBg,
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    memberInitials,
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : Container(
+                                                width: 42,
+                                                height: 42,
+                                                color: memberBg,
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  memberInitials,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              member.fullName,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              member.designation ?? member.organisationName ?? 'Member',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (isOwner)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withAlpha(25),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Text(
+                                            'OWNER',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        )
+                                      else if (details?.isOwner == true && !member.isMe)
+                                        IconButton(
+                                          icon: const Icon(Icons.person_remove_outlined, color: Colors.red, size: 20),
+                                          onPressed: () async {
+                                            final confirm = await showDialog<bool>(
+                                              context: sheetContext,
+                                              builder: (dialogCtx) => AlertDialog(
+                                                title: const Text('Remove Member'),
+                                                content: Text('Are you sure you want to remove ${member.fullName} from this group?'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(dialogCtx, false),
+                                                    child: const Text('Cancel'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(dialogCtx, true),
+                                                    child: const Text('Remove', style: TextStyle(color: Colors.red)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+
+                                            if (confirm == true) {
+                                              final success = await netProvider.removeGroupMember(
+                                                conversationId: widget.conversation.conversationId,
+                                                memberIds: [member.userId],
+                                                userId: member.userId,
+                                                accessToken: auth.accessToken,
+                                              );
+                                              if (sheetContext.mounted) {
+                                                if (success) {
+                                                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('${member.fullName} removed from group'),
+                                                      backgroundColor: Colors.black87,
+                                                      behavior: SnackBarBehavior.floating,
+                                                    ),
+                                                  );
+                                                } else {
+                                                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Failed to remove member'),
+                                                      backgroundColor: Colors.red,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1, thickness: 1),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: BorderSide(color: Colors.red.shade200),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.exit_to_app_rounded, size: 18),
+                            label: const Text(
+                              'Leave Group',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              _handleLeaveGroup();
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 60),
+                    ],
+                  ),
+                );
+              },
             );
           },
         );
@@ -830,3 +1196,4 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
   }
 }
+

@@ -8,6 +8,7 @@ import '../../providers/network_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/gallery_provider.dart';
+import '../../domain/networking_models.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../utils/time_formatter.dart';
@@ -35,11 +36,15 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
   void _loadParticipants() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
-    final assignmentId = widget.session.assignmentId ?? widget.session.id.toString();
-    connProvider.fetchSessionParticipants(
-      assignmentId: assignmentId,
-      accessToken: auth.accessToken,
-    );
+    final assignmentId = widget.session.assignmentId;
+    final topicId = widget.session.topicId;
+    if ((assignmentId != null && assignmentId.isNotEmpty) || (topicId != null && topicId.isNotEmpty)) {
+      connProvider.fetchSessionParticipants(
+        assignmentId: assignmentId,
+        topicId: topicId,
+        accessToken: auth.accessToken,
+      );
+    }
   }
 
   void _showParticipantsSheet(BuildContext context) {
@@ -410,11 +415,30 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
 
     ParticipantItem? speakerParticipant;
     try {
+      final sName = widget.session.speakerName.toLowerCase().replaceAll('dr.', '').replaceAll('dr', '').trim();
       speakerParticipant = connProvider.participants.firstWhere(
-        (p) => p.isSpeaker || p.name.toLowerCase() == widget.session.speakerName.toLowerCase(),
+        (p) {
+          if (p.isSpeaker) return true;
+          final pName = p.name.toLowerCase().replaceAll('dr.', '').replaceAll('dr', '').trim();
+          if (sName.isNotEmpty && (pName == sName || pName.contains(sName) || sName.contains(pName))) return true;
+          return false;
+        },
       );
     } catch (_) {
       speakerParticipant = null;
+    }
+
+    if (speakerParticipant == null && widget.session.speakerName.isNotEmpty && widget.session.speakerName != 'TBA') {
+      speakerParticipant = ParticipantItem(
+        id: '0',
+        name: widget.session.speakerName,
+        title: widget.session.speakerTitle,
+        initials: widget.session.speakerInitials,
+        bg: const Color(0xFF6366F1),
+        isSpeaker: true,
+        connectionStatus: 'NONE',
+        action: 'CONNECT',
+      );
     }
 
     return Scaffold(
@@ -1224,33 +1248,154 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
       );
     }
 
-    final bool isConnected = p.isConnected || p.action == 'CONNECTED' || p.connectionStatus == 'CONNECTED';
-    final bool isRequested = p.action == 'REQUESTED' || p.connectionStatus == 'PENDING';
-    final bool isAccept = p.action == 'ACCEPT';
-
-    if (isConnected) {
+    if (auth.userId.isNotEmpty && (p.id == auth.userId || (auth.userName.isNotEmpty && p.name.toLowerCase().trim() == auth.userName.toLowerCase().trim()))) {
       return Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFFECFDF5),
+          color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFA7F3D0), width: 1.5),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
-            SizedBox(width: 4),
-            Text(
-              'Connected',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF047857),
+        alignment: Alignment.center,
+        child: const Text(
+          'You',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    final bool isConnected = p.isConnected || p.action == 'CONNECTED' || p.action == 'ACCEPTED' || p.connectionStatus == 'CONNECTED' || p.connectionStatus == 'ACCEPTED';
+    final bool isRequested = p.action == 'REQUESTED' || p.connectionStatus == 'PENDING' || p.connectionStatus == 'REQUESTED';
+    final bool isAccept = p.action == 'ACCEPT';
+    final bool isRejected = p.connectionStatus == 'REJECTED' || p.connectionStatus == 'DECLINED' || p.action == 'REJECTED' || p.action == 'DECLINED';
+
+    if (isRejected) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEE2E2),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFFECDD3), width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.close_rounded, size: 10, color: Color(0xFFDC2626)),
+                SizedBox(width: 3),
+                Text(
+                  'Declined',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 32,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final success = await connProvider.sendConnectionRequest(
+                  targetUserId: p.id,
+                  assignmentId: assignmentId ?? widget.session.assignmentId ?? widget.session.id.toString(),
+                  accessToken: auth.accessToken,
+                );
+                if (success && mounted) {
+                  netProvider.fetchPendingRequests(accessToken: auth.accessToken);
+                  netProvider.fetchConversations(accessToken: auth.accessToken);
+                }
+              },
+              icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
+              label: const Text(
+                'Connect',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
               ),
             ),
-          ],
+          ),
+        ],
+      );
+    }
+
+    if (isConnected) {
+      return GestureDetector(
+        onTap: () async {
+          final connId = p.connectionId ??
+              netProvider.getConnectionIdForConversation(ConversationItem(
+                conversationId: p.conversationId ?? 0,
+                type: 'DIRECT',
+                title: p.name,
+                peerId: int.tryParse(p.id),
+              ));
+          if (connId != null && connId > 0) {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (c) => AlertDialog(
+                title: const Text('Disconnect Connection'),
+                content: Text('Do you want to disconnect with ${p.name}?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text('Disconnect', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              await connProvider.disconnectConnection(
+                connectionId: connId,
+                targetUserId: p.id,
+                accessToken: auth.accessToken,
+              );
+              netProvider.fetchConversations(accessToken: auth.accessToken);
+            }
+          }
+        },
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFECFDF5),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFA7F3D0), width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.check, size: 14, color: Color(0xFF10B981)),
+              SizedBox(width: 4),
+              Text(
+                'Connected',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF047857),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }

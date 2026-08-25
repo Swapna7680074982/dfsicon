@@ -4,10 +4,13 @@ import '../../constants/colors.dart';
 import '../../domain/networking_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/network_provider.dart';
+import '../../providers/sessions_provider.dart';
 import 'group_chat_screen.dart';
 
 class CreateGroupScreen extends StatefulWidget {
-  const CreateGroupScreen({super.key});
+  final dynamic assignmentId;
+
+  const CreateGroupScreen({super.key, this.assignmentId});
 
   @override
   State<CreateGroupScreen> createState() => _CreateGroupScreenState();
@@ -59,6 +62,37 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+    final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
+
+    dynamic targetAssignmentId = widget.assignmentId;
+
+    if (targetAssignmentId == null || targetAssignmentId.toString().isEmpty) {
+      for (final p in _selectedParticipants) {
+        if (p.assignmentId != null && p.assignmentId.toString().isNotEmpty) {
+          targetAssignmentId = p.assignmentId;
+          break;
+        }
+      }
+    }
+
+    if (targetAssignmentId == null || targetAssignmentId.toString().isEmpty) {
+      for (final c in netProvider.myConnections) {
+        if (c.assignmentId != null && c.assignmentId.toString().isNotEmpty) {
+          targetAssignmentId = c.assignmentId;
+          break;
+        }
+      }
+    }
+
+    if (targetAssignmentId == null || targetAssignmentId.toString().isEmpty) {
+      if (sessionsProvider.mySessions.isNotEmpty) {
+        targetAssignmentId = sessionsProvider.mySessions.first.assignmentId;
+      } else if (sessionsProvider.sessions.isNotEmpty) {
+        targetAssignmentId = sessionsProvider.sessions.first.assignmentId;
+      }
+    }
+
+    targetAssignmentId ??= 1;
 
     setState(() {
       _isCreating = true;
@@ -69,6 +103,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final memberIds = _selectedParticipants.map((p) => p.userId).toList();
 
     final newConvId = await netProvider.createGroup(
+      assignmentId: targetAssignmentId,
       groupName: groupName,
       groupDescription: description,
       memberIds: memberIds,

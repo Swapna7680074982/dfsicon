@@ -890,9 +890,6 @@ class ApiService {
     };
     if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
     if (topicId != null) bodyMap['topic_id'] = topicId;
-    if (bodyMap['assignment_id'] == null && topicId != null) {
-      bodyMap['assignment_id'] = topicId;
-    }
     if (search != null && search.isNotEmpty) bodyMap['search'] = search;
 
     final requestBody = json.encode(bodyMap);
@@ -1160,10 +1157,10 @@ class ApiService {
       'Content-Type': 'application/json',
     };
     final Map<String, dynamic> bodyMap = {
+      'assignment_id': assignmentId ?? 1,
       'group_name': groupName,
       'member_ids': memberIds,
     };
-    if (assignmentId != null) bodyMap['assignment_id'] = assignmentId;
     if (groupDescription != null && groupDescription.isNotEmpty) {
       bodyMap['group_description'] = groupDescription;
     }
@@ -1220,7 +1217,8 @@ class ApiService {
   // 15. Remove Member(s) in Group API
   static Future<http.Response> removeNetworkGroupMember({
     required dynamic conversationId,
-    required List<int> memberIds,
+    List<int>? memberIds,
+    dynamic userId,
     required String accessToken,
   }) async {
     final url = Uri.parse(ApiUrls.removeMember);
@@ -1228,10 +1226,16 @@ class ApiService {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
     };
-    final requestBody = json.encode({
+    final targetUserId = userId ?? (memberIds != null && memberIds.isNotEmpty ? memberIds.first : null);
+    final Map<String, dynamic> bodyMap = {
       'conversation_id': conversationId,
-      'member_ids': memberIds,
-    });
+      'user_id': targetUserId,
+    };
+    if (memberIds != null) {
+      bodyMap['member_ids'] = memberIds;
+    }
+
+    final requestBody = json.encode(bodyMap);
 
     CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
     final response = await http.post(url, headers: headers, body: requestBody);

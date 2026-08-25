@@ -119,6 +119,52 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  Future<void> _handleDisconnect() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final netProvider = Provider.of<NetworkProvider>(context, listen: false);
+
+    final connId = widget.conversation.connectionId ??
+        netProvider.getConnectionIdForConversation(widget.conversation) ??
+        widget.conversation.conversationId;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect Connection'),
+        content: Text('Are you sure you want to disconnect with ${widget.conversation.title}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Disconnect', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final success = await netProvider.disconnectConnection(
+        connectionId: connId,
+        accessToken: auth.accessToken,
+      );
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Disconnected successfully')),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to disconnect connection')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final netProvider = Provider.of<NetworkProvider>(context);
@@ -206,6 +252,28 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
+            onSelected: (value) {
+              if (value == 'disconnect') {
+                _handleDisconnect();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'disconnect',
+                child: Row(
+                  children: [
+                    Icon(Icons.link_off, size: 18, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Disconnect', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -291,9 +359,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            if (msg.body != null && msg.body!.isNotEmpty)
+                                            if (msg.displayText.isNotEmpty)
                                               Text(
-                                                msg.body!,
+                                                msg.displayText,
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color: msg.isMine ? Colors.white : AppColors.textPrimary,
@@ -301,7 +369,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                                 ),
                                               ),
                                             if (msg.attachmentUrl != null && msg.attachmentUrl!.isNotEmpty) ...[
-                                              if (msg.body != null && msg.body!.isNotEmpty) const SizedBox(height: 8),
+                                              if (msg.displayText.isNotEmpty) const SizedBox(height: 8),
                                               Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [

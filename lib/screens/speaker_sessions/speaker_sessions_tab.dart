@@ -309,6 +309,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                         coordinatorEmail: s.coordinatorEmail ?? '',
                         description: s.description,
                         topicId: s.topicId,
+                        assignmentId: s.assignmentId,
                       ),
                     ),
                   );

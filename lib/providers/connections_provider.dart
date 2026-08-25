@@ -133,7 +133,7 @@ class ConnectionsProvider extends ChangeNotifier {
               title: title,
               initials: _getInitials(fullName),
               bg: _getColorForIndex(idx),
-              isConnected: connStatus == 'CONNECTED' || actionStr == 'CONNECTED',
+              isConnected: connStatus == 'CONNECTED' || connStatus == 'ACCEPTED' || actionStr == 'CONNECTED' || actionStr == 'ACCEPTED',
               profileImage: (profileImage != null && profileImage.isNotEmpty && profileImage != 'null') ? profileImage : null,
               connectionId: item['connection_id'] is int ? item['connection_id'] : int.tryParse(item['connection_id']?.toString() ?? ''),
               connectionStatus: connStatus,
@@ -312,6 +312,55 @@ class ConnectionsProvider extends ChangeNotifier {
       return false;
     } catch (e, stack) {
       CustomLogger.logError('ConnectionsProvider.respondConnectionRequest failed', e, stack);
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+        notifyListeners();
+      }
+      return false;
+    }
+  }
+
+  Future<bool> disconnectConnection({
+    required int connectionId,
+    required String targetUserId,
+    required String accessToken,
+  }) async {
+    if (accessToken.isEmpty) return false;
+    final index = _participants.indexWhere((p) => p.id == targetUserId || p.connectionId == connectionId);
+    if (index != -1) {
+      _participants[index].isConnecting = true;
+      notifyListeners();
+    }
+
+    try {
+      final response = await ApiService.disconnectNetworkConnection(
+        connectionId: connectionId,
+        accessToken: accessToken,
+      );
+
+      if (index != -1) {
+        _participants[index].isConnecting = false;
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          if (index != -1) {
+            _participants[index].action = 'CONNECT';
+            _participants[index].connectionStatus = 'NONE';
+            _participants[index].isConnected = false;
+            _participants[index].connectionId = null;
+          }
+          notifyListeners();
+          return true;
+        }
+      }
+      if (index != -1) {
+        notifyListeners();
+      }
+      return false;
+    } catch (e, stack) {
+      CustomLogger.logError('ConnectionsProvider.disconnectConnection failed', e, stack);
       if (index != -1) {
         _participants[index].isConnecting = false;
         notifyListeners();

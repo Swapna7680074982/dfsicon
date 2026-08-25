@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
 import '../../providers/gallery_provider.dart';
+import '../../domain/networking_models.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../utils/time_formatter.dart';
 
@@ -22,6 +23,7 @@ class SpeakerSessionDetailScreen extends StatefulWidget {
   final String coordinatorEmail;
   final String? description;
   final String? topicId;
+  final String? assignmentId;
 
   const SpeakerSessionDetailScreen({
     super.key,
@@ -35,6 +37,7 @@ class SpeakerSessionDetailScreen extends StatefulWidget {
     required this.coordinatorEmail,
     this.description,
     this.topicId,
+    this.assignmentId,
   });
 
   @override
@@ -50,13 +53,34 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
       final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
-      final topicIdVal = widget.topicId ?? '1';
-      connProvider.fetchSessionParticipants(
-        topicId: topicIdVal,
-        accessToken: auth.accessToken,
-      );
+      final topicIdVal = widget.topicId;
+      final assignmentIdVal = widget.assignmentId;
+      if (assignmentIdVal != null && assignmentIdVal.isNotEmpty && assignmentIdVal != topicIdVal) {
+        connProvider.fetchSessionParticipants(
+          assignmentId: assignmentIdVal,
+          topicId: topicIdVal,
+          accessToken: auth.accessToken,
+        );
+      }
       if (widget.topicId != null) {
-        abstractProvider.fetchTopicDetails(widget.topicId!, auth.accessToken);
+        abstractProvider.fetchTopicDetails(widget.topicId!, auth.accessToken).then((_) {
+          final fetchedTopic = abstractProvider.selectedTopicDetails;
+          if (fetchedTopic != null) {
+            final sessDetails = (fetchedTopic['session_details'] is Map)
+                ? fetchedTopic['session_details'] as Map<String, dynamic>
+                : (fetchedTopic['session'] is Map)
+                    ? fetchedTopic['session'] as Map<String, dynamic>
+                    : null;
+            final realAssignmentId = sessDetails?['assignment_id']?.toString() ?? fetchedTopic['assignment_id']?.toString();
+            if (realAssignmentId != null && realAssignmentId.isNotEmpty && realAssignmentId != assignmentIdVal) {
+              connProvider.fetchSessionParticipants(
+                assignmentId: realAssignmentId,
+                topicId: topicIdVal,
+                accessToken: auth.accessToken,
+              );
+            }
+          }
+        });
       }
     });
   }
@@ -907,6 +931,15 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
   }
 
   void _showParticipantsModal(BuildContext context) {
+    final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+    final topicDetails = abstractProvider.selectedTopicDetails;
+    final sessionDetailsMap = (topicDetails != null && topicDetails['session_details'] is Map)
+        ? topicDetails['session_details'] as Map<String, dynamic>
+        : (topicDetails != null && topicDetails['session'] is Map)
+            ? topicDetails['session'] as Map<String, dynamic>
+            : null;
+    final currentAssignmentId = sessionDetailsMap?['assignment_id']?.toString() ?? widget.assignmentId;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1032,7 +1065,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                                         ),
                                       ),
                                       const SizedBox(width: 10),
-                                      _buildConnectionButton(p, widget.topicId),
+                                      _buildConnectionButton(p, currentAssignmentId),
                                     ],
                                   ),
                                 );
@@ -1047,7 +1080,7 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
     );
   }
 
-  Widget _buildConnectionButton(ParticipantItem p, String? topicId) {
+  Widget _buildConnectionButton(ParticipantItem p, String? assignmentId) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
     final netProvider = Provider.of<NetworkProvider>(context, listen: false);
@@ -1065,31 +1098,152 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       );
     }
 
-    final bool isConnected = p.isConnected || p.action == 'CONNECTED' || p.connectionStatus == 'CONNECTED';
-    final bool isRequested = p.action == 'REQUESTED' || p.connectionStatus == 'PENDING';
-    final bool isAccept = p.action == 'ACCEPT';
-
-    if (isConnected) {
+    if (auth.userId.isNotEmpty && (p.id == auth.userId || (auth.userName.isNotEmpty && p.name.toLowerCase().trim() == auth.userName.toLowerCase().trim()))) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFECFDF5),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
-            SizedBox(width: 4),
-            Text(
-              'CONNECTED',
+        alignment: Alignment.center,
+        child: const Text(
+          'YOU',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    final bool isConnected = p.isConnected || p.action == 'CONNECTED' || p.action == 'ACCEPTED' || p.connectionStatus == 'CONNECTED' || p.connectionStatus == 'ACCEPTED';
+    final bool isRequested = p.action == 'REQUESTED' || p.connectionStatus == 'PENDING' || p.connectionStatus == 'REQUESTED';
+    final bool isAccept = p.action == 'ACCEPT';
+    final bool isRejected = p.connectionStatus == 'REJECTED' || p.connectionStatus == 'DECLINED' || p.action == 'REJECTED' || p.action == 'DECLINED';
+
+    if (isRejected) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEE2E2),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFFECDD3), width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.close_rounded, size: 10, color: Color(0xFFDC2626)),
+                SizedBox(width: 3),
+                Text(
+                  'DECLINED',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          OutlinedButton.icon(
+            onPressed: () async {
+              final targetAssignmentId = assignmentId ?? widget.assignmentId;
+              final success = await connProvider.sendConnectionRequest(
+                targetUserId: p.id,
+                assignmentId: targetAssignmentId,
+                accessToken: auth.accessToken,
+              );
+              if (success && mounted) {
+                netProvider.fetchPendingRequests(accessToken: auth.accessToken);
+                netProvider.fetchConversations(accessToken: auth.accessToken);
+              }
+            },
+            icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
+            label: const Text(
+              'CONNECT',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF10B981),
+                color: AppColors.primary,
               ),
             ),
-          ],
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (isConnected) {
+      return GestureDetector(
+        onTap: () async {
+          final connId = p.connectionId ??
+              netProvider.getConnectionIdForConversation(ConversationItem(
+                conversationId: p.conversationId ?? 0,
+                type: 'DIRECT',
+                title: p.name,
+                peerId: int.tryParse(p.id),
+              ));
+          if (connId != null && connId > 0) {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (c) => AlertDialog(
+                title: const Text('Disconnect Connection'),
+                content: Text('Do you want to disconnect with ${p.name}?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text('Disconnect', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              await connProvider.disconnectConnection(
+                connectionId: connId,
+                targetUserId: p.id,
+                accessToken: auth.accessToken,
+              );
+              netProvider.fetchConversations(accessToken: auth.accessToken);
+            }
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFECFDF5),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
+              SizedBox(width: 4),
+              Text(
+                'CONNECTED',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -1179,9 +1333,10 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
 
     return OutlinedButton.icon(
       onPressed: () async {
+        final targetAssignmentId = assignmentId ?? widget.assignmentId;
         final success = await connProvider.sendConnectionRequest(
           targetUserId: p.id,
-          assignmentId: topicId ?? widget.topicId,
+          assignmentId: targetAssignmentId,
           accessToken: auth.accessToken,
         );
         if (success && mounted) {

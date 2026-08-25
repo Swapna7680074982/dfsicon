@@ -139,6 +139,7 @@ class ConversationItem {
   final String? subtitle;
   final String? image;
   final int? peerId;
+  final int? connectionId;
   final int memberCount;
   final bool isOwner;
   final bool ownerLeft;
@@ -158,6 +159,7 @@ class ConversationItem {
     this.subtitle,
     this.image,
     this.peerId,
+    this.connectionId,
     this.memberCount = 1,
     this.isOwner = false,
     this.ownerLeft = false,
@@ -170,6 +172,16 @@ class ConversationItem {
   });
 
   bool get isGroup => type.toUpperCase() == 'GROUP';
+
+  String get displayLastMessage {
+    if (lastMessage != null && lastMessage!.trim().isNotEmpty) {
+      return lastMessage!.trim();
+    }
+    if (subtitle != null && subtitle!.trim().isNotEmpty) {
+      return subtitle!.trim();
+    }
+    return isGroup ? 'Group created' : 'Connection established';
+  }
 
   factory ConversationItem.fromJson(Map<String, dynamic> json) {
     String? img = json['image']?.toString();
@@ -185,6 +197,7 @@ class ConversationItem {
       subtitle: json['subtitle']?.toString(),
       image: img,
       peerId: json['peer_id'] is int ? json['peer_id'] : int.tryParse(json['peer_id']?.toString() ?? ''),
+      connectionId: json['connection_id'] is int ? json['connection_id'] : int.tryParse(json['connection_id']?.toString() ?? ''),
       memberCount: json['member_count'] is int ? json['member_count'] : int.tryParse(json['member_count']?.toString() ?? '1') ?? 1,
       isOwner: json['is_owner'] == true || json['is_owner'] == 1 || json['is_owner'] == '1',
       ownerLeft: json['owner_left'] == true || json['owner_left'] == 1 || json['owner_left'] == '1',
@@ -236,6 +249,30 @@ class MessageItem {
     this.isDeleted = false,
     required this.createdAt,
   });
+
+  String get displayText {
+    if (body != null && body!.trim().isNotEmpty) {
+      return body!.trim();
+    }
+    if (systemText != null && systemText!.trim().isNotEmpty) {
+      return systemText!.trim();
+    }
+    if (systemEvent != null && systemEvent!.trim().isNotEmpty) {
+      final eventUpper = systemEvent!.toUpperCase();
+      if (eventUpper.contains('CONNECT') || eventUpper.contains('ACCEPT')) {
+        return 'Connection established';
+      } else if (eventUpper.contains('GROUP')) {
+        return 'Group created';
+      } else if (eventUpper.contains('CREATE')) {
+        return 'Conversation created';
+      }
+      return systemEvent!;
+    }
+    if (attachmentUrl != null && attachmentUrl!.isNotEmpty) {
+      return '';
+    }
+    return 'Connection established';
+  }
 
   factory MessageItem.fromJson(Map<String, dynamic> json) {
     String? img = json['sender_image']?.toString();

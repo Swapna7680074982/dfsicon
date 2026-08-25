@@ -50,6 +50,23 @@ class NetworkProvider extends ChangeNotifier {
     return _groupDetailsMap[conversationId];
   }
 
+  int? getConnectionIdForConversation(ConversationItem conversation) {
+    if (conversation.connectionId != null && conversation.connectionId! > 0) {
+      return conversation.connectionId;
+    }
+    for (final conn in _myConnections) {
+      if (conn.conversationId == conversation.conversationId || (conversation.peerId != null && conn.userId == conversation.peerId)) {
+        return conn.connectionId;
+      }
+    }
+    for (final part in _sessionParticipants) {
+      if (conversation.peerId != null && part.userId == conversation.peerId && part.connectionId != null && part.connectionId! > 0) {
+        return part.connectionId;
+      }
+    }
+    return null;
+  }
+
   static String getInitials(String name) {
     if (name.trim().isEmpty) return 'PA';
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -790,15 +807,18 @@ class NetworkProvider extends ChangeNotifier {
   // 17. Remove Group Member
   Future<bool> removeGroupMember({
     required dynamic conversationId,
-    required List<int> memberIds,
+    List<int>? memberIds,
+    dynamic userId,
     required String accessToken,
   }) async {
-    if (accessToken.isEmpty || memberIds.isEmpty) return false;
+    final targetUserId = userId ?? (memberIds != null && memberIds.isNotEmpty ? memberIds.first : null);
+    if (accessToken.isEmpty || targetUserId == null) return false;
 
     try {
       final response = await ApiService.removeNetworkGroupMember(
         conversationId: conversationId,
         memberIds: memberIds,
+        userId: targetUserId,
         accessToken: accessToken,
       );
 

@@ -394,47 +394,80 @@ class _NetworkTabState extends State<NetworkTab> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        final success = await netProvider.respondConnectionRequest(
-                                          connectionId: req.connectionId,
-                                          action: 'ACCEPT',
-                                          accessToken: authProvider.accessToken,
-                                        );
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(success ? 'Connected with ${req.fullName}!' : 'Action failed'),
-                                              duration: const Duration(seconds: 2),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            final messenger = ScaffoldMessenger.of(context);
+                                            final success = await netProvider.respondConnectionRequest(
+                                              connectionId: req.connectionId,
+                                              action: 'ACCEPT',
+                                              accessToken: authProvider.accessToken,
+                                            );
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(success ? 'Connected with ${req.fullName}!' : 'Action failed'),
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
                                             ),
-                                          );
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: const [
-                                          Icon(Icons.person_add_alt_1_outlined, size: 14),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'ACCEPT',
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: const Text(
+                                            'Accept',
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 11,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        TextButton(
+                                          onPressed: () async {
+                                            final messenger = ScaffoldMessenger.of(context);
+                                            final success = await netProvider.respondConnectionRequest(
+                                              connectionId: req.connectionId,
+                                              action: 'REJECT',
+                                              accessToken: authProvider.accessToken,
+                                            );
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(success ? 'Request declined' : 'Action failed'),
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          },
+                                          style: TextButton.styleFrom(
+                                            backgroundColor: const Color(0xFFFEE2E2),
+                                            foregroundColor: const Color(0xFFDC2626),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                              side: const BorderSide(color: Color(0xFFFECDD3), width: 1),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: const Text(
+                                            'Decline',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFDC2626),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -596,8 +629,8 @@ class _NetworkTabState extends State<NetworkTab> {
                                                 Expanded(
                                                   child: Text(
                                                     conv.isGroup
-                                                        ? 'Group · ${conv.memberCount} members · ${conv.lastMessage ?? ""}'
-                                                        : (conv.lastMessage ?? conv.subtitle ?? ''),
+                                                        ? 'Group · ${conv.memberCount} members · ${conv.displayLastMessage}'
+                                                        : conv.displayLastMessage,
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: TextStyle(
