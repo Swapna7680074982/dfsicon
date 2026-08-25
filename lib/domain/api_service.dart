@@ -1288,7 +1288,7 @@ class ApiService {
   static Future<http.Response> fetchNetworkConversations({
     String? type, // "DIRECT" or "GROUP"
     String? search,
-    required String accessToken,
+    required String accessToken, 
   }) async {
     final url = Uri.parse(ApiUrls.conversations);
     final headers = {
