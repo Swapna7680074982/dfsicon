@@ -10,7 +10,7 @@ import '../../providers/explore_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
-import '../../widgets/event_qr_modal.dart';
+// import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../profile/profile_screen.dart';
 // import '../sightseeing/sightseeing_list_screen.dart';
@@ -1131,6 +1131,7 @@ class HomeTab extends StatelessWidget {
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
+                                    /*
                                     const SizedBox(height: 24),
                                     ElevatedButton.icon(
                                       onPressed: () {
@@ -1175,6 +1176,7 @@ class HomeTab extends StatelessWidget {
                                         ),
                                       ),
                                     ),
+                                    */
                                   ],
                                 ),
                               ),

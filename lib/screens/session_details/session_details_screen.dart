@@ -6,10 +6,10 @@ import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../providers/network_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/home_provider.dart';
+// import '../../providers/home_provider.dart';
 import '../../providers/gallery_provider.dart';
 import '../../domain/networking_models.dart';
-import '../../widgets/event_qr_modal.dart';
+// import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../utils/time_formatter.dart';
 
@@ -691,6 +691,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                   ),
                 ),
+                /*
                 const SizedBox(width: 12),
                 Expanded(
                   child: GestureDetector(
@@ -731,6 +732,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                   ),
                 ),
+                */
               ],
             ),
             const SizedBox(height: 28),

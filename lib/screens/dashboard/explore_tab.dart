@@ -7,7 +7,7 @@ import '../../providers/home_provider.dart';
 import '../exhibitor/exhibitors_list_screen.dart';
 // import '../sightseeing/sightseeing_list_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
-import '../help_desk/help_desk_screen.dart';
+// import '../help_desk/help_desk_screen.dart';
 import '../workshops/workshops_list_screen.dart';
 import '../explore/invited_speakers_screen.dart';
 import '../../widgets/water_droplets_background.dart';
@@ -156,6 +156,7 @@ class _ExploreTabState extends State<ExploreTab> {
                     },
                   ),
                   */
+                  /*
                   const SizedBox(height: 16),
                   _buildCategoryCard(
                     context,
@@ -171,6 +172,7 @@ class _ExploreTabState extends State<ExploreTab> {
                       );
                     },
                   ),
+                  */
                 ],
               ),
             ),
