@@ -219,7 +219,32 @@ class TimeFormatter {
     }
     return formatTime(timeRange);
   }
+
+  /// Formats a date string into a human-readable relative time (e.g. "5m ago", "2h ago", "1d ago").
+  static String formatRelativeTime(String? dateStr) {
+    if (dateStr == null || dateStr.trim().isEmpty) return '';
+    try {
+      final dt = DateTime.tryParse(dateStr);
+      if (dt == null) return dateStr;
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inSeconds < 60) {
+        return 'Just now';
+      } else if (diff.inMinutes < 60) {
+        return '${diff.inMinutes}m ago';
+      } else if (diff.inHours < 24) {
+        return '${diff.inHours}h ago';
+      } else if (diff.inDays < 7) {
+        return '${diff.inDays}d ago';
+      } else {
+        return formatDateTime(dt);
+      }
+    } catch (_) {
+      return dateStr;
+    }
+  }
 }
+
 
 
 class _TimeOfDay {

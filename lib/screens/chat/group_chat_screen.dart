@@ -1184,7 +1184,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 60), 
+                      const SizedBox(height: 60),
                     ],
                   ),
                 );

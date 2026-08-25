@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../gallery/gallery_tab.dart';
+import '../qa/qa_section_widget.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../providers/network_provider.dart';
@@ -838,6 +839,13 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     _buildConnectionButton(speakerParticipant, widget.session.assignmentId ?? widget.session.id.toString()),
                 ],
               ),
+            ),
+            const SizedBox(height: 20),
+            QaSectionWidget(
+              assignmentId: connProvider.sessionData?['session_details']?['assignment_id'] ??
+                  connProvider.sessionData?['assignment_id'] ??
+                  widget.session.assignmentId ??
+                  widget.session.id,
             ),
             const SizedBox(height: 28),
             if (isBookmarked) ...[

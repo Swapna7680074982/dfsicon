@@ -54,4 +54,15 @@ class ApiUrls {
   static const String removeMember = '$baseUrl/networking/remove_member';
   static const String leaveGroup = '$baseUrl/networking/leave_group';
   static const String conversations = '$baseUrl/networking/conversations';
+
+  // Q&A Module APIs
+  static const String qaQuestions = '$baseUrl/qa/questions';
+  static const String qaPostQuestion = '$baseUrl/qa/post_question';
+  static const String qaPostReply = '$baseUrl/qa/post_reply';
+  static const String qaQuestionDetail = '$baseUrl/qa/question_detail';
+  static const String qaDeleteQuestion = '$baseUrl/qa/delete_question';
+  static const String qaDeleteReply = '$baseUrl/qa/delete_reply';
+  static const String qaMyQuestions = '$baseUrl/qa/my_questions';
+  static const String qaSessionThread = '$baseUrl/qa/session_thread';
 }
+

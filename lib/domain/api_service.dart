@@ -1284,4 +1284,188 @@ class ApiService {
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }
+
+  // ==========================================
+  // Q&A Module APIs
+  // ==========================================
+
+  // 1. Q&A - Questions API
+  static Future<http.Response> fetchQaQuestions({
+    required dynamic assignmentId,
+    int? beforeId,
+    int limit = 20,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaQuestions);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'assignment_id': assignmentId is int ? assignmentId : int.tryParse(assignmentId.toString()) ?? assignmentId,
+      'limit': limit,
+    };
+    if (beforeId != null) {
+      bodyMap['before_id'] = beforeId;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 2. Q&A – Post Question API
+  static Future<http.Response> postQaQuestion({
+    required dynamic assignmentId,
+    required String body,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaPostQuestion);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'assignment_id': assignmentId is int ? assignmentId : int.tryParse(assignmentId.toString()) ?? assignmentId,
+      'body': body,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 3. Q&A – Post Reply API
+  static Future<http.Response> postQaReply({
+    required dynamic questionId,
+    required String body,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaPostReply);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'question_id': questionId is int ? questionId : int.tryParse(questionId.toString()) ?? questionId,
+      'body': body,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 4. Q&A – Question Detail API
+  static Future<http.Response> fetchQaQuestionDetail({
+    required dynamic questionId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaQuestionDetail);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'question_id': questionId is int ? questionId : int.tryParse(questionId.toString()) ?? questionId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 5. Q&A – Delete Question API
+  static Future<http.Response> deleteQaQuestion({
+    required dynamic questionId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaDeleteQuestion);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'question_id': questionId is int ? questionId : int.tryParse(questionId.toString()) ?? questionId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 6. Q&A – Delete Reply API
+  static Future<http.Response> deleteQaReply({
+    required dynamic replyId,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaDeleteReply);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      'reply_id': replyId is int ? replyId : int.tryParse(replyId.toString()) ?? replyId,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 7. Q&A – My Questions API
+  static Future<http.Response> fetchMyQaQuestions({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaMyQuestions);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    const requestBody = '{}';
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // 8. Q&A – Session Thread API
+  static Future<http.Response> fetchQaSessionThread({
+    required dynamic assignmentId,
+    int? beforeId,
+    int limit = 10,
+    int? replyLimit,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.qaSessionThread);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'assignment_id': assignmentId is int ? assignmentId : int.tryParse(assignmentId.toString()) ?? assignmentId,
+      'limit': limit,
+    };
+    if (beforeId != null) {
+      bodyMap['before_id'] = beforeId;
+    }
+    if (replyLimit != null) {
+      bodyMap['reply_limit'] = replyLimit;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }
+

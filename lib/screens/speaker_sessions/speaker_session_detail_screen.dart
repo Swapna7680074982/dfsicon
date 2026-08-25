@@ -7,6 +7,7 @@ import '../../providers/network_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../gallery/gallery_tab.dart';
+import '../qa/qa_section_widget.dart';
 import '../../providers/gallery_provider.dart';
 import '../../domain/networking_models.dart';
 import '../../widgets/venue_media_widget.dart';
@@ -577,6 +578,18 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                   height: 1.5,
                 ),
               ),
+            const SizedBox(height: 20),
+            Builder(
+              builder: (context) {
+                final sessionDetailsMap = (topicDetails != null && topicDetails['session_details'] is Map)
+                    ? topicDetails['session_details'] as Map<String, dynamic>
+                    : (topicDetails != null && topicDetails['session'] is Map)
+                        ? topicDetails['session'] as Map<String, dynamic>
+                        : null;
+                final currentAssignmentId = sessionDetailsMap?['assignment_id']?.toString() ?? widget.assignmentId;
+                return QaSectionWidget(assignmentId: currentAssignmentId);
+              },
+            ),
             const SizedBox(height: 28),
             GestureDetector(
               onTap: () => _showParticipantsModal(context),
