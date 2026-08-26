@@ -105,14 +105,39 @@ class PhotoUploadScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Help attendees recognize you and get tagged in event photos automatically.',
+                'Please upload a clear photo to help attendees recognize you and get tagged in event photos automatically.',
                 style: TextStyle(
                   fontSize: 16,
                   color: AppColors.textSecondary,
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.info_outline, color: AppColors.primary, size: 18),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Please upload a clear photo with your face clearly visible.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
               DashedCircleAvatar(
                 imagePath: photoProvider.imagePath,
