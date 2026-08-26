@@ -352,7 +352,7 @@ class GalleryProvider with ChangeNotifier {
   Future<List<GalleryImage>> fetchGalleryMatch({
     required String accessToken,
     List<int>? userIds,
-    bool requireAll = true,
+    bool requireAll = false,
   }) async {
     if (accessToken.isEmpty) return [];
 

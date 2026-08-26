@@ -840,7 +840,7 @@ class _GalleryTabState extends State<GalleryTab> {
     final images = await galProvider.fetchGalleryMatch(
       accessToken: authProvider.accessToken,
       userIds: [face.userId],
-      requireAll: true,
+      requireAll: false,
     );
 
     if (!mounted) return;
@@ -876,7 +876,7 @@ class _GalleryTabState extends State<GalleryTab> {
     final images = await galProvider.fetchGalleryMatch(
       accessToken: authProvider.accessToken,
       userIds: userIds,
-      requireAll: true,
+      requireAll: false,
     );
 
     if (!mounted) return;

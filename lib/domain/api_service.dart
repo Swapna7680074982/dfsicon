@@ -1678,7 +1678,7 @@ class ApiService {
   static Future<http.Response> fetchGalleryMatch({
     required String accessToken,
     List<int>? userIds,
-    bool requireAll = true,
+    bool requireAll = false,
   }) async {
     final url = Uri.parse(ApiUrls.galleryMatch);
     final headers = {
