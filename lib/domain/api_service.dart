@@ -1596,5 +1596,108 @@ class ApiService {
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }
+
+  // ==========================================
+  // Gallery Module APIs
+  // ==========================================
+
+  // Gallery – Get Faces API
+  static Future<http.Response> fetchGalleryFaces({
+    required String accessToken,
+    String? search,
+    int? page,
+  }) async {
+    final url = Uri.parse(ApiUrls.galleryFaces);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {};
+    if (search != null && search.trim().isNotEmpty) {
+      bodyMap['search'] = search.trim();
+    }
+    if (page != null) {
+      bodyMap['page'] = page;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Gallery – Gallery Days API
+  static Future<http.Response> fetchGalleryDays({
+    required String accessToken,
+    dynamic summitId = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.galleryDays);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'summit_id': summitId is int ? summitId : (int.tryParse(summitId.toString()) ?? 1),
+    };
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Gallery – Gallery Images API
+  static Future<http.Response> fetchGalleryImages({
+    required String accessToken,
+    dynamic galleryDayId,
+    int? page,
+  }) async {
+    final url = Uri.parse(ApiUrls.galleryImages);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {};
+    if (galleryDayId != null) {
+      bodyMap['gallery_day_id'] = galleryDayId is int ? galleryDayId : (int.tryParse(galleryDayId.toString()) ?? galleryDayId);
+    }
+    if (page != null) {
+      bodyMap['page'] = page;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Gallery – Gallery Face Match API
+  static Future<http.Response> fetchGalleryMatch({
+    required String accessToken,
+    List<int>? userIds,
+    bool requireAll = true,
+  }) async {
+    final url = Uri.parse(ApiUrls.galleryMatch);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      'require_all': requireAll,
+    };
+    if (userIds != null && userIds.isNotEmpty) {
+      bodyMap['user_ids'] = userIds;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }
+
 

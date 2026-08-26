@@ -23,6 +23,12 @@ class ApiUrls {
   static const String myQr = '$baseUrl/utility/my_qr';
   static const String venueLayouts = '$baseUrl/utility/venue_layouts';
 
+  // Gallery Module APIs
+  static const String galleryFaces = '$baseUrl/utility/gallery_faces';
+  static const String galleryDays = '$baseUrl/utility/gallery_days';
+  static const String galleryImages = '$baseUrl/utility/gallery_images';
+  static const String galleryMatch = '$baseUrl/utility/gallery_match';
+
   static const String myWorkshops = '$baseUrl/utility/my_workshops';
   static const String viewWorkshopParticipants = '$baseUrl/utility/view_workshop_participants';
   static const String speakerMyTopics = '$baseUrl/speaker/my_topics';

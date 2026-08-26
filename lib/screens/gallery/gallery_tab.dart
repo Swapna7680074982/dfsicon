@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/gallery_provider.dart';
 import 'gallery_detail_screen.dart';
 import '../../widgets/water_droplets_background.dart';
@@ -19,26 +20,65 @@ class _GalleryTabState extends State<GalleryTab> {
   
   // People selection states
   bool _isPeopleSelectMode = false;
-  final Set<PersonGallery> _selectedPeople = {};
+  final Set<GalleryFace> _selectedPeople = {};
 
-  void _toggleSelectPerson(PersonGallery p) {
+  // Search state for People tab
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadData({bool force = false}) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+    if (authProvider.accessToken.isNotEmpty) {
+      galProvider.fetchGalleryDays(accessToken: authProvider.accessToken, forceRefresh: force);
+      galProvider.fetchGalleryFaces(accessToken: authProvider.accessToken, forceRefresh: force);
+    }
+  }
+
+  void _onSearchFaces(String query) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+    if (authProvider.accessToken.isNotEmpty) {
+      galProvider.fetchGalleryFaces(
+        accessToken: authProvider.accessToken,
+        search: query,
+        forceRefresh: true,
+      );
+    }
+  }
+
+  void _toggleSelectPerson(GalleryFace f) {
     setState(() {
-      if (_selectedPeople.contains(p)) {
-        _selectedPeople.remove(p);
+      if (_selectedPeople.contains(f)) {
+        _selectedPeople.remove(f);
         if (_selectedPeople.isEmpty) {
           _isPeopleSelectMode = false;
         }
       } else {
-        _selectedPeople.add(p);
+        _selectedPeople.add(f);
       }
     });
   }
 
-  void _enterPeopleSelectMode(PersonGallery p) {
+  void _enterPeopleSelectMode(GalleryFace f) {
     setState(() {
       _isPeopleSelectMode = true;
       _selectedPeople.clear();
-      _selectedPeople.add(p);
+      _selectedPeople.add(f);
     });
   }
 
@@ -49,7 +89,7 @@ class _GalleryTabState extends State<GalleryTab> {
     });
   }
 
-  void _selectAllPeople(List<PersonGallery> allPeople) {
+  void _selectAllPeople(List<GalleryFace> allPeople) {
     setState(() {
       _selectedPeople.clear();
       _selectedPeople.addAll(allPeople);
@@ -62,37 +102,12 @@ class _GalleryTabState extends State<GalleryTab> {
     });
   }
 
-  List<String> _getCommonPhotos(List<PersonGallery> selected) {
-    if (selected.isEmpty) return [];
-    
-    // Start with the first person's photos
-    Set<String> common = selected.first.photos.toSet();
-    
-    // Intersect with each subsequent person's photos
-    for (int i = 1; i < selected.length; i++) {
-      common = common.intersection(selected[i].photos.toSet());
-    }
-    
-    return common.toList();
-  }
-
-  List<String> _getUnionPhotos(List<PersonGallery> selected) {
-    if (selected.isEmpty) return [];
-    
-    Set<String> union = {};
-    for (var p in selected) {
-      union.addAll(p.photos);
-    }
-    return union.toList();
-  }
-
-  String _getFilteredTitle(List<PersonGallery> selected) {
+  String _getFilteredTitle(List<GalleryFace> selected) {
     if (selected.isEmpty) return 'Filtered Photos';
-    if (selected.length == 1) return selected.first.name;
+    if (selected.length == 1) return selected.first.fullName;
     
-    // Clean names to first names for a compact, neat display
     final firstNames = selected.map((p) {
-      final cleanName = p.name.replaceAll(RegExp(r'^(Dr\.\s*|Prof\.\s*)'), '');
+      final cleanName = p.fullName.replaceAll(RegExp(r'^(Dr\.\s*|Prof\.\s*)'), '');
       return cleanName.split(' ').first;
     }).toList();
 
@@ -111,90 +126,123 @@ class _GalleryTabState extends State<GalleryTab> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: _buildAppBar(galProvider),
-      body: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Tab segment selector
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedSegment = 0;
-                          _exitPeopleSelectMode(); // Exit people selection when switching segments
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSessions ? AppColors.primary : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Sessions',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: isSessions ? Colors.white : AppColors.textSecondary,
+        body: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Segment selector & search bar
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedSegment = 0;
+                                _exitPeopleSelectMode();
+                                _isSearching = false;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSessions ? AppColors.primary : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Sessions',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSessions ? Colors.white : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedSegment = 1;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: !isSessions ? AppColors.primary : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'People',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: !isSessions ? Colors.white : AppColors.textSecondary,
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedSegment = 1;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !isSessions ? AppColors.primary : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'People',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: !isSessions ? Colors.white : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ],
+                      if (!isSessions && _isSearching) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _searchController,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            hintText: 'Search people by name...',
+                            hintStyle: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                            prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchFaces('');
+                              },
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onSubmitted: _onSearchFaces,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              
-              // Segment lists
-              Expanded(
-                child: isSessions
-                    ? _buildSessionsList(galProvider)
-                    : _buildPeopleGrid(galProvider),
-              ),
-              
-              // Reserve bottom space for people selection bar
-              if (_isPeopleSelectMode && !isSessions) const SizedBox(height: 90),
-            ],
-          ),
-          
-          // Floating Bottom Filter Action Bar
-          if (_isPeopleSelectMode && !isSessions) _buildPeopleBottomBar(galProvider),
-        ],
+                
+                // Segment lists
+                Expanded(
+                  child: isSessions
+                      ? _buildSessionsList(galProvider)
+                      : _buildPeopleGrid(galProvider),
+                ),
+                
+                // Reserve bottom space for people selection bar
+                if (_isPeopleSelectMode && !isSessions) const SizedBox(height: 90),
+              ],
+            ),
+            
+            // Floating Bottom Filter Action Bar
+            if (_isPeopleSelectMode && !isSessions) _buildPeopleBottomBar(galProvider),
+          ],
+        ),
       ),
-    ),);
+    );
   }
 
   // --- AppBar Handler ---
   PreferredSizeWidget _buildAppBar(GalleryProvider galProvider) {
     if (_isPeopleSelectMode && _selectedSegment == 1) {
-      final allSelected = _selectedPeople.length == galProvider.people.length;
+      final allSelected = _selectedPeople.length == galProvider.faces.length;
       return AppBar(
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -224,7 +272,7 @@ class _GalleryTabState extends State<GalleryTab> {
               if (allSelected) {
                 _deselectAllPeople();
               } else {
-                _selectAllPeople(galProvider.people);
+                _selectAllPeople(galProvider.faces);
               }
             },
             child: Text(
@@ -270,7 +318,23 @@ class _GalleryTabState extends State<GalleryTab> {
       centerTitle: false,
       actions: _selectedSegment == 1
           ? [
-              // Button to enter Multi-Select Mode in People tab
+              IconButton(
+                icon: Icon(
+                  _isSearching ? Icons.search_off : Icons.search,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                tooltip: 'Search People',
+                onPressed: () {
+                  setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) {
+                      _searchController.clear();
+                      _onSearchFaces('');
+                    }
+                  });
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.library_add_check_outlined, color: Colors.white, size: 22),
                 tooltip: 'Select Multiple People',
@@ -287,241 +351,353 @@ class _GalleryTabState extends State<GalleryTab> {
     );
   }
 
-  // --- Sessions List Builder ---
+  // --- Sessions / Days List Builder ---
   Widget _buildSessionsList(GalleryProvider galProvider) {
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20),
-      itemCount: galProvider.sessions.length,
-      itemBuilder: (context, index) {
-        final s = galProvider.sessions[index];
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GalleryDetailScreen(
-                  title: s.title,
-                  photos: s.photos,
-                ),
-              ),
-            );
-          },
+    if (galProvider.isLoadingDays && galProvider.days.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (galProvider.days.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async => _loadData(force: true),
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Container(
-            height: 180,
-            margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.tileBorder, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(5),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+            height: 400,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  galProvider.daysError ?? 'No Gallery Days Available',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _loadData(force: true),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Refresh'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
                 ),
               ],
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  s.imageUrl,
-                  fit: BoxFit.cover,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withAlpha(160),
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async => _loadData(force: true),
+      color: AppColors.primary,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.all(20),
+        itemCount: galProvider.days.length,
+        itemBuilder: (context, index) {
+          final day = galProvider.days[index];
+          return GestureDetector(
+            onTap: () => _openDayGallery(day),
+            child: Container(
+              height: 180,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.tileBorder, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    day.coverUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withAlpha(170),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          day.dayTitle,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${day.galleryDate}   •   ${day.totalImages} Photos',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withAlpha(220),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (day.description.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            day.description,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withAlpha(180),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- People Grid Builder ---
+  Widget _buildPeopleGrid(GalleryProvider galProvider) {
+    if (galProvider.isLoadingFaces && galProvider.faces.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (galProvider.faces.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async => _loadData(force: true),
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: 400,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  galProvider.facesError ?? 'No People Found',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
                 ),
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        s.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${s.date}   -   ${s.photoCount}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withAlpha(200),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _loadData(force: true),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Refresh'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    }
 
-  // --- People Grid Builder (With Multi-Selection Overlays) ---
-  Widget _buildPeopleGrid(GalleryProvider galProvider) {
-    return GridView.builder(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 24,
-        childAspectRatio: 0.72,
-      ),
-      itemCount: galProvider.people.length,
-      itemBuilder: (context, index) {
-        final p = galProvider.people[index];
-        final isSelected = _selectedPeople.contains(p);
+    return RefreshIndicator(
+      onRefresh: () async => _loadData(force: true),
+      color: AppColors.primary,
+      child: GridView.builder(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.all(20),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 24,
+          childAspectRatio: 0.70,
+        ),
+        itemCount: galProvider.faces.length,
+        itemBuilder: (context, index) {
+          final f = galProvider.faces[index];
+          final isSelected = _selectedPeople.contains(f);
 
-        return GestureDetector(
-          onTap: () {
-            if (_isPeopleSelectMode) {
-              _toggleSelectPerson(p);
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GalleryDetailScreen(
-                    title: p.name,
-                    photos: p.photos,
-                  ),
-                ),
-              );
-            }
-          },
-          onLongPress: () {
-            if (!_isPeopleSelectMode) {
-              _enterPeopleSelectMode(p);
-            }
-          },
-          child: Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Avatar Circle Frame
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected ? AppColors.primary : Colors.grey.shade200, 
-                          width: isSelected ? 3.5 : 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(isSelected ? 10 : 2),
-                            blurRadius: isSelected ? 8 : 4,
-                            offset: const Offset(0, 2),
+          return GestureDetector(
+            onTap: () {
+              if (_isPeopleSelectMode) {
+                _toggleSelectPerson(f);
+              } else {
+                _openFaceGallery(f);
+              }
+            },
+            onLongPress: () {
+              if (!_isPeopleSelectMode) {
+                _enterPeopleSelectMode(f);
+              }
+            },
+            child: Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Avatar Circle Frame
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                            width: isSelected ? 3.5 : 2,
                           ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Avatar Photo
-                            Image.network(
-                              p.imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: Colors.grey.shade200,
-                                child: const Icon(Icons.person, color: Colors.grey),
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(isSelected ? 15 : 4),
+                              blurRadius: isSelected ? 8 : 4,
+                              offset: const Offset(0, 2),
                             ),
-                            // Selection dark overlay
-                            if (_isPeopleSelectMode)
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
-                                color: isSelected 
-                                    ? AppColors.primary.withAlpha(35) 
-                                    : Colors.black.withAlpha(60),
-                              ),
                           ],
                         ),
-                      ),
-                    ),
-                    
-                    // Small Checkmark Bubble - Positioned OUTSIDE ClipOval
-                    if (_isPeopleSelectMode)
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected ? AppColors.primary : Colors.white.withAlpha(180),
-                            border: Border.all(
-                              color: isSelected ? Colors.white : Colors.grey.shade400,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(15),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
+                        child: ClipOval(
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                f.photoUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.person, color: Colors.grey),
+                                ),
                               ),
+                              if (_isPeopleSelectMode)
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  color: isSelected
+                                      ? AppColors.primary.withAlpha(45)
+                                      : Colors.black.withAlpha(60),
+                                ),
                             ],
                           ),
-                          child: isSelected
-                              ? const Icon(Icons.check, color: Colors.white, size: 12)
-                              : null,
                         ),
                       ),
-                  ],
+                      
+                      // Badge for "ME"
+                      if (f.isMe)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            child: const Text(
+                              'YOU',
+                              style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+
+                      // Selection Checkmark
+                      if (_isPeopleSelectMode)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isSelected ? AppColors.primary : Colors.white.withAlpha(180),
+                              border: Border.all(
+                                color: isSelected ? Colors.white : Colors.grey.shade400,
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(15),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check, color: Colors.white, size: 12)
+                                : null,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                p.name,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                const SizedBox(height: 8),
+                Text(
+                  f.fullName,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                p.photoCount,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Text(
+                  f.designation.isNotEmpty
+                      ? f.designation
+                      : (f.roleCode == 'SK' ? 'Speaker' : 'Delegate'),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -570,7 +746,7 @@ class _GalleryTabState extends State<GalleryTab> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        count >= 2 ? 'Find photos with both' : 'Select at least 2 people',
+                        count >= 1 ? 'Find photos with selected' : 'Select at least 1 person',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
@@ -582,8 +758,6 @@ class _GalleryTabState extends State<GalleryTab> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                
-                // Cancel
                 TextButton(
                   onPressed: _exitPeopleSelectMode,
                   child: const Text(
@@ -595,10 +769,8 @@ class _GalleryTabState extends State<GalleryTab> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                
-                // Filter Action Button
                 ElevatedButton.icon(
-                  onPressed: count >= 2 ? _filterPhotosBySelectedPeople : null,
+                  onPressed: count >= 1 ? _filterPhotosBySelectedPeople : null,
                   icon: const Icon(Icons.filter_alt, size: 16),
                   label: const Text(
                     'Find Photos',
@@ -624,28 +796,105 @@ class _GalleryTabState extends State<GalleryTab> {
     );
   }
 
-  // --- Filtering Execution ---
-  void _filterPhotosBySelectedPeople() {
-    final list = _selectedPeople.toList();
-    if (list.length < 2) return;
+  // --- API Triggers ---
+  void _openDayGallery(GalleryDay day) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final galProvider = Provider.of<GalleryProvider>(context, listen: false);
 
-    // Calculate URL intersection
-    final commonPhotos = _getCommonPhotos(list);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+    );
+
+    final images = await galProvider.fetchGalleryImages(
+      accessToken: authProvider.accessToken,
+      galleryDayId: day.galleryDayId,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loader
+
+    final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GalleryDetailScreen(
+          title: day.dayTitle,
+          photos: photoUrls,
+        ),
+      ),
+    );
+  }
+
+  void _openFaceGallery(GalleryFace face) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+    );
+
+    final images = await galProvider.fetchGalleryMatch(
+      accessToken: authProvider.accessToken,
+      userIds: [face.userId],
+      requireAll: true,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loader
+
+    final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GalleryDetailScreen(
+          title: face.fullName,
+          photos: photoUrls,
+        ),
+      ),
+    );
+  }
+
+  void _filterPhotosBySelectedPeople() async {
+    final list = _selectedPeople.toList();
+    if (list.isEmpty) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+    );
+
+    final userIds = list.map((f) => f.userId).toList();
+    final images = await galProvider.fetchGalleryMatch(
+      accessToken: authProvider.accessToken,
+      userIds: userIds,
+      requireAll: true,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loader
+
+    final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
     final title = _getFilteredTitle(list);
 
-    if (commonPhotos.isNotEmpty) {
-      // 1. Navigate to GalleryDetailScreen with common photos!
+    if (photoUrls.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => GalleryDetailScreen(
             title: title,
-            photos: commonPhotos,
+            photos: photoUrls,
           ),
         ),
       );
     } else {
-      // 2. No common photos found. Show a beautiful glassmorphic choice dialog!
       showDialog(
         context: context,
         builder: (context) => BackdropFilter(
@@ -653,18 +902,18 @@ class _GalleryTabState extends State<GalleryTab> {
           child: AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             backgroundColor: Colors.white,
-            title: Row(
+            title: const Row(
               children: [
                 Icon(Icons.face_retouching_natural_outlined, color: AppColors.primary, size: 28),
-                const SizedBox(width: 10),
-                const Text(
+                SizedBox(width: 10),
+                Text(
                   'No Common Photos',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ],
             ),
             content: Text(
-              'We couldn\'t find any single photo where all ${list.length} selected individuals are present together.\n\nWould you like to adjust your selection or view all photos of these individuals jointly?',
+              'We couldn\'t find photos where all ${list.length} selected individuals are present together.\n\nWould you like to view photos containing any of these individuals?',
               style: const TextStyle(fontSize: 14, height: 1.4, color: AppColors.textSecondary),
             ),
             actionsAlignment: MainAxisAlignment.spaceBetween,
@@ -677,17 +926,30 @@ class _GalleryTabState extends State<GalleryTab> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context); // Close dialog
-                  final unionPhotos = _getUnionPhotos(list);
-                  final unionTitle = 'ALL PHOTOS: ${list.length} PEOPLE';
-                  
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  );
+
+                  final anyMatchImages = await galProvider.fetchGalleryMatch(
+                    accessToken: authProvider.accessToken,
+                    userIds: userIds,
+                    requireAll: false,
+                  );
+
+                  if (!mounted) return;
+                  Navigator.pop(context); // Close loader
+
+                  final anyUrls = anyMatchImages.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => GalleryDetailScreen(
-                        title: unionTitle,
-                        photos: unionPhotos,
+                        title: 'ALL PHOTOS: ${list.length} PEOPLE',
+                        photos: anyUrls,
                       ),
                     ),
                   );
@@ -700,7 +962,7 @@ class _GalleryTabState extends State<GalleryTab> {
                   elevation: 0,
                 ),
                 child: const Text(
-                  'VIEW ALL JOINTLY',
+                  'VIEW ANY MATCH',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
