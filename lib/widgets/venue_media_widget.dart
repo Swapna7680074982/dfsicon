@@ -83,7 +83,7 @@ class _VenueMediaWidgetState extends State<VenueMediaWidget> {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
         ],
         Container(
           height: carouselHeight,

@@ -4,11 +4,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dfsicon/domain/api_service.dart';
+import 'package:dfsicon/domain/utility_models.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 import 'package:dfsicon/main.dart';
 import 'package:dfsicon/services/fcm_service.dart';
 
 class AuthProvider with ChangeNotifier {
+  MyQrData? _myQrData;
+  bool _isFetchingQr = false;
+  
   String _phoneNumber = '';
   bool _otpSent = false;
   String _otpCode = '';
@@ -54,6 +58,42 @@ class AuthProvider with ChangeNotifier {
   String get accessToken => _accessToken;
   String get refreshToken => _refreshToken;
   Map<String, dynamic> get profileData => _profileData;
+  MyQrData? get myQrData => _myQrData;
+  bool get isFetchingQr => _isFetchingQr;
+
+  Future<MyQrData?> fetchMyQr({bool forceRefresh = false}) async {
+    if (!forceRefresh && _myQrData != null) {
+      return _myQrData;
+    }
+    if (_accessToken.isEmpty) return null;
+
+    _isFetchingQr = true;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.fetchMyQr(accessToken: _accessToken);
+
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        _isFetchingQr = false;
+        notifyListeners();
+        return null;
+      }
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['status'] == true && body['data'] != null) {
+          _myQrData = MyQrData.fromJson(body['data']);
+        }
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch My QR failed', e, stack);
+    } finally {
+      _isFetchingQr = false;
+      notifyListeners();
+    }
+    return _myQrData;
+  }
 
   String get citizenType => (_profileData['citizen_type'] ?? '').toString();
   bool get isForeignUser {

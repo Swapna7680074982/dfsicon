@@ -1554,5 +1554,47 @@ class ApiService {
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }
+
+  // Utility: My QR API
+  static Future<http.Response> fetchMyQr({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myQr);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({});
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Utility: Get Venue Layouts API
+  static Future<http.Response> fetchVenueLayouts({
+    required String accessToken,
+    dynamic summitId,
+    String? layoutType,
+  }) async {
+    final url = Uri.parse(ApiUrls.venueLayouts);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {};
+    if (summitId != null) {
+      bodyMap['summit_id'] = summitId is int ? summitId : int.tryParse(summitId.toString()) ?? summitId;
+    }
+    if (layoutType != null && layoutType.isNotEmpty) {
+      bodyMap['layout_type'] = layoutType;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }
 

@@ -20,6 +20,8 @@ class ApiUrls {
   static const String getConfirmedSessions = '$baseUrl/delegate/confirmed_sessions';
   static const String getVenueAndHalls = '$baseUrl/utility/get_venue_and_halls';
   static const String getSummitBooths = '$baseUrl/utility/get_summit_booths';
+  static const String myQr = '$baseUrl/utility/my_qr';
+  static const String venueLayouts = '$baseUrl/utility/venue_layouts';
 
   static const String myWorkshops = '$baseUrl/utility/my_workshops';
   static const String viewWorkshopParticipants = '$baseUrl/utility/view_workshop_participants';

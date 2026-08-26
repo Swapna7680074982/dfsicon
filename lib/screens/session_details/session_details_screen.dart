@@ -10,7 +10,7 @@ import '../../providers/auth_provider.dart';
 // import '../../providers/home_provider.dart';
 import '../../providers/gallery_provider.dart';
 import '../../domain/networking_models.dart';
-// import '../../widgets/event_qr_modal.dart';
+import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../utils/time_formatter.dart';
 
@@ -692,16 +692,15 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                   ),
                 ),
-                /*
                 const SizedBox(width: 12),
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      final auth = Provider.of<AuthProvider>(context, listen: false);
                       showDialog(
                         context: context,
                         builder: (context) => EventQrModal(
-                          userName: 'Alex Kumar',
-                          eventName: Provider.of<HomeProvider>(context, listen: false).eventInfo.name,
+                          userName: auth.userName,
                         ),
                       );
                     },
@@ -733,7 +732,6 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                   ),
                 ),
-                */
               ],
             ),
             const SizedBox(height: 28),

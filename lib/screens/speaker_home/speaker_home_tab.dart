@@ -9,6 +9,8 @@ import '../../providers/abstract_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../../widgets/venue_media_widget.dart';
+import '../../widgets/venue_layouts_widget.dart';
+import '../../widgets/event_qr_modal.dart';
 import '../speaker_abstract/abstract_detail_screen.dart';
 import '../speaker_sessions/speaker_session_detail_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -66,6 +68,8 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
 
       await Future.wait([
         sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+        sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+        auth.fetchMyQr(forceRefresh: forceRefresh),
         abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
         sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
         workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
@@ -95,6 +99,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final homeProvider = Provider.of<HomeProvider>(context);
     final photoProvider = Provider.of<PhotoProvider>(context);
     final abstractProvider = Provider.of<AbstractProvider>(context);
     final sessionsProvider = Provider.of<SessionsProvider>(context);
@@ -207,6 +212,32 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                   );
                                 },
                               ),
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => EventQrModal(
+                                      userName: authProvider.userName,
+                                      eventName: homeProvider.eventInfo.name,
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(25),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.qr_code_2_outlined,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
                               const SizedBox(width: 12),
                               GestureDetector(
                                 onTap: () {
@@ -297,7 +328,127 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                 ),
                 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(240),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: AppColors.primary.withAlpha(24),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withAlpha(12),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withAlpha(16),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: AppColors.primary,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                homeProvider.eventInfo.location,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          homeProvider.eventInfo.name,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          TimeFormatter.formatString(
+                            homeProvider.eventInfo.date,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => EventQrModal(
+                                userName: authProvider.userName,
+                                eventName: homeProvider.eventInfo.name,
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.qr_code_2_outlined,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          label: const Text(
+                            'MY QR CODE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            elevation: 2,
+                            shadowColor: AppColors.primary.withAlpha(60),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14.0,
+                            ),
+                            minimumSize: const Size(
+                              double.infinity,
+                              48,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                   child: Row(
                     children: [
                       Expanded(
@@ -386,9 +537,18 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ),
                   ),
                 ] else ...[
+                  if (sessionsProvider.venueLayouts.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: VenueLayoutsWidget(
+                        layouts: sessionsProvider.venueLayouts,
+                        isLoading: sessionsProvider.isFetchingVenueLayouts,
+                      ),
+                    ),
+                  ],
                   if (sessionsProvider.venueMedia.isNotEmpty) ...[
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                       child: VenueMediaWidget(
                         mediaList: sessionsProvider.venueMedia,
                         title: 'Venue photos',

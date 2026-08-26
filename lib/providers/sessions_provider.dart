@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dfsicon/domain/api_service.dart';
+import 'package:dfsicon/domain/utility_models.dart';
 import 'package:dfsicon/utils/custom_logger.dart';
 import '../main.dart';
 import '../utils/time_formatter.dart';
@@ -169,6 +170,11 @@ class SessionsProvider extends ChangeNotifier {
   VenueInfo? get venueInfo => _venueInfo;
   List<HallItem> get halls => _halls;
   List<VenueMediaItem> get venueMedia => _venueMedia;
+  List<VenueLayoutItem> _venueLayouts = [];
+  bool _isFetchingVenueLayouts = false;
+
+  List<VenueLayoutItem> get venueLayouts => _venueLayouts;
+  bool get isFetchingVenueLayouts => _isFetchingVenueLayouts;
 
   String _searchQuery = '';
   bool _showOnlyBookmarked = false;
@@ -193,6 +199,7 @@ class SessionsProvider extends ChangeNotifier {
     _venueInfo = null;
     _halls = [];
     _venueMedia = [];
+    _venueLayouts = [];
     _searchQuery = '';
     _showOnlyBookmarked = false;
     _isLoading = false;
@@ -424,6 +431,47 @@ class SessionsProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> fetchVenueLayouts(String accessToken, {dynamic summitId, String? layoutType}) async {
+    if (accessToken.isEmpty) return false;
+    _isFetchingVenueLayouts = true;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.fetchVenueLayouts(
+        accessToken: accessToken,
+        summitId: summitId,
+        layoutType: layoutType,
+      );
+
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        _isFetchingVenueLayouts = false;
+        notifyListeners();
+        return false;
+      }
+
+      if (response.statusCode == 200) {
+        final data = _safeJsonDecode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          final List list = data['data'];
+          _venueLayouts = list
+              .whereType<Map<String, dynamic>>()
+              .map((item) => VenueLayoutItem.fromJson(item))
+              .toList();
+          _isFetchingVenueLayouts = false;
+          notifyListeners();
+          return true;
+        }
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch venue layouts failed', e, stack);
+    } finally {
+      _isFetchingVenueLayouts = false;
+      notifyListeners();
+    }
+    return false;
   }
 
   Future<bool> fetchConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {

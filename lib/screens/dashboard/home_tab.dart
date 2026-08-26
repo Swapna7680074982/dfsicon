@@ -10,8 +10,9 @@ import '../../providers/explore_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
-// import '../../widgets/event_qr_modal.dart';
+import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
+import '../../widgets/venue_layouts_widget.dart';
 import '../profile/profile_screen.dart';
 // import '../sightseeing/sightseeing_list_screen.dart';
 import '../notifications/notifications_screen.dart';
@@ -999,6 +1000,32 @@ class HomeTab extends StatelessWidget {
                             );
                           },
                         ),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => EventQrModal(
+                                userName: authProvider.userName,
+                                eventName: homeProvider.eventInfo.name,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(25),
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.qr_code_2_outlined,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 12),
                         GestureDetector(
                           onTap: () {
@@ -1131,23 +1158,21 @@ class HomeTab extends StatelessWidget {
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
-                                    /*
-                                    const SizedBox(height: 24),
+                                    const SizedBox(height: 20),
                                     ElevatedButton.icon(
                                       onPressed: () {
                                         showDialog(
                                           context: context,
                                           builder: (context) => EventQrModal(
                                             userName: authProvider.userName,
-                                            eventName:
-                                                homeProvider.eventInfo.name,
+                                            eventName: homeProvider.eventInfo.name,
                                           ),
                                         );
                                       },
                                       icon: const Icon(
                                         Icons.qr_code_2_outlined,
                                         color: Colors.white,
-                                        size: 18,
+                                        size: 20,
                                       ),
                                       label: const Text(
                                         'MY QR CODE',
@@ -1155,13 +1180,13 @@ class HomeTab extends StatelessWidget {
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primary,
                                         elevation: 2,
-                                        shadowColor: AppColors.primary
-                                            .withAlpha(60),
+                                        shadowColor: AppColors.primary.withAlpha(60),
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14.0,
                                         ),
@@ -1176,12 +1201,18 @@ class HomeTab extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    */
                                   ],
                                 ),
                               ),
+                              if (sessionsProvider.venueLayouts.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                VenueLayoutsWidget(
+                                  layouts: sessionsProvider.venueLayouts,
+                                  isLoading: sessionsProvider.isFetchingVenueLayouts,
+                                ),
+                              ],
                               if (sessionsProvider.venueMedia.isNotEmpty) ...[
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                                 VenueMediaWidget(
                                   mediaList: sessionsProvider.venueMedia,
                                   title: 'Venue photos',

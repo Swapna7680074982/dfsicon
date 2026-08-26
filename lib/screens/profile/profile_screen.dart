@@ -4,9 +4,8 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/photo_provider.dart';
 import '../../providers/auth_provider.dart';
-// import '../../providers/home_provider.dart';
 import '../../main.dart';
-// import '../../widgets/event_qr_modal.dart';
+import '../../widgets/event_qr_modal.dart';
 import 'edit_profile_screen.dart';
 // import '../help_desk/help_desk_screen.dart';
 
@@ -760,7 +759,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                /*
                 const SizedBox(height: 24),
                 GestureDetector(
                   onTap: () {
@@ -768,7 +766,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context: context,
                       builder: (context) => EventQrModal(
                         userName: name,
-                        eventName: homeProvider.eventInfo.name,
                       ),
                     );
                   },
@@ -780,7 +777,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       border: Border.all(color: AppColors.tileBorder, width: 1),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(2),
+                          color: Colors.black.withAlpha(4),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -814,14 +811,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(width: 14),
                         const Icon(
                           Icons.qr_code_2_outlined,
-                          color: AppColors.textPrimary,
+                          color: AppColors.primary,
                           size: 32,
                         ),
                       ],
                     ),
                   ),
                 ),
-                */
                 const SizedBox(height: 20),
                 Container(
                   decoration: BoxDecoration(

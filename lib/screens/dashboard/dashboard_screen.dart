@@ -40,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
 
       auth.registerDeviceToken();
+      auth.fetchMyQr();
       notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
 
       if (auth.isSpeaker) {
@@ -48,6 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
             : '1';
         sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
+        sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId);
         sessionsProvider.fetchMyConfirmedSessions(auth.accessToken);
       } else {
         // Delegate flow
@@ -58,6 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         exploreProvider.fetchSponsors(summitId, auth.accessToken);
         exploreProvider.fetchSummitBooths(summitId, auth.accessToken);
         sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
+        sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId);
         sessionsProvider.fetchConfirmedSessions(auth.accessToken);
         workshopsProvider.fetchMyWorkshops(auth.accessToken);
       }
