@@ -74,10 +74,8 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
 
     final workshopsProv = Provider.of<WorkshopsProvider>(context);
     final isLoadingParticipants = workshopsProv.isLoadingParticipants;
-    // final speakers = workshopsProv.workshopSpeakers;
-    // final delegates = workshopsProv.workshopDelegates;
-    final faculty = workshopsProv.workshopFaculty;
-    final facilitators = workshopsProv.workshopFacilitators;
+    final speakers = workshopsProv.workshopSpeakers;
+    final delegates = workshopsProv.workshopDelegates;
 
     final venue = widget.workshop.venueName;
     final address = widget.workshop.address;
@@ -432,22 +430,12 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
                     ],
 
 
-                    /*
-                    // Workshop Speakers Section
-                    _buildSpeakersSection(context, isLoadingParticipants, speakers),
+                    // Workshop Faculty Section (Speakers)
+                    _buildFacultySection(context, isLoadingParticipants, speakers),
                     const SizedBox(height: 24),
 
-                    // Workshop Delegates Section
-                    _buildDelegatesSection(context, isLoadingParticipants, delegates),
-                    const SizedBox(height: 24),
-                    */
-
-                    // Workshop Faculty Section
-                    _buildFacultySection(context, isLoadingParticipants, faculty),
-                    const SizedBox(height: 24),
-
-                    // Workshop Facilitators Section
-                    _buildFacilitatorsSection(context, isLoadingParticipants, facilitators),
+                    // Workshop Participants Section (Delegates)
+                    _buildParticipantsSection(context, isLoadingParticipants, delegates),
                   ],
                 ),
               ),
@@ -1093,26 +1081,26 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     );
   }
 
-  Widget _buildFacilitatorsSection(BuildContext context, bool isLoading, List<WorkshopParticipant> facilitators) {
+  Widget _buildParticipantsSection(BuildContext context, bool isLoading, List<WorkshopParticipant> delegates) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () => _showAllFacilitatorsModal(context, facilitators),
+          onTap: () => _showAllParticipantsModal(context, delegates),
           child: Container(
             color: Colors.transparent,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'WORKSHOP FACILITATORS (${facilitators.length})',
+                  'WORKSHOP PARTICIPANTS (${delegates.length})',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                if (facilitators.isNotEmpty)
+                if (delegates.isNotEmpty)
                   Row(
                     children: const [
                       Text(
@@ -1139,7 +1127,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
           )
-        else if (facilitators.isEmpty)
+        else if (delegates.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -1150,21 +1138,21 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
             ),
             child: const Center(
               child: Text(
-                'No facilitators assigned to this workshop.',
+                'No participants registered to this workshop yet.',
                 style: TextStyle(fontSize: 13, color: AppColors.textLight),
               ),
             ),
           )
         else
           GestureDetector(
-            onTap: () => _showAllFacilitatorsModal(context, facilitators),
+            onTap: () => _showAllParticipantsModal(context, delegates),
             child: Row(
               children: [
-                for (int i = 0; i < facilitators.length && i < 4; i++) ...[
-                  _buildAvatarChip(facilitators[i]),
+                for (int i = 0; i < delegates.length && i < 4; i++) ...[
+                  _buildAvatarChip(delegates[i]),
                   const SizedBox(width: 6),
                 ],
-                if (facilitators.length > 4)
+                if (delegates.length > 4)
                   Container(
                     width: 38,
                     height: 38,
@@ -1175,7 +1163,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      '+${facilitators.length - 4}',
+                      '+${delegates.length - 4}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1268,7 +1256,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
     );
   }
 
-  void _showAllFacilitatorsModal(BuildContext context, List<WorkshopParticipant> facilitators) {
+  void _showAllParticipantsModal(BuildContext context, List<WorkshopParticipant> delegates) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1303,7 +1291,7 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'WORKSHOP FACILITATORS',
+                    'WORKSHOP PARTICIPANTS',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1325,17 +1313,17 @@ class _WorkshopDetailsScreenState extends State<WorkshopDetailsScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                '${facilitators.length} FACILITATORS ASSIGNED',
+                '${delegates.length} PARTICIPANTS REGISTERED',
                 style: const TextStyle(fontSize: 12, color: AppColors.textLight),
               ),
               const SizedBox(height: 20),
               Expanded(
                 child: ListView.builder(
                   physics: const BouncingScrollPhysics(),
-                  itemCount: facilitators.length,
+                  itemCount: delegates.length,
                   itemBuilder: (context, idx) {
-                    final f = facilitators[idx];
-                    return _buildParticipantTile(f);
+                    final d = delegates[idx];
+                    return _buildParticipantTile(d);
                   },
                 ),
               ),

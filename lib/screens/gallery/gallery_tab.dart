@@ -69,6 +69,17 @@ class _GalleryTabState extends State<GalleryTab> {
           _isPeopleSelectMode = false;
         }
       } else {
+        if (_selectedPeople.length >= 4) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You can select a maximum of 4 people'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
         _selectedPeople.add(f);
       }
     });
@@ -86,13 +97,6 @@ class _GalleryTabState extends State<GalleryTab> {
     setState(() {
       _isPeopleSelectMode = false;
       _selectedPeople.clear();
-    });
-  }
-
-  void _selectAllPeople(List<GalleryFace> allPeople) {
-    setState(() {
-      _selectedPeople.clear();
-      _selectedPeople.addAll(allPeople);
     });
   }
 
@@ -242,7 +246,6 @@ class _GalleryTabState extends State<GalleryTab> {
   // --- AppBar Handler ---
   PreferredSizeWidget _buildAppBar(GalleryProvider galProvider) {
     if (_isPeopleSelectMode && _selectedSegment == 1) {
-      final allSelected = _selectedPeople.length == galProvider.faces.length;
       return AppBar(
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -259,7 +262,7 @@ class _GalleryTabState extends State<GalleryTab> {
           onPressed: _exitPeopleSelectMode,
         ),
         title: Text(
-          '${_selectedPeople.length} Selected',
+          '${_selectedPeople.length}/4 Selected',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -267,23 +270,18 @@ class _GalleryTabState extends State<GalleryTab> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              if (allSelected) {
-                _deselectAllPeople();
-              } else {
-                _selectAllPeople(galProvider.faces);
-              }
-            },
-            child: Text(
-              allSelected ? 'Deselect All' : 'Select All',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+          if (_selectedPeople.isNotEmpty)
+            TextButton(
+              onPressed: _deselectAllPeople,
+              child: const Text(
+                'Deselect All',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
-          ),
           const SizedBox(width: 8),
         ],
       );
@@ -735,7 +733,7 @@ class _GalleryTabState extends State<GalleryTab> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '$count Person${count == 1 ? '' : 's'} Selected',
+                        '$count / 4 Selected',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -746,7 +744,7 @@ class _GalleryTabState extends State<GalleryTab> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        count >= 1 ? 'Find photos with selected' : 'Select at least 1 person',
+                        count >= 1 ? 'Find photos with selected' : 'Select up to 4 people',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
@@ -800,6 +798,7 @@ class _GalleryTabState extends State<GalleryTab> {
   void _openDayGallery(GalleryDay day) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
 
     showDialog(
       context: context,
@@ -813,7 +812,7 @@ class _GalleryTabState extends State<GalleryTab> {
     );
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loader
+    navigator.pop(); // Close loader
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
     Navigator.push(
@@ -830,6 +829,7 @@ class _GalleryTabState extends State<GalleryTab> {
   void _openFaceGallery(GalleryFace face) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
 
     showDialog(
       context: context,
@@ -844,7 +844,7 @@ class _GalleryTabState extends State<GalleryTab> {
     );
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loader
+    navigator.pop(); // Close loader
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
     Navigator.push(
@@ -864,6 +864,7 @@ class _GalleryTabState extends State<GalleryTab> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final galProvider = Provider.of<GalleryProvider>(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
 
     showDialog(
       context: context,
@@ -879,7 +880,7 @@ class _GalleryTabState extends State<GalleryTab> {
     );
 
     if (!mounted) return;
-    Navigator.pop(context); // Close loader
+    navigator.pop(); // Close loader
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
     final title = _getFilteredTitle(list);
@@ -897,7 +898,7 @@ class _GalleryTabState extends State<GalleryTab> {
     } else {
       showDialog(
         context: context,
-        builder: (context) => BackdropFilter(
+        builder: (dialogContext) => BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -913,57 +914,16 @@ class _GalleryTabState extends State<GalleryTab> {
               ],
             ),
             content: Text(
-              'We couldn\'t find photos where all ${list.length} selected individuals are present together.\n\nWould you like to view photos containing any of these individuals?',
+              'We couldn\'t find photos where all ${list.length} selected individuals are present together.',
               style: const TextStyle(fontSize: 14, height: 1.4, color: AppColors.textSecondary),
             ),
-            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actionsAlignment: MainAxisAlignment.end,
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text(
-                  'ADJUST SELECTION',
-                  style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context); // Close dialog
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                  );
-
-                  final anyMatchImages = await galProvider.fetchGalleryMatch(
-                    accessToken: authProvider.accessToken,
-                    userIds: userIds,
-                    requireAll: false,
-                  );
-
-                  if (!mounted) return;
-                  Navigator.pop(context); // Close loader
-
-                  final anyUrls = anyMatchImages.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => GalleryDetailScreen(
-                        title: 'ALL PHOTOS: ${list.length} PEOPLE',
-                        photos: anyUrls,
-                      ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'VIEW ANY MATCH',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  'OK',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
