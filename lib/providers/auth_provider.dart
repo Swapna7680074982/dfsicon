@@ -260,6 +260,7 @@ class AuthProvider with ChangeNotifier {
           _refreshToken = data['refresh_token'] ?? '';
           _profileData = Map<String, dynamic>.from(data['use_profile'] ?? data['user_profile'] ?? {});
           _profileData['citizen_type'] = citizenType;
+          _myQrData = null;
           
           await _saveSession();
           registerDeviceToken();
@@ -309,6 +310,7 @@ class AuthProvider with ChangeNotifier {
           _refreshToken = data['refresh_token'] ?? '';
           _profileData = Map<String, dynamic>.from(data['use_profile'] ?? data['user_profile'] ?? {});
           _profileData['citizen_type'] = citizenType;
+          _myQrData = null;
 
           await _saveSession();
           registerDeviceToken();
@@ -389,6 +391,7 @@ class AuthProvider with ChangeNotifier {
         _profileData = {};
         _userRole = 'DL';
         _userName = 'Alex Kumar';
+        _myQrData = null;
 
         await _clearSession();
         notifyListeners();
@@ -444,6 +447,7 @@ class AuthProvider with ChangeNotifier {
     _profileData = {};
     _userRole = 'DL';
     _userName = 'Alex Kumar';
+    _myQrData = null;
     
     await _clearSession();
     notifyListeners();
@@ -476,6 +480,7 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('access_token');
     await prefs.remove('refresh_token');
     await prefs.remove('profile_data');
+    _myQrData = null;
     await FcmService.deleteFcmToken();
   }
 

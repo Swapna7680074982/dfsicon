@@ -93,76 +93,44 @@ class _SessionsTabState extends State<SessionsTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.tileBorder,
-                          width: 1.5,
+              Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.tileBorder,
+                    width: 1.5,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: AppColors.textLight, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          sessionsProvider.setSearchQuery(value);
+                        },
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search, color: AppColors.textLight, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (value) {
-                                sessionsProvider.setSearchQuery(value);
-                              },
-                              style: const TextStyle(
-                                fontSize: 15,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'SEARCH SESSIONS OR SPEAKERS...',
-                                hintStyle: TextStyle(
-                                  color: AppColors.textLight,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'SEARCH SESSIONS OR SPEAKERS...',
+                          hintStyle: TextStyle(
+                            color: AppColors.textLight,
+                            fontWeight: FontWeight.w400,
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Filter by Date calendar opened')),
-                      );
-                    },
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.tileBorder,
-                          width: 1.5,
                         ),
                       ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.calendar_today_outlined,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               SingleChildScrollView(

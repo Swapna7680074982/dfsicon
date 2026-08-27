@@ -113,9 +113,7 @@ class _EventQrModalState extends State<EventQrModal> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      if (auth.myQrData == null) {
-        auth.fetchMyQr();
-      }
+      auth.fetchMyQr(forceRefresh: true);
     });
   }
 
@@ -129,9 +127,9 @@ class _EventQrModalState extends State<EventQrModal> {
         ? authProvider.userName
         : (widget.userName ?? 'User');
 
-    final String displayRole = (qrData?.roleCode == 'SK' || authProvider.isSpeaker)
-        ? 'Speaker'
-        : 'Delegate';
+    final String displayRole = (qrData != null && qrData.roleCode.isNotEmpty)
+        ? (qrData.roleCode.toUpperCase() == 'SK' ? 'Speaker' : 'Delegate')
+        : (authProvider.isSpeaker ? 'Speaker' : 'Delegate');
 
     final String displaySummit = qrData?.summitTitle.isNotEmpty == true
         ? qrData!.summitTitle
