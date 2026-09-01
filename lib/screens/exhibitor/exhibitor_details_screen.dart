@@ -102,7 +102,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
               _buildHeroHeaderCard(context),
 
               // Booth Location Highlights Card
-              if (exhibitor.boothCode.isNotEmpty) ...[
+              if (exhibitor.boothCode.trim().isNotEmpty || exhibitor.boothZone.trim().isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildBoothLocationCard(context),
               ],
@@ -313,8 +313,11 @@ class ExhibitorDetailsScreen extends StatelessWidget {
 
   // --- BOOTH LOCATION CARD ---
   Widget _buildBoothLocationCard(BuildContext context) {
-    final boothText = exhibitor.boothCode.toUpperCase();
-    final zoneText = exhibitor.boothZone.isNotEmpty ? exhibitor.boothZone.toUpperCase() : '';
+    final boothText = exhibitor.boothCode.trim().toUpperCase();
+    final zoneText = exhibitor.boothZone.trim().toUpperCase();
+    final displayText = boothText.isNotEmpty && zoneText.isNotEmpty
+        ? '$boothText  •  $zoneText'
+        : (boothText.isNotEmpty ? boothText : zoneText);
 
     return Container(
       width: double.infinity,
@@ -375,7 +378,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                     ),
                     const Spacer(),
                     GestureDetector(
-                      onTap: () => _copyToClipboard(context, '$boothText - $zoneText', 'Booth info'),
+                      onTap: () => _copyToClipboard(context, displayText, 'Booth info'),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -402,7 +405,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  zoneText.isNotEmpty ? '$boothText  •  $zoneText' : boothText,
+                  displayText,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -648,16 +651,18 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 icon: Icons.map_rounded,
                 title: 'BOOTH LOCATION & BLUEPRINT',
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Convention Center / ${exhibitor.boothCode}'.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
+              if (exhibitor.boothCode.trim().isNotEmpty || exhibitor.boothZone.trim().isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Convention Center / ${exhibitor.boothZone.isNotEmpty ? (exhibitor.boothCode.isNotEmpty ? "${exhibitor.boothZone} • ${exhibitor.boothCode}" : exhibitor.boothZone) : exhibitor.boothCode}'.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
               GridView.builder(
                 shrinkWrap: true,
@@ -671,9 +676,26 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 itemCount: booths.length,
                 itemBuilder: (context, index) {
                   final b = booths[index];
-                  final isCurrentExhibitor = (b.sponsorId != null && b.sponsorId == exhibitor.id) ||
-                      (b.companyName != null && b.companyName!.toLowerCase() == exhibitor.name.toLowerCase()) ||
-                      exhibitor.boothCode.toLowerCase().contains(b.boothNumber.toLowerCase());
+                  final exhibitorBoothNumbers = exhibitor.boothCode
+                      .split(',')
+                      .map((e) => e.replaceAll('#', '').trim().toLowerCase())
+                      .where((e) => e.isNotEmpty)
+                      .toSet();
+
+                  final exhibitorBoothLabels = exhibitor.boothZone
+                      .split(',')
+                      .map((e) => e.replaceAll('#', '').trim().toLowerCase())
+                      .where((e) => e.isNotEmpty)
+                      .toSet();
+
+                  final isCurrentExhibitor = (b.sponsorId != null && b.sponsorId!.isNotEmpty && b.sponsorId == exhibitor.id) ||
+                      (b.companyName != null && b.companyName!.trim().isNotEmpty && b.companyName!.trim().toLowerCase() == exhibitor.name.trim().toLowerCase()) ||
+                      (b.boothNumber.trim().isNotEmpty && exhibitorBoothNumbers.contains(b.boothNumber.replaceAll('#', '').trim().toLowerCase())) ||
+                      (b.boothLabel.trim().isNotEmpty && exhibitorBoothLabels.contains(b.boothLabel.replaceAll('#', '').trim().toLowerCase())) ||
+                      exhibitor.booths.any((eb) =>
+                          (eb.boothId.isNotEmpty && eb.boothId == b.boothId) ||
+                          (eb.boothNumber.isNotEmpty && eb.boothNumber.trim().toLowerCase() == b.boothNumber.trim().toLowerCase()) ||
+                          (eb.boothLabel.isNotEmpty && eb.boothLabel.trim().toLowerCase() == b.boothLabel.trim().toLowerCase()));
 
                   final logoPath = (b.logo != null && b.logo!.isNotEmpty) ? b.logo : (isCurrentExhibitor ? exhibitor.logoUrl : null);
 
@@ -726,7 +748,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                b.boothNumber.isNotEmpty ? b.boothNumber : b.boothLabel,
+                                b.boothLabel.isNotEmpty ? b.boothLabel : b.boothNumber,
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.bold,
@@ -740,7 +762,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          b.boothLabel,
+                          b.boothNumber.isNotEmpty ? b.boothNumber : b.boothLabel,
                           style: TextStyle(
                             fontSize: 11,
                             color: isCurrentExhibitor ? const Color(0xFF4338CA) : AppColors.textSecondary,

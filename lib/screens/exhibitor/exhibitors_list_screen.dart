@@ -273,7 +273,9 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                     child: Text(
                                       ex.boothCode.isNotEmpty
                                           ? '${ex.category}  •  ${ex.boothCode}'
-                                          : ex.category,
+                                          : (ex.boothZone.isNotEmpty
+                                              ? '${ex.category}  •  ${ex.boothZone}'
+                                              : ex.category),
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,

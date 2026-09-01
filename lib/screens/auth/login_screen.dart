@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
-                                      'Foreign',
+                                      'Foreigner',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,

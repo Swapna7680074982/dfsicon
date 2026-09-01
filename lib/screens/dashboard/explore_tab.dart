@@ -262,6 +262,10 @@ class _ExploreTabState extends State<ExploreTab> {
               itemCount: expProvider.featuredExhibitors.length,
               itemBuilder: (context, index) {
                 final ex = expProvider.featuredExhibitors[index];
+                final locationText = ex.boothCode.trim().isNotEmpty
+                    ? ex.boothCode.trim()
+                    : ex.boothZone.trim();
+
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -325,6 +329,8 @@ class _ExploreTabState extends State<ExploreTab> {
                         const SizedBox(height: 10),
                         Text(
                           ex.name.toUpperCase(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -334,34 +340,38 @@ class _ExploreTabState extends State<ExploreTab> {
                         const SizedBox(height: 2),
                         Text(
                           ex.category.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: AppColors.textLight,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                ex.boothCode.toUpperCase(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textLight,
-                                  fontWeight: FontWeight.w500,
+                        if (locationText.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: AppColors.textLight,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  locationText.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textLight,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
