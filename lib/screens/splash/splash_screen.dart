@@ -34,7 +34,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       if (!mounted) return;
       if (isLoggedIn) {
         if (authProvider.hasValidProfileImage) {
-          Navigator.of(context).pushReplacementNamed('/dashboard');
+          if (authProvider.isSpeakerRole && authProvider.selectedRole == null) {
+            Navigator.of(context).pushReplacementNamed('/role_selection');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/dashboard');
+          }
         } else {
           Navigator.of(context).pushReplacementNamed('/photo_upload');
         }

@@ -25,6 +25,7 @@ class AuthProvider with ChangeNotifier {
   // Fallback defaults
   String _userRole = 'DL';
   String _userName = 'Alex Kumar';
+  String? _selectedRole;
 
   // API Tokens and Profile Data
   String _accessToken = '';
@@ -112,7 +113,23 @@ class AuthProvider with ChangeNotifier {
   String get userId => (_profileData['user_id'] ?? _profileData['id'] ?? '').toString();
   String get userRole => _profileData['role_code'] ?? _userRole;
   String get userName => _profileData['full_name'] ?? _userName;
-  bool get isSpeaker => userRole.toUpperCase() == 'SK';
+  bool get isSpeakerRole => (_profileData['role_code'] ?? _userRole).toString().toUpperCase() == 'SK';
+  bool get isSpeaker => (_selectedRole ?? userRole).toUpperCase() == 'SK';
+  String? get selectedRole => _selectedRole;
+
+  void setSelectedRole(String? role) {
+    _selectedRole = role;
+    if (role != null) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('selected_role', role);
+      });
+    } else {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.remove('selected_role');
+      });
+    }
+    notifyListeners();
+  }
 
   String get email => _profileData['email'] ?? '';
   String get mobile => _profileData['mobile'] ?? _phoneNumber;
@@ -390,6 +407,7 @@ class AuthProvider with ChangeNotifier {
         _refreshToken = '';
         _profileData = {};
         _userRole = 'DL';
+        _selectedRole = null;
         _userName = 'Alex Kumar';
         _myQrData = null;
 
@@ -446,6 +464,7 @@ class AuthProvider with ChangeNotifier {
     _refreshToken = '';
     _profileData = {};
     _userRole = 'DL';
+    _selectedRole = null;
     _userName = 'Alex Kumar';
     _myQrData = null;
     
@@ -473,6 +492,11 @@ class AuthProvider with ChangeNotifier {
     await prefs.setString('access_token', _accessToken);
     await prefs.setString('refresh_token', _refreshToken);
     await prefs.setString('profile_data', json.encode(_profileData));
+    if (_selectedRole != null) {
+      await prefs.setString('selected_role', _selectedRole!);
+    } else {
+      await prefs.remove('selected_role');
+    }
   }
 
   Future<void> _clearSession() async {
@@ -480,6 +504,8 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('access_token');
     await prefs.remove('refresh_token');
     await prefs.remove('profile_data');
+    await prefs.remove('selected_role');
+    _selectedRole = null;
     _myQrData = null;
     await FcmService.deleteFcmToken();
   }
@@ -634,6 +660,7 @@ class AuthProvider with ChangeNotifier {
       
       final profileStr = prefs.getString('profile_data') ?? '{}';
       _profileData = json.decode(profileStr) as Map<String, dynamic>;
+      _selectedRole = prefs.getString('selected_role');
       final success = await refreshSessionToken();
       if (success) {
         registerDeviceToken();

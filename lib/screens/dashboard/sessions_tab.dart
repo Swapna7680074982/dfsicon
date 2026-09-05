@@ -26,6 +26,7 @@ class _SessionsTabState extends State<SessionsTab> {
   }
 
   Future<void> _fetchSessions({bool forceRefresh = false}) async {
+    if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
     await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);

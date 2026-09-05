@@ -5,7 +5,6 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../../providers/sessions_provider.dart';
-import 'edit_topic_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -201,7 +200,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
             else
               SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -587,58 +586,6 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                       ),
                     ],
                   ],
-                ),
-              ),
-            if (!isLoading && status != 'Confirmed')
-              Positioned(
-                bottom: 50,
-                left: 20,
-                right: 20,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditTopicScreen(
-                            topicId: widget.abstractId,
-                            initialData: details ?? {
-                              'contributing_author1_name': author1,
-                              'contributing_author2_name': author2,
-                              'background_introduction': background,
-                              'aims_objectives': aims,
-                              'materials_methods': methods,
-                              'results': results,
-                              'conclusion': conclusion,
-                              'keywords': keywords,
-                            },
-                          ),
-                        ),
-                      ).then((updated) {
-                        if (updated == true) {
-                          _loadDetails();
-                        }
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(27),
-                      ),
-                      elevation: 4,
-                    ),
-                    child: const Text(
-                      'EDIT TOPIC DETAILS',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-
-                  ),
                 ),
               ),
           ],

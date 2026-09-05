@@ -7,6 +7,7 @@ import '../../providers/explore_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/abstract_provider.dart';
 import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
@@ -38,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
       final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
       final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
+      final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
 
       auth.registerDeviceToken();
       auth.fetchMyQr();
@@ -51,6 +53,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
         sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId);
         sessionsProvider.fetchMyConfirmedSessions(auth.accessToken);
+        abstractProvider.fetchMyTopics(auth.accessToken);
+        workshopsProvider.fetchMyWorkshops(auth.accessToken);
       } else {
         // Delegate flow
         await homeProvider.fetchSummits(auth.accessToken);

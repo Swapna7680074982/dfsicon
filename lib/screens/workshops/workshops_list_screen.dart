@@ -26,6 +26,7 @@ class _WorkshopsListScreenState extends State<WorkshopsListScreen> {
   }
 
   Future<void> _fetchWorkshops({bool forceRefresh = false}) async {
+    if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
     await workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh);

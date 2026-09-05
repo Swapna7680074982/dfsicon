@@ -29,6 +29,7 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   Future<void> _fetchSponsors({bool force = false}) async {
+    if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final explore = Provider.of<ExploreProvider>(context, listen: false);
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
@@ -81,6 +82,7 @@ class _ExploreTabState extends State<ExploreTab> {
         onRefresh: () async {
           final auth = Provider.of<AuthProvider>(context, listen: false);
           await auth.refreshSessionToken();
+          if (!mounted) return;
           await _fetchSponsors();
         },
         color: AppColors.primary,

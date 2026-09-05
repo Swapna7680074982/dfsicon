@@ -201,7 +201,11 @@ class PhotoUploadScreen extends StatelessWidget {
                   final String? photoUrl = await photoProvider.uploadPhoto(authProvider.accessToken);
                   if (photoUrl != null) {
                     await authProvider.updateProfileImage(photoUrl);
-                    navigator.pushReplacementNamed('/dashboard');
+                    if (authProvider.isSpeakerRole) {
+                      navigator.pushReplacementNamed('/role_selection');
+                    } else {
+                      navigator.pushReplacementNamed('/dashboard');
+                    }
                   } else if (photoProvider.uploadError != null && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

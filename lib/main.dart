@@ -14,6 +14,7 @@ import 'providers/workshops_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/qa_provider.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/role_selection_screen.dart';
 import 'screens/photo/photo_upload_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/fcm_service.dart';
@@ -105,6 +106,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),
+          '/role_selection': (context) => const RoleSelectionScreen(),
           '/photo_upload': (context) => const PhotoUploadScreen(),
           '/dashboard': (context) => const DashboardScreen(),
         },

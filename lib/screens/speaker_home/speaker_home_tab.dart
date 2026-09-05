@@ -48,11 +48,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
   }
 
   Future<void> _fetchData({bool forceRefresh = false}) async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
@@ -62,6 +61,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
 
     try {
       await homeProvider.fetchSummits(auth.accessToken);
+      if (!mounted) return;
       final String summitId = homeProvider.summits.isNotEmpty
           ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
           : '1';
@@ -115,6 +115,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
           onRefresh: () async {
             final auth = Provider.of<AuthProvider>(context, listen: false);
             await auth.refreshSessionToken();
+            if (!mounted) return;
             await _fetchData(forceRefresh: true);
           },
           color: AppColors.primary,
@@ -715,7 +716,9 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                           ),
                         ),
                       ).then((_) {
-                        _fetchData();
+                        if (mounted) {
+                          _fetchData();
+                        }
                       });
                     },
                     child: Container(

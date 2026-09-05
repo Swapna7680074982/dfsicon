@@ -268,25 +268,6 @@ class _EventQrModalState extends State<EventQrModal> {
                   ),
                   const SizedBox(height: 6),
 
-                  // Role Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(20),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.primary.withAlpha(50)),
-                    ),
-                    child: Text(
-                      'Role: $displayRole',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
                   // Summit Title & Dates Card
                   Container(
                     width: double.infinity,

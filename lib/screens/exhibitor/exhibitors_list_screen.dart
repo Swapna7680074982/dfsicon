@@ -27,6 +27,7 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
   }
 
   Future<void> _fetchData({bool force = false}) async {
+    if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final explore = Provider.of<ExploreProvider>(context, listen: false);
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
@@ -133,6 +134,7 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                 onRefresh: () async {
                   final auth = Provider.of<AuthProvider>(context, listen: false);
                   await auth.refreshSessionToken();
+                  if (!mounted) return;
                   await _fetchData(force: true);
                 },
                 color: AppColors.primary,
@@ -484,26 +486,6 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                      if (booth.sponsorType != null && booth.sponsorType!.trim().isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary.withAlpha(15),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            booth.sponsorType!,
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.primary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
                                         ),
                                       ],
                                       if (booth.boothCapacity != '0' && booth.boothCapacity.isNotEmpty) ...[

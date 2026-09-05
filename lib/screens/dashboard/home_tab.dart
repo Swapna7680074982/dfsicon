@@ -899,8 +899,11 @@ class HomeTab extends StatelessWidget {
               final sessionsProv = Provider.of<SessionsProvider>(context, listen: false);
               final workshopsProv = Provider.of<WorkshopsProvider>(context, listen: false);
               await authProvider.refreshSessionToken();
+              if (!context.mounted) return;
               await homeProvider.fetchSummits(authProvider.accessToken);
+              if (!context.mounted) return;
               await sessionsProv.fetchConfirmedSessions(authProvider.accessToken, forceRefresh: true);
+              if (!context.mounted) return;
               await workshopsProv.fetchMyWorkshops(authProvider.accessToken, forceRefresh: true);
             },
             color: AppColors.primary,

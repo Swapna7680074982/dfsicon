@@ -289,7 +289,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               final String? errorMsg = await authProvider.verifyOtp(citizenType: 'INDIAN');
                               if (errorMsg == null && mounted) {
                                 if (authProvider.hasValidProfileImage) {
-                                  navigator.pushReplacementNamed('/dashboard');
+                                  if (authProvider.isSpeakerRole) {
+                                    navigator.pushReplacementNamed('/role_selection');
+                                  } else {
+                                    navigator.pushReplacementNamed('/dashboard');
+                                  }
                                 } else {
                                   navigator.pushNamed('/photo_upload');
                                 }
@@ -416,7 +420,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                               if (errorMsg == null && mounted) {
                                 if (authProvider.hasValidProfileImage) {
-                                  navigator.pushReplacementNamed('/dashboard');
+                                  if (authProvider.isSpeakerRole) {
+                                    navigator.pushReplacementNamed('/role_selection');
+                                  } else {
+                                    navigator.pushReplacementNamed('/dashboard');
+                                  }
                                 } else {
                                   navigator.pushNamed('/photo_upload');
                                 }

@@ -30,6 +30,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
   }
 
   Future<void> _fetchTopics({bool forceRefresh = false}) async {
+    if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
     await abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh);
@@ -260,6 +261,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                       onRefresh: () async {
                         final auth = Provider.of<AuthProvider>(context, listen: false);
                         await auth.refreshSessionToken();
+                        if (!mounted) return;
                         await _fetchTopics(forceRefresh: true);
                       },
                       color: AppColors.primary,
