@@ -266,24 +266,6 @@ class _EventQrModalState extends State<EventQrModal> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      displayRole.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
 
                   // Summit Title & Dates Card
                   Container(

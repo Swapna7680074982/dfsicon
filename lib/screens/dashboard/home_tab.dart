@@ -1153,7 +1153,7 @@ class HomeTab extends StatelessWidget {
                                     Text(
                                       homeProvider.eventInfo.name,
                                       style: const TextStyle(
-                                        fontSize: 24,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.primary,
                                         letterSpacing: 0.2,
