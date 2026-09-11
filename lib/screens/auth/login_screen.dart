@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
@@ -188,10 +189,35 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Row(
                               children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      '+91',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      width: 1.5,
+                                      height: 22,
+                                      color: AppColors.inputBorder,
+                                    ),
+                                    const SizedBox(width: 10),
+                                  ],
+                                ),
                                 Expanded(
                                   child: TextField(
                                     controller: _phoneController,
                                     keyboardType: TextInputType.phone,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(10),
+                                    ],
+                                    maxLength: 10,
                                     onChanged: (value) => authProvider.setPhoneNumber(value),
                                     style: const TextStyle(
                                       fontSize: 16,
@@ -200,7 +226,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
-                                      hintText: '987654 3210',
+                                      counterText: '',
+                                      hintText: '9876543210',
                                       hintStyle: TextStyle(
                                         color: AppColors.textLight,
                                       ),

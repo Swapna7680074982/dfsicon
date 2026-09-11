@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
@@ -27,48 +28,76 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+  DateTime? _lastBackPressTime;
+  bool? _lastSpeakerMode;
 
   @override
   void initState() {
     super.initState();
     MyApp.resetRedirectFlag();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
-      final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
-      final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
-      final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
-      final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
-      final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+      _lastSpeakerMode = auth.isSpeaker;
+      _loadDashboardData(auth, forceRefresh: false);
+    });
+  }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context);
+    if (_lastSpeakerMode != null && _lastSpeakerMode != auth.isSpeaker) {
+      _lastSpeakerMode = auth.isSpeaker;
+      _currentIndex = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadDashboardData(auth, forceRefresh: true);
+      });
+    }
+  }
+
+  Future<void> _loadDashboardData(AuthProvider auth, {bool forceRefresh = false}) async {
+    if (!mounted) return;
+    final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+    final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
+    final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
+    final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
+    final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
+    final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+
+    try {
       auth.registerDeviceToken();
-      auth.fetchMyQr();
+      auth.fetchMyQr(forceRefresh: forceRefresh);
       notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
 
+      await homeProvider.fetchSummits(auth.accessToken);
+      if (!mounted) return;
+
+      final String summitId = homeProvider.summits.isNotEmpty
+          ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+          : '1';
+
       if (auth.isSpeaker) {
-        await homeProvider.fetchSummits(auth.accessToken);
-        final String summitId = homeProvider.summits.isNotEmpty
-            ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
-            : '1';
-        sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
-        sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId);
-        sessionsProvider.fetchMyConfirmedSessions(auth.accessToken);
-        abstractProvider.fetchMyTopics(auth.accessToken);
-        workshopsProvider.fetchMyWorkshops(auth.accessToken);
+        await Future.wait([
+          sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+          sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+          sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+          abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
+          workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
+        ]);
       } else {
         // Delegate flow
-        await homeProvider.fetchSummits(auth.accessToken);
-        final String summitId = homeProvider.summits.isNotEmpty
-            ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
-            : '1';
-        exploreProvider.fetchSponsors(summitId, auth.accessToken);
-        exploreProvider.fetchSummitBooths(summitId, auth.accessToken);
-        sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken);
-        sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId);
-        sessionsProvider.fetchConfirmedSessions(auth.accessToken);
-        workshopsProvider.fetchMyWorkshops(auth.accessToken);
+        await Future.wait([
+          exploreProvider.fetchSponsors(summitId, auth.accessToken),
+          exploreProvider.fetchSummitBooths(summitId, auth.accessToken),
+          sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+          sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+          sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+          workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
+        ]);
       }
-    });
+    } catch (_) {
+      // Gracefully catch any network or mapping exceptions so screens do not error
+    }
   }
 
   @override
@@ -229,43 +258,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _currentIndex = 0;
     }
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: tabs,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(15),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // If not on Home tab (index 0), navigate back to Home tab (like WhatsApp)
+        if (_currentIndex != 0) {
+          setState(() {
+            _currentIndex = 0;
+          });
+          return;
+        }
+
+        // If already on Home tab, require double tap within 2 seconds to exit
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Press back again to exit',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              backgroundColor: const Color(0xFF1E293B),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              duration: const Duration(seconds: 2),
             ),
-          ],
+          );
+          return;
+        }
+
+        // Second press within 2s -> exit the application cleanly
+        SystemNavigator.pop();
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: tabs,
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.1,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(15),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.1,
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.textSecondary,
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.1,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.1,
+            ),
+            items: barItems,
           ),
-          items: barItems,
         ),
       ),
     );

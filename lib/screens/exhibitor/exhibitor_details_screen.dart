@@ -101,10 +101,10 @@ class ExhibitorDetailsScreen extends StatelessWidget {
               // Hero Profile Header Card
               _buildHeroHeaderCard(context),
 
-              // Booth Location Highlights Card
-              if (exhibitor.boothCode.trim().isNotEmpty || exhibitor.boothZone.trim().isNotEmpty) ...[
+              // Booth Location & Blueprint Card
+              if (exhibitor.boothCode.trim().isNotEmpty || exhibitor.boothZone.trim().isNotEmpty || exhibitor.booths.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                _buildBoothLocationCard(context),
+                _buildBoothBlueprintCard(context),
               ],
 
               // About Description Card
@@ -118,10 +118,6 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildProductsAndBrochureCard(context),
               ],
-
-              // Floor Plan / Booth Blueprint Grid
-              const SizedBox(height: 20),
-              _buildBoothBlueprintCard(context),
 
               // Contact & Online Channels Card
               if (exhibitor.website.isNotEmpty || exhibitor.email.isNotEmpty) ...[
@@ -304,118 +300,6 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                     ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- BOOTH LOCATION CARD ---
-  Widget _buildBoothLocationCard(BuildContext context) {
-    final boothText = exhibitor.boothCode.trim().toUpperCase();
-    final zoneText = exhibitor.boothZone.trim().toUpperCase();
-    final displayText = boothText.isNotEmpty && zoneText.isNotEmpty
-        ? '$boothText  •  $zoneText'
-        : (boothText.isNotEmpty ? boothText : zoneText);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEEECF9), Color(0xFFE0E7FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.primary.withAlpha(38), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withAlpha(12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withAlpha(76),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.location_on_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'BOOTH LOCATION',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => _copyToClipboard(context, displayText, 'Booth info'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(178),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.copy_rounded, size: 12, color: AppColors.primary),
-                            SizedBox(width: 4),
-                            Text(
-                              'COPY',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  displayText,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    height: 1.3,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -620,18 +504,75 @@ class ExhibitorDetailsScreen extends StatelessWidget {
     );
   }
 
-  // --- BOOTH BLUEPRINT CARD ---
+  // --- BOOTH LOCATION CARD ---
   Widget _buildBoothBlueprintCard(BuildContext context) {
+    final boothText = exhibitor.boothCode.trim().toUpperCase();
+    final zoneText = exhibitor.boothZone.trim().toUpperCase();
+
     return Consumer<ExploreProvider>(
       builder: (context, expProvider, child) {
-        final booths = expProvider.summitBooths.isNotEmpty
-            ? expProvider.summitBooths
-            : exhibitor.booths;
+        final exhibitorBoothNumbers = exhibitor.boothCode
+            .split(',')
+            .map((e) => e.replaceAll('#', '').trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toSet();
 
-        if (booths.isEmpty) return const SizedBox.shrink();
+        final exhibitorBoothLabels = exhibitor.boothZone
+            .split(',')
+            .map((e) => e.replaceAll('#', '').trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toSet();
+
+        final List<BoothItem> assignedBooths = [];
+
+        for (final b in exhibitor.booths) {
+          if (!assignedBooths.any((ab) => ab.boothId.isNotEmpty && ab.boothId == b.boothId)) {
+            assignedBooths.add(b);
+          }
+        }
+
+        for (final b in expProvider.summitBooths) {
+          final isMatch = (b.sponsorId != null && b.sponsorId!.isNotEmpty && b.sponsorId == exhibitor.id) ||
+              (b.companyName != null && b.companyName!.trim().isNotEmpty && b.companyName!.trim().toLowerCase() == exhibitor.name.trim().toLowerCase()) ||
+              (b.boothNumber.trim().isNotEmpty && exhibitorBoothNumbers.contains(b.boothNumber.replaceAll('#', '').trim().toLowerCase())) ||
+              (b.boothLabel.trim().isNotEmpty && exhibitorBoothLabels.contains(b.boothLabel.replaceAll('#', '').trim().toLowerCase()));
+
+          if (isMatch && !assignedBooths.any((ab) => ab.boothId.isNotEmpty && ab.boothId == b.boothId)) {
+            assignedBooths.add(b);
+          }
+        }
+
+        final displayBooth = boothText.isNotEmpty
+            ? boothText
+            : (assignedBooths.isNotEmpty
+                ? assignedBooths.map((b) => b.boothNumber.isNotEmpty ? b.boothNumber : b.boothLabel).join(', ')
+                : 'ASSIGNED');
+        final displayZone = zoneText.isNotEmpty
+            ? zoneText
+            : (assignedBooths.isNotEmpty && assignedBooths.first.boothLabel.isNotEmpty
+                ? assignedBooths.first.boothLabel
+                : '');
+
+        final String stallText = displayZone.isNotEmpty
+            ? (displayZone.startsWith('STALL') || displayZone.startsWith('BOOTH')
+                ? displayZone
+                : 'STALL $displayZone')
+            : '';
+
+        final String boothNumText = (displayBooth.isNotEmpty &&
+                displayBooth != 'ASSIGNED' &&
+                displayBooth.toLowerCase() != displayZone.toLowerCase())
+            ? (displayBooth.startsWith('BOOTH') || displayBooth.startsWith('STALL')
+                ? displayBooth
+                : 'BOOTH : $displayBooth')
+            : (stallText.isEmpty
+                ? (displayBooth.startsWith('BOOTH') || displayBooth.startsWith('STALL')
+                    ? displayBooth
+                    : 'BOOTH : $displayBooth')
+                : '');
 
         return Container(
-          padding: const EdgeInsets.all(20),
+          width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -644,150 +585,140 @@ class ExhibitorDetailsScreen extends StatelessWidget {
               ),
             ],
           ),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader(
-                icon: Icons.map_rounded,
-                title: 'BOOTH LOCATION & BLUEPRINT',
-              ),
-              if (exhibitor.boothCode.trim().isNotEmpty || exhibitor.boothZone.trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Convention Center / ${exhibitor.boothZone.isNotEmpty ? (exhibitor.boothCode.isNotEmpty ? "${exhibitor.boothZone} • ${exhibitor.boothCode}" : exhibitor.boothZone) : exhibitor.boothCode}'.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.6,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: booths.length,
-                itemBuilder: (context, index) {
-                  final b = booths[index];
-                  final exhibitorBoothNumbers = exhibitor.boothCode
-                      .split(',')
-                      .map((e) => e.replaceAll('#', '').trim().toLowerCase())
-                      .where((e) => e.isNotEmpty)
-                      .toSet();
-
-                  final exhibitorBoothLabels = exhibitor.boothZone
-                      .split(',')
-                      .map((e) => e.replaceAll('#', '').trim().toLowerCase())
-                      .where((e) => e.isNotEmpty)
-                      .toSet();
-
-                  final isCurrentExhibitor = (b.sponsorId != null && b.sponsorId!.isNotEmpty && b.sponsorId == exhibitor.id) ||
-                      (b.companyName != null && b.companyName!.trim().isNotEmpty && b.companyName!.trim().toLowerCase() == exhibitor.name.trim().toLowerCase()) ||
-                      (b.boothNumber.trim().isNotEmpty && exhibitorBoothNumbers.contains(b.boothNumber.replaceAll('#', '').trim().toLowerCase())) ||
-                      (b.boothLabel.trim().isNotEmpty && exhibitorBoothLabels.contains(b.boothLabel.replaceAll('#', '').trim().toLowerCase())) ||
-                      exhibitor.booths.any((eb) =>
-                          (eb.boothId.isNotEmpty && eb.boothId == b.boothId) ||
-                          (eb.boothNumber.isNotEmpty && eb.boothNumber.trim().toLowerCase() == b.boothNumber.trim().toLowerCase()) ||
-                          (eb.boothLabel.isNotEmpty && eb.boothLabel.trim().toLowerCase() == b.boothLabel.trim().toLowerCase()));
-
-                  final logoPath = (b.logo != null && b.logo!.isNotEmpty) ? b.logo : (isCurrentExhibitor ? exhibitor.logoUrl : null);
-
-                  return Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isCurrentExhibitor ? const Color(0xFFEEF2FF) : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isCurrentExhibitor ? const Color(0xFF6366F1) : Colors.grey.shade300,
-                        width: isCurrentExhibitor ? 2 : 1,
-                      ),
-                      boxShadow: isCurrentExhibitor
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF6366F1).withAlpha(38),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: _buildSectionHeader(
+                      icon: Icons.location_on_rounded,
+                      title: 'BOOTH LOCATION',
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withAlpha(25),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF10B981).withAlpha(80), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Text(
+                          'ASSIGNED',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF047857),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Highlighted Primary Booth Location Card - Single Line
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withAlpha(40),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (stallText.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withAlpha(100),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (logoPath != null && logoPath.isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: Image.network(
-                                  logoPath,
-                                  width: 22,
-                                  height: 22,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, o, s) => Icon(
-                                    Icons.storefront_rounded,
-                                    size: 18,
-                                    color: isCurrentExhibitor ? const Color(0xFF6366F1) : AppColors.primary,
-                                  ),
-                                ),
-                              )
-                            else
-                              Icon(
-                                Icons.storefront_rounded,
-                                size: 18,
-                                color: isCurrentExhibitor ? const Color(0xFF6366F1) : AppColors.textLight,
-                              ),
+                            const Icon(Icons.storefront_rounded, size: 18, color: Colors.white),
                             const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                b.boothLabel.isNotEmpty ? b.boothLabel : b.boothNumber,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: isCurrentExhibitor ? const Color(0xFF1E1B4B) : AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              stallText,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.6,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          b.boothNumber.isNotEmpty ? b.boothNumber : b.boothLabel,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isCurrentExhibitor ? const Color(0xFF4338CA) : AppColors.textSecondary,
-                            fontWeight: isCurrentExhibitor ? FontWeight.w700 : FontWeight.normal,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      ),
+                    if (boothNumText.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(25),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withAlpha(50), width: 1.2),
                         ),
-                        if (b.companyName != null && b.companyName!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            b.companyName!,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isCurrentExhibitor ? const Color(0xFF6366F1) : AppColors.textLight,
-                              fontWeight: isCurrentExhibitor ? FontWeight.w600 : FontWeight.normal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.tag_rounded, size: 16, color: Color(0xFF93C5FD)),
+                            const SizedBox(width: 6),
+                            Text(
+                              boothNumText,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -917,6 +848,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
   // --- SECTION HEADER HELPER ---
   Widget _buildSectionHeader({required IconData icon, required String title}) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.all(6),
@@ -931,13 +863,17 @@ class ExhibitorDetailsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14.5,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: 0.8,
+        Flexible(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              letterSpacing: 0.8,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

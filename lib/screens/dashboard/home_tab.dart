@@ -10,6 +10,7 @@ import '../../providers/explore_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
+import '../exhibitor/exhibitors_list_screen.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../widgets/venue_layouts_widget.dart';
@@ -77,46 +78,54 @@ class HomeTab extends StatelessWidget {
     required Color iconBgColor,
     required String value,
     required String label,
+    VoidCallback? onTap,
   }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.tileBorder, width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: iconColor, size: 16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.tileBorder, width: 1.5),
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            child: Column(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: iconColor, size: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              label.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 9,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1233,6 +1242,7 @@ class HomeTab extends StatelessWidget {
                                         homeProvider.stats[0].iconBgColor,
                                     value: homeProvider.stats[0].value,
                                     label: homeProvider.stats[0].label,
+                                    onTap: onNavigateToSessions,
                                   ),
                                   const SizedBox(width: 8),
                                   _buildStatCard(
@@ -1251,6 +1261,15 @@ class HomeTab extends StatelessWidget {
                                         homeProvider.stats[4].iconBgColor,
                                     value: homeProvider.stats[4].value,
                                     label: homeProvider.stats[4].label,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const WorkshopsListScreen(),
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(width: 8),
                                   _buildStatCard(
@@ -1260,6 +1279,15 @@ class HomeTab extends StatelessWidget {
                                         homeProvider.stats[2].iconBgColor,
                                     value: homeProvider.stats[2].value,
                                     label: homeProvider.stats[2].label,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const ExhibitorsListScreen(),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -1621,13 +1649,52 @@ class HomeTab extends StatelessWidget {
                                 ),
                               ],
                               const SizedBox(height: 28),
-                              const Text(
-                                'Sponsors & Exhibitors',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Sponsors & Exhibitors',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const ExhibitorsListScreen(),
+                                        ),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: Row(
+                                      children: const [
+                                        Text(
+                                          'VIEW ALL',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 14),
                               if (homeProvider.exhibitors.isEmpty)

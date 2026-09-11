@@ -342,7 +342,6 @@ class HomeProvider with ChangeNotifier {
           // Only replace if there are active sponsors returned from the API
           final List<HomeExhibitor> fetchedList = [];
           for (var item in list) {
-            final String sponsorId = item['sponsor_id']?.toString() ?? '';
             final String companyName = item['company_name']?.toString() ?? '';
             final String category = item['sponsor_category']?.toString() ?? 'Standard';
             

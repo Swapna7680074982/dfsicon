@@ -273,11 +273,13 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
-                                      ex.boothCode.isNotEmpty
-                                          ? '${ex.category}  •  ${ex.boothCode}'
+                                      ex.boothCode.isNotEmpty && ex.boothZone.isNotEmpty
+                                          ? '${ex.category}  •  Stall: ${ex.boothZone}  •  ${ex.boothCode}'
                                           : (ex.boothZone.isNotEmpty
-                                              ? '${ex.category}  •  ${ex.boothZone}'
-                                              : ex.category),
+                                              ? '${ex.category}  •  Stall: ${ex.boothZone}'
+                                              : (ex.boothCode.isNotEmpty
+                                                  ? '${ex.category}  •  ${ex.boothCode}'
+                                                  : ex.category)),
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,

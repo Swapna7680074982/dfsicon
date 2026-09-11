@@ -180,12 +180,12 @@ class AuthProvider with ChangeNotifier {
     return true;
   }
 
-  bool get isPhoneValid => _phoneNumber.length >= 10;
+  bool get isPhoneValid => _phoneNumber.length == 10;
   bool get isOtpComplete => _otpCode.length == 6;
 
   void setPhoneNumber(String value) {
     final cleaned = value.replaceAll(RegExp(r'\D'), '');
-    _phoneNumber = cleaned;
+    _phoneNumber = cleaned.length > 10 ? cleaned.substring(0, 10) : cleaned;
     notifyListeners();
   }
 
