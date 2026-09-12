@@ -86,8 +86,10 @@ class PhotoUploadScreen extends StatelessWidget {
     MyApp.resetRedirectFlag();
     final photoProvider = Provider.of<PhotoProvider>(context);
 
-    void navigateToNextScreen() {
+    Future<void> navigateToNextScreen() async {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.skipPhotoUpload();
+      if (!context.mounted) return;
       if (authProvider.isSpeakerRole) {
         Navigator.of(context).pushNamedAndRemoveUntil('/role_selection', (route) => false);
       } else {
@@ -153,7 +155,7 @@ class PhotoUploadScreen extends StatelessWidget {
                         child: Text(
                           'Adding a face photo enables automatic AI facial recognition to tag and show all your photos in the event Gallery.',
                           style: TextStyle(
-                            fontSize: 8,
+                            fontSize: 10,
                             color: Color(0xFF1E3A8A),
                             height: 1.35,
                             fontWeight: FontWeight.w500,

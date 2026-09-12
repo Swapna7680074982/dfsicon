@@ -38,10 +38,6 @@ class _EventQrModalState extends State<EventQrModal> {
         ? authProvider.userName
         : (widget.userName ?? 'User');
 
-    final String displayRole = (qrData != null && qrData.roleCode.isNotEmpty)
-        ? (qrData.roleCode.toUpperCase() == 'SK' ? 'Speaker' : 'Delegate')
-        : (authProvider.isSpeaker ? 'Speaker' : 'Delegate');
-
     final String displaySummit = qrData?.summitTitle.isNotEmpty == true
         ? qrData!.summitTitle
         : (widget.eventName ?? 'Diabetic Foot Society of India');

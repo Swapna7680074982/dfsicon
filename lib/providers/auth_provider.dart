@@ -48,8 +48,11 @@ class AuthProvider with ChangeNotifier {
   }
 
   bool _isLoggingInPassword = false;
+  bool _isPhotoUploadSkipped = false;
 
   // Getters
+  bool get isPhotoUploadSkipped => _isPhotoUploadSkipped;
+  bool get shouldSkipPhotoUploadScreen => hasValidProfileImage || _isPhotoUploadSkipped;
   String get phoneNumber => _phoneNumber;
   bool get otpSent => _otpSent;
   String get otpCode => _otpCode;
@@ -288,6 +291,13 @@ class AuthProvider with ChangeNotifier {
           _profileData['citizen_type'] = citizenType;
           _myQrData = null;
           
+          final prefs = await SharedPreferences.getInstance();
+          final bool skippedGlobal = prefs.getBool('photo_upload_skipped') ?? false;
+          final bool skippedPhone = _phoneNumber.isNotEmpty && (prefs.getBool('photo_upload_skipped_$_phoneNumber') ?? false);
+          final bool skippedMobile = mobile.isNotEmpty && (prefs.getBool('photo_upload_skipped_$mobile') ?? false);
+          final bool skippedUser = userId.isNotEmpty && (prefs.getBool('photo_upload_skipped_$userId') ?? false);
+          _isPhotoUploadSkipped = skippedGlobal || skippedPhone || skippedMobile || skippedUser;
+
           await _saveSession();
           registerDeviceToken();
 
@@ -337,6 +347,13 @@ class AuthProvider with ChangeNotifier {
           _profileData = Map<String, dynamic>.from(data['use_profile'] ?? data['user_profile'] ?? {});
           _profileData['citizen_type'] = citizenType;
           _myQrData = null;
+
+          final prefs = await SharedPreferences.getInstance();
+          final bool skippedGlobal = prefs.getBool('photo_upload_skipped') ?? false;
+          final bool skippedMobile = mobile.isNotEmpty && (prefs.getBool('photo_upload_skipped_$mobile') ?? false);
+          final bool skippedPhone = _phoneNumber.isNotEmpty && (prefs.getBool('photo_upload_skipped_$_phoneNumber') ?? false);
+          final bool skippedUser = userId.isNotEmpty && (prefs.getBool('photo_upload_skipped_$userId') ?? false);
+          _isPhotoUploadSkipped = skippedGlobal || skippedMobile || skippedPhone || skippedUser;
 
           await _saveSession();
           registerDeviceToken();
@@ -501,6 +518,7 @@ class AuthProvider with ChangeNotifier {
     await prefs.setString('access_token', _accessToken);
     await prefs.setString('refresh_token', _refreshToken);
     await prefs.setString('profile_data', json.encode(_profileData));
+    await prefs.setBool('photo_upload_skipped', _isPhotoUploadSkipped);
     if (_selectedRole != null) {
       await prefs.setString('selected_role', _selectedRole!);
     } else {
@@ -514,6 +532,7 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('refresh_token');
     await prefs.remove('profile_data');
     await prefs.remove('selected_role');
+    // Note: photo_upload_skipped is preserved so user doesn't get re-prompted on next login
     _selectedRole = null;
     _myQrData = null;
     await FcmService.deleteFcmToken();
@@ -624,8 +643,36 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> skipPhotoUpload() async {
+    _isPhotoUploadSkipped = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('photo_upload_skipped', true);
+    if (_phoneNumber.isNotEmpty) {
+      await prefs.setBool('photo_upload_skipped_$_phoneNumber', true);
+    }
+    if (mobile.isNotEmpty) {
+      await prefs.setBool('photo_upload_skipped_$mobile', true);
+    }
+    if (userId.isNotEmpty) {
+      await prefs.setBool('photo_upload_skipped_$userId', true);
+    }
+    notifyListeners();
+  }
+
   Future<void> updateProfileImage(String profileImageUrl) async {
     _profileData['profile_image'] = profileImageUrl;
+    _isPhotoUploadSkipped = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('photo_upload_skipped', true);
+    if (_phoneNumber.isNotEmpty) {
+      await prefs.setBool('photo_upload_skipped_$_phoneNumber', true);
+    }
+    if (mobile.isNotEmpty) {
+      await prefs.setBool('photo_upload_skipped_$mobile', true);
+    }
+    if (userId.isNotEmpty) {
+      await prefs.setBool('photo_upload_skipped_$userId', true);
+    }
     await _saveSession();
     notifyListeners();
   }
@@ -670,6 +717,13 @@ class AuthProvider with ChangeNotifier {
       final profileStr = prefs.getString('profile_data') ?? '{}';
       _profileData = json.decode(profileStr) as Map<String, dynamic>;
       _selectedRole = prefs.getString('selected_role');
+      
+      final bool skippedGlobal = prefs.getBool('photo_upload_skipped') ?? false;
+      final bool skippedPhone = _phoneNumber.isNotEmpty && (prefs.getBool('photo_upload_skipped_$_phoneNumber') ?? false);
+      final bool skippedMobile = mobile.isNotEmpty && (prefs.getBool('photo_upload_skipped_$mobile') ?? false);
+      final bool skippedUser = userId.isNotEmpty && (prefs.getBool('photo_upload_skipped_$userId') ?? false);
+      _isPhotoUploadSkipped = skippedGlobal || skippedPhone || skippedMobile || skippedUser;
+
       final success = await refreshSessionToken();
       if (success) {
         registerDeviceToken();

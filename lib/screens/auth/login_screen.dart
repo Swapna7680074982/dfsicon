@@ -316,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               final navigator = Navigator.of(context);
                               final String? errorMsg = await authProvider.verifyOtp(citizenType: 'INDIAN');
                               if (errorMsg == null && mounted) {
-                                if (authProvider.hasValidProfileImage) {
+                                if (authProvider.shouldSkipPhotoUploadScreen) {
                                   if (authProvider.isSpeakerRole) {
                                     navigator.pushNamedAndRemoveUntil('/role_selection', (route) => false);
                                   } else {
@@ -447,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 citizenType: 'FOREIGN',
                               );
                               if (errorMsg == null && mounted) {
-                                if (authProvider.hasValidProfileImage) {
+                                if (authProvider.shouldSkipPhotoUploadScreen) {
                                   if (authProvider.isSpeakerRole) {
                                     navigator.pushNamedAndRemoveUntil('/role_selection', (route) => false);
                                   } else {

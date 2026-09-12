@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       final bool isLoggedIn = await authProvider.tryAutoLogin();
       if (!mounted) return;
       if (isLoggedIn) {
-        if (authProvider.hasValidProfileImage) {
+        if (authProvider.shouldSkipPhotoUploadScreen) {
           if (authProvider.isSpeakerRole && authProvider.selectedRole == null) {
             Navigator.of(context).pushReplacementNamed('/role_selection');
           } else {
