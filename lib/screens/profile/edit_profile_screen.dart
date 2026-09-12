@@ -100,7 +100,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const Padding(
                 padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
                 child: Text(
-                  'Please upload a clear photo',
+                  'Select Photo',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -323,15 +323,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Please upload a clear photo',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],

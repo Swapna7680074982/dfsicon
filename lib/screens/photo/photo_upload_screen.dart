@@ -103,50 +103,18 @@ class PhotoUploadScreen extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Please upload a clear photo to help attendees recognize you and get tagged in event photos automatically.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondary,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.info_outline, color: AppColors.primary, size: 18),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Please upload a clear photo with your face clearly visible.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
 
-              DashedCircleAvatar(
-                imagePath: photoProvider.imagePath,
-                radius: 80,
-                onTap: () {
-                  photoProvider.pickImage(ImageSource.gallery);
-                },
+              Center(
+                child: DashedCircleAvatar(
+                  imagePath: photoProvider.imagePath,
+                  radius: 80,
+                  onTap: () {
+                    photoProvider.pickImage(ImageSource.gallery);
+                  },
+                ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
 
               _buildSelectionCard(
                 icon: Icons.camera_alt_outlined,
@@ -164,29 +132,6 @@ class PhotoUploadScreen extends StatelessWidget {
                 title: 'Choose from Gallery',
                 subtitle: 'Select an existing photo',
                 onTap: () => photoProvider.pickImage(ImageSource.gallery),
-              ),
-              const SizedBox(height: 24),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.shield_outlined,
-                    color: AppColors.textLight,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Your photo is used solely for event identification and gallery tagging. It is never shared externally or used for advertising.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
               ),
 
               const Spacer(),

@@ -81,83 +81,30 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             Container(
               color: Colors.white,
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                        },
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'SEARCH SESSIONS',
-                          hintStyle: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textLight,
-                          ),
-                          prefixIcon: Icon(Icons.search, color: AppColors.textLight),
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) {
+                    setState(() {
+                      _searchQuery = val;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'SEARCH SESSIONS',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textLight,
                     ),
+                    prefixIcon: Icon(Icons.search, color: AppColors.textLight),
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
                   ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2026, 1, 1),
-                        lastDate: DateTime(2026, 12, 31),
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: const ColorScheme.light(
-                                primary: AppColors.primary,
-                                onPrimary: Colors.white,
-                                onSurface: AppColors.textPrimary,
-                              ),
-                            ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (date != null) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Sessions filtered by date: ${date.day}/${date.month}/${date.year}'),
-                            behavior: SnackBarBehavior.floating,
-                            backgroundColor: AppColors.primary,
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.calendar_today_outlined,
-                        color: AppColors.textPrimary,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             const Padding(
