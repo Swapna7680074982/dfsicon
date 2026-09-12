@@ -112,7 +112,7 @@ class PhotoUploadScreen extends StatelessWidget {
                     const Text(
                       'Add your photo',
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
