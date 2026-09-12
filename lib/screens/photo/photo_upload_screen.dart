@@ -86,84 +86,87 @@ class PhotoUploadScreen extends StatelessWidget {
     MyApp.resetRedirectFlag();
     final photoProvider = Provider.of<PhotoProvider>(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              const Text(
-                'Add your photo',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                const Text(
+                  'Add your photo',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              Center(
-                child: DashedCircleAvatar(
-                  imagePath: photoProvider.imagePath,
-                  radius: 80,
-                  onTap: () {
-                    photoProvider.pickImage(ImageSource.gallery);
+                Center(
+                  child: DashedCircleAvatar(
+                    imagePath: photoProvider.imagePath,
+                    radius: 80,
+                    onTap: () {
+                      photoProvider.pickImage(ImageSource.gallery);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 36),
+
+                _buildSelectionCard(
+                  icon: Icons.camera_alt_outlined,
+                  iconColor: AppColors.iconCamera,
+                  iconBgColor: AppColors.iconBgCamera,
+                  title: 'Take a Photo',
+                  subtitle: 'Open camera and snap a selfie',
+                  onTap: () => photoProvider.pickImage(ImageSource.camera),
+                ),
+                const SizedBox(height: 16),
+                _buildSelectionCard(
+                  icon: Icons.image_outlined,
+                  iconColor: AppColors.iconGallery,
+                  iconBgColor: AppColors.iconBgGallery,
+                  title: 'Choose from Gallery',
+                  subtitle: 'Select an existing photo',
+                  onTap: () => photoProvider.pickImage(ImageSource.gallery),
+                ),
+
+                const Spacer(),
+
+                CustomButton(
+                  text: photoProvider.hasPhoto ? 'Save and Continue' : 'Upload a Photo to Continue',
+                  isEnabled: photoProvider.hasPhoto,
+                  isLoading: photoProvider.isUploading,
+                  onPressed: () async {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final navigator = Navigator.of(context);
+                    final String? photoUrl = await photoProvider.uploadPhoto(authProvider.accessToken);
+                    if (photoUrl != null) {
+                      await authProvider.updateProfileImage(photoUrl);
+                      if (authProvider.isSpeakerRole) {
+                        navigator.pushNamedAndRemoveUntil('/role_selection', (route) => false);
+                      } else {
+                        navigator.pushNamedAndRemoveUntil('/dashboard', (route) => false);
+                      }
+                    } else if (photoProvider.uploadError != null && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(photoProvider.uploadError!),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
                   },
                 ),
-              ),
-              const SizedBox(height: 36),
-
-              _buildSelectionCard(
-                icon: Icons.camera_alt_outlined,
-                iconColor: AppColors.iconCamera,
-                iconBgColor: AppColors.iconBgCamera,
-                title: 'Take a Photo',
-                subtitle: 'Open camera and snap a selfie',
-                onTap: () => photoProvider.pickImage(ImageSource.camera),
-              ),
-              const SizedBox(height: 16),
-              _buildSelectionCard(
-                icon: Icons.image_outlined,
-                iconColor: AppColors.iconGallery,
-                iconBgColor: AppColors.iconBgGallery,
-                title: 'Choose from Gallery',
-                subtitle: 'Select an existing photo',
-                onTap: () => photoProvider.pickImage(ImageSource.gallery),
-              ),
-
-              const Spacer(),
-
-              CustomButton(
-                text: photoProvider.hasPhoto ? 'Save and Continue' : 'Upload a Photo to Continue',
-                isEnabled: photoProvider.hasPhoto,
-                isLoading: photoProvider.isUploading,
-                onPressed: () async {
-                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                  final navigator = Navigator.of(context);
-                  final String? photoUrl = await photoProvider.uploadPhoto(authProvider.accessToken);
-                  if (photoUrl != null) {
-                    await authProvider.updateProfileImage(photoUrl);
-                    if (authProvider.isSpeakerRole) {
-                      navigator.pushReplacementNamed('/role_selection');
-                    } else {
-                      navigator.pushReplacementNamed('/dashboard');
-                    }
-                  } else if (photoProvider.uploadError != null && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                         content: Text(photoProvider.uploadError!),
-                         behavior: SnackBarBehavior.floating,
-                         backgroundColor: Colors.redAccent,
-                      ),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),

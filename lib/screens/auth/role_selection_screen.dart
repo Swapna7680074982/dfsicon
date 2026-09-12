@@ -180,7 +180,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       // Mode Option 1: Speaker Portal
                       _buildNeatRoleCard(
                         modeKey: 'SK',
-                        badgeText: 'Faculty / Speaker',
+                        //badgeText: 'Faculty / Speaker',
                         badgeColor: const Color(0xFF1E3A8A),
                         badgeBg: const Color(0xFFEEF2FF),
                         title: 'Speaker Portal',
@@ -198,7 +198,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       // Mode Option 2: Delegate Portal
                       _buildNeatRoleCard(
                         modeKey: 'DL',
-                        badgeText: 'Attendee Access',
+                        //badgeText: 'Attendee Access',
                         badgeColor: const Color(0xFF0F766E),
                         badgeBg: const Color(0xFFF0FDF4),
                         title: 'Delegate Portal',
@@ -276,7 +276,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   Widget _buildNeatRoleCard({
     required String modeKey,
-    required String badgeText,
+    //required String badgeText,
     required Color badgeColor,
     required Color badgeBg,
     required String title,
@@ -367,14 +367,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                 color: badgeBg,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Text(
-                                badgeText,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: badgeColor,
-                                ),
-                              ),
+                              // child: Text(
+                              //   badgeText,
+                              //   style: TextStyle(
+                              //     fontSize: 10.5,
+                              //     fontWeight: FontWeight.w600,
+                              //     color: badgeColor,
+                              //   ),
+                              // ),
                             ),
                           ],
                         ),

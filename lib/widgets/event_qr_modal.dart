@@ -1,97 +1,8 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
 import '../providers/auth_provider.dart';
 import '../domain/utility_models.dart';
-
-class QrMockupPainter extends CustomPainter {
-  final Color darkColor;
-
-  QrMockupPainter({this.darkColor = AppColors.textPrimary});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double width = size.width;
-    final double height = size.height;
-    
-    final Paint darkPaint = Paint()
-      ..color = darkColor
-      ..style = PaintingStyle.fill;
-      
-    final Paint lightPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final double finderSize = width * 0.24;
-    _drawFinderPattern(canvas, const Offset(0, 0), finderSize, darkPaint, lightPaint);
-    _drawFinderPattern(canvas, Offset(width - finderSize, 0), finderSize, darkPaint, lightPaint);
-    _drawFinderPattern(canvas, Offset(0, height - finderSize), finderSize, darkPaint, lightPaint);
-
-    final double alignSize = finderSize * 0.4;
-    _drawAlignmentPattern(canvas, Offset(width - finderSize * 1.2, height - finderSize * 1.2), alignSize, darkPaint, lightPaint);
-
-    const int gridCount = 21;
-    final double cellSize = width / gridCount;
-    final Random random = Random(42);
-
-    for (int r = 0; r < gridCount; r++) {
-      for (int c = 0; c < gridCount; c++) {
-        bool isTopLeftFinder = r < 7 && c < 7;
-        bool isTopRightFinder = r < 7 && c >= gridCount - 7;
-        bool isBottomLeftFinder = r >= gridCount - 7 && c < 7;
-        
-        if (isTopLeftFinder || isTopRightFinder || isBottomLeftFinder) {
-          continue;
-        }
-
-        if (random.nextDouble() > 0.45) {
-          canvas.drawRect(
-            Rect.fromLTWH(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5),
-            darkPaint,
-          );
-        }
-      }
-    }
-  }
-
-  void _drawFinderPattern(Canvas canvas, Offset offset, double size, Paint darkPaint, Paint lightPaint) {
-    canvas.drawRect(Rect.fromLTWH(offset.dx, offset.dy, size, size), darkPaint);
-    
-    final double strokeWidth = size * 0.14;
-    canvas.drawRect(
-      Rect.fromLTWH(offset.dx + strokeWidth, offset.dy + strokeWidth, size - strokeWidth * 2, size - strokeWidth * 2),
-      lightPaint,
-    );
-    
-    final double innerSize = size * 0.44;
-    final double innerOffset = (size - innerSize) / 2;
-    canvas.drawRect(
-      Rect.fromLTWH(offset.dx + innerOffset, offset.dy + innerOffset, innerSize, innerSize),
-      darkPaint,
-    );
-  }
-
-  void _drawAlignmentPattern(Canvas canvas, Offset offset, double size, Paint darkPaint, Paint lightPaint) {
-    canvas.drawRect(Rect.fromLTWH(offset.dx, offset.dy, size, size), darkPaint);
-    final double innerWhite = size * 0.33;
-    canvas.drawRect(
-      Rect.fromLTWH(offset.dx + innerWhite, offset.dy + innerWhite, size - innerWhite * 2, size - innerWhite * 2),
-      lightPaint,
-    );
-    final double centerDark = size * 0.33;
-    final double centerOffset = (size - centerDark) / 2;
-    canvas.drawRect(
-      Rect.fromLTWH(offset.dx + centerOffset, offset.dy + centerOffset, centerDark, centerDark),
-      darkPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant QrMockupPainter oldDelegate) {
-    return oldDelegate.darkColor != darkColor;
-  }
-}
 
 class EventQrModal extends StatefulWidget {
   final String? userName;
@@ -231,7 +142,7 @@ class _EventQrModalState extends State<EventQrModal> {
                               ],
                             ),
                           )
-                        : (qrData != null && qrData.qrImage.isNotEmpty)
+                        : (qrData != null && qrData.isGenerated && qrData.qrImage.isNotEmpty)
                             ? Image.network(
                                 qrData.qrImage,
                                 fit: BoxFit.contain,
@@ -245,13 +156,57 @@ class _EventQrModalState extends State<EventQrModal> {
                                   );
                                 },
                                 errorBuilder: (context, error, stackTrace) {
-                                  return CustomPaint(
-                                    painter: QrMockupPainter(darkColor: AppColors.textPrimary),
+                                  return Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Icon(Icons.broken_image_outlined, size: 40, color: Colors.grey),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Failed to load QR image',
+                                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               )
-                            : CustomPaint(
-                                painter: QrMockupPainter(darkColor: AppColors.textPrimary),
+                            : Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFEF3C7),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: const Color(0xFFFDE68A),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.qr_code_2_outlined,
+                                          color: Color(0xFFD97706),
+                                          size: 32,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        authProvider.myQrMessage ?? 'QR code not yet generated for this event.',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                   ),
                   const SizedBox(height: 18),
@@ -266,7 +221,6 @@ class _EventQrModalState extends State<EventQrModal> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-
                   // Summit Title & Dates Card
                   Container(
                     width: double.infinity,

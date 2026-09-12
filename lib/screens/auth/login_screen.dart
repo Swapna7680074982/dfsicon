@@ -35,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -162,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text(
                             'Enter your mobile number to receive a one-time verification code.',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 10,
                               color: AppColors.textSecondary,
                               height: 1.4,
                             ),
@@ -317,12 +318,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (errorMsg == null && mounted) {
                                 if (authProvider.hasValidProfileImage) {
                                   if (authProvider.isSpeakerRole) {
-                                    navigator.pushReplacementNamed('/role_selection');
+                                    navigator.pushNamedAndRemoveUntil('/role_selection', (route) => false);
                                   } else {
-                                    navigator.pushReplacementNamed('/dashboard');
+                                    navigator.pushNamedAndRemoveUntil('/dashboard', (route) => false);
                                   }
                                 } else {
-                                  navigator.pushNamed('/photo_upload');
+                                  navigator.pushNamedAndRemoveUntil('/photo_upload', (route) => false);
                                 }
                               } else if (errorMsg != null && mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -340,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text(
                             'Enter your phone number and password to login.',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 10,
                               color: AppColors.textSecondary,
                               height: 1.4,
                             ),
@@ -448,12 +449,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (errorMsg == null && mounted) {
                                 if (authProvider.hasValidProfileImage) {
                                   if (authProvider.isSpeakerRole) {
-                                    navigator.pushReplacementNamed('/role_selection');
+                                    navigator.pushNamedAndRemoveUntil('/role_selection', (route) => false);
                                   } else {
-                                    navigator.pushReplacementNamed('/dashboard');
+                                    navigator.pushNamedAndRemoveUntil('/dashboard', (route) => false);
                                   }
                                 } else {
-                                  navigator.pushNamed('/photo_upload');
+                                  navigator.pushNamedAndRemoveUntil('/photo_upload', (route) => false);
                                 }
                               } else if (errorMsg != null && mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(

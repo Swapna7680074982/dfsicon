@@ -12,6 +12,8 @@ import 'package:dfsicon/services/fcm_service.dart';
 class AuthProvider with ChangeNotifier {
   MyQrData? _myQrData;
   bool _isFetchingQr = false;
+  String? _myQrMessage;
+  bool _isQrGenerated = false;
   
   String _phoneNumber = '';
   bool _otpSent = false;
@@ -61,6 +63,8 @@ class AuthProvider with ChangeNotifier {
   Map<String, dynamic> get profileData => _profileData;
   MyQrData? get myQrData => _myQrData;
   bool get isFetchingQr => _isFetchingQr;
+  String? get myQrMessage => _myQrMessage;
+  bool get isQrGenerated => _isQrGenerated && _myQrData != null && _myQrData!.qrImage.isNotEmpty;
 
   Future<MyQrData?> fetchMyQr({bool forceRefresh = false}) async {
     if (!forceRefresh && _myQrData != null) {
@@ -83,8 +87,13 @@ class AuthProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
-        if (body['status'] == true && body['data'] != null) {
+        _myQrMessage = body['message']?.toString();
+        final bool isGen = body['is_generated'] == true;
+        _isQrGenerated = isGen;
+        if (body['status'] == true && body['data'] != null && isGen) {
           _myQrData = MyQrData.fromJson(body['data']);
+        } else {
+          _myQrData = null;
         }
       }
     } catch (e, stack) {

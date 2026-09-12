@@ -1508,22 +1508,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: isSpeaker ? AppColors.primary : AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Faculty',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E3A8A),
-                                ),
-                              ),
-                            ),
                             if (isSpeaker) ...[
                               const SizedBox(width: 6),
                               Container(
@@ -1634,22 +1618,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
                                 color: !isSpeaker ? const Color(0xFF0F766E) : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0FDF4),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Attendee',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0F766E),
-                                ),
                               ),
                             ),
                             if (!isSpeaker) ...[
