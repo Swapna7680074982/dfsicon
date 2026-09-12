@@ -86,6 +86,15 @@ class PhotoUploadScreen extends StatelessWidget {
     MyApp.resetRedirectFlag();
     final photoProvider = Provider.of<PhotoProvider>(context);
 
+    void navigateToNextScreen() {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.isSpeakerRole) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/role_selection', (route) => false);
+      } else {
+        Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
+      }
+    }
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -96,27 +105,76 @@ class PhotoUploadScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
-                const Text(
-                  'Add your photo',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Add your photo',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: navigateToNextScreen,
+                      child: const Text(
+                        'Skip',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Info banner explaining why photo is important
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFBFDBFE), width: 1),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        color: Color(0xFF1D4ED8),
+                        size: 18,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Adding a face photo enables automatic AI facial recognition to tag and show all your photos in the event Gallery.',
+                          style: TextStyle(
+                            fontSize: 8,
+                            color: Color(0xFF1E3A8A),
+                            height: 1.35,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
 
                 Center(
                   child: DashedCircleAvatar(
                     imagePath: photoProvider.imagePath,
-                    radius: 80,
+                    radius: 70,
                     onTap: () {
                       photoProvider.pickImage(ImageSource.gallery);
                     },
                   ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 24),
 
                 _buildSelectionCard(
                   icon: Icons.camera_alt_outlined,
@@ -126,7 +184,7 @@ class PhotoUploadScreen extends StatelessWidget {
                   subtitle: 'Open camera and snap a selfie',
                   onTap: () => photoProvider.pickImage(ImageSource.camera),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 _buildSelectionCard(
                   icon: Icons.image_outlined,
                   iconColor: AppColors.iconGallery,
@@ -139,7 +197,7 @@ class PhotoUploadScreen extends StatelessWidget {
                 const Spacer(),
 
                 CustomButton(
-                  text: photoProvider.hasPhoto ? 'Save and Continue' : 'Upload a Photo to Continue',
+                  text: 'Save and Continue',
                   isEnabled: photoProvider.hasPhoto,
                   isLoading: photoProvider.isUploading,
                   onPressed: () async {
@@ -164,7 +222,21 @@ class PhotoUploadScreen extends StatelessWidget {
                     }
                   },
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton(
+                    onPressed: navigateToNextScreen,
+                    child: const Text(
+                      'Skip for now (Optional)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
               ],
             ),
           ),

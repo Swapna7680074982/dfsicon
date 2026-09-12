@@ -123,6 +123,7 @@ class _GalleryTabState extends State<GalleryTab> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     final galProvider = Provider.of<GalleryProvider>(context);
     final isSessions = _selectedSegment == 0;
 
@@ -222,6 +223,40 @@ class _GalleryTabState extends State<GalleryTab> {
                     ],
                   ),
                 ),
+
+                // Informational notice if user has not uploaded profile photo (Info only, no action button)
+                if (!authProvider.hasValidProfileImage)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Color(0xFF15803D),
+                          size: 18,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'To find and view your conference photos automatically via AI facial recognition, please add your profile photo in the Profile screen.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF166534),
+                              height: 1.35,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 
                 // Segment lists
                 Expanded(
