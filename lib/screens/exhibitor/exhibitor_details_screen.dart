@@ -204,55 +204,77 @@ class ExhibitorDetailsScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(
                 children: [
-                  // Logo Circle with double border & glow
+                  // Logo Card with double border & glow
                   Container(
-                    width: 84,
-                    height: 84,
-                    padding: const EdgeInsets.all(4),
+                    width: 104,
+                    height: 104,
+                    padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
                       color: Colors.white,
+                      borderRadius: BorderRadius.circular(26),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(30),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withAlpha(35),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: exhibitor.logoUrl != null ? Colors.white : exhibitor.bg,
-                        border: Border.all(color: Colors.grey.shade200, width: 1),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      alignment: Alignment.center,
-                      child: exhibitor.logoUrl != null && exhibitor.logoUrl!.isNotEmpty
-                          ? Image.network(
-                              exhibitor.logoUrl!,
-                              width: 76,
-                              height: 76,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => Text(
+                    child: Builder(
+                      builder: (context) {
+                      final hasLogo = exhibitor.logoUrl != null && exhibitor.logoUrl!.isNotEmpty;
+                      const List<Map<String, Color>> lightPalettes = [
+                        {'bg': Color(0xFFF1F5F9), 'border': Color(0xFFCBD5E1), 'text': Color(0xFF334155)},
+                        {'bg': Color(0xFFEEF2FF), 'border': Color(0xFFC7D2FE), 'text': Color(0xFF4338CA)},
+                        {'bg': Color(0xFFF5F3FF), 'border': Color(0xFFDDD6FE), 'text': Color(0xFF6D28D9)},
+                        {'bg': Color(0xFFECFDF5), 'border': Color(0xFFA7F3D0), 'text': Color(0xFF047857)},
+                        {'bg': Color(0xFFFFFBEB), 'border': Color(0xFFFDE68A), 'text': Color(0xFFB45309)},
+                        {'bg': Color(0xFFFFF1F2), 'border': Color(0xFFFECDD3), 'text': Color(0xFFBE123C)},
+                        {'bg': Color(0xFFF0FDF4), 'border': Color(0xFFBBF7D0), 'text': Color(0xFF15803D)},
+                        {'bg': Color(0xFFF0F9FF), 'border': Color(0xFFBAE6FD), 'text': Color(0xFF0284C7)},
+                        {'bg': Color(0xFFFAF5FF), 'border': Color(0xFFE9D5FF), 'text': Color(0xFF7E22CE)},
+                      ];
+                      final palette = lightPalettes[exhibitor.name.hashCode.abs() % lightPalettes.length];
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: hasLogo ? const Color(0xFFF8FAFC) : palette['bg'],
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: hasLogo ? Colors.grey.shade200 : palette['border']!,
+                            width: 1.2,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(8),
+                        child: hasLogo
+                            ? Image.network(
+                                exhibitor.logoUrl!,
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) => Text(
+                                  exhibitor.initials.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color: palette['text'],
+                                  ),
+                                ),
+                              )
+                            : Text(
                                 exhibitor.initials.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 24,
+                                style: TextStyle(
+                                  fontSize: 30,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: palette['text'],
                                 ),
                               ),
-                            )
-                          : Text(
-                              exhibitor.initials.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
+                      );
+                    },
                   ),
+                ),
                   const SizedBox(height: 12),
 
                   // Exhibitor Name

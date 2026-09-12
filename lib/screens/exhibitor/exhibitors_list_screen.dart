@@ -53,6 +53,60 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
     super.dispose();
   }
 
+  static final List<Map<String, Color>> _lightPalettes = [
+    {
+      'bg': Color(0xFFF1F5F9), // Light Slate
+      'border': Color(0xFFCBD5E1),
+      'text': Color(0xFF334155),
+    },
+    {
+      'bg': Color(0xFFEEF2FF), // Light Indigo
+      'border': Color(0xFFC7D2FE),
+      'text': Color(0xFF4338CA),
+    },
+    {
+      'bg': Color(0xFFF5F3FF), // Light Purple
+      'border': Color(0xFFDDD6FE),
+      'text': Color(0xFF6D28D9),
+    },
+    {
+      'bg': Color(0xFFECFDF5), // Light Emerald
+      'border': Color(0xFFA7F3D0),
+      'text': Color(0xFF047857),
+    },
+    {
+      'bg': Color(0xFFFFFBEB), // Light Amber
+      'border': Color(0xFFFDE68A),
+      'text': Color(0xFFB45309),
+    },
+    {
+      'bg': Color(0xFFFFF1F2), // Light Rose
+      'border': Color(0xFFFECDD3),
+      'text': Color(0xFFBE123C),
+    },
+    {
+      'bg': Color(0xFFF0FDF4), // Light Green
+      'border': Color(0xFFBBF7D0),
+      'text': Color(0xFF15803D),
+    },
+    {
+      'bg': Color(0xFFF0F9FF), // Light Sky
+      'border': Color(0xFFBAE6FD),
+      'text': Color(0xFF0284C7),
+    },
+    {
+      'bg': Color(0xFFFAF5FF), // Light Violet
+      'border': Color(0xFFE9D5FF),
+      'text': Color(0xFF7E22CE),
+    },
+  ];
+
+  Map<String, Color> _getLightPalette(String name) {
+    if (name.isEmpty) return _lightPalettes[0];
+    final index = name.hashCode.abs() % _lightPalettes.length;
+    return _lightPalettes[index];
+  }
+
   @override
   Widget build(BuildContext context) {
     final expProvider = Provider.of<ExploreProvider>(context);
@@ -206,99 +260,172 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                             ),
                             const SizedBox(height: 10),
                             ...filteredExhibitors.map((ex) {
-                              return Container(
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(235),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.tileBorder, width: 1),
-                                ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  leading: Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: ex.logoUrl != null ? Colors.white : ex.bg,
-                                      shape: BoxShape.circle,
-                                      border: ex.logoUrl != null ? Border.all(color: AppColors.tileBorder, width: 1) : null,
+                              final palette = _getLightPalette(ex.name);
+                              final hasLogo = ex.logoUrl != null && ex.logoUrl!.isNotEmpty;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ExhibitorDetailsScreen(exhibitor: ex),
                                     ),
-                                    alignment: Alignment.center,
-                                    clipBehavior: Clip.antiAlias,
-                                    child: ex.logoUrl != null
-                                        ? Image.network(
-                                            ex.logoUrl!,
-                                            width: 44,
-                                            height: 44,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder: (context, child, loadingProgress) {
-                                              if (loadingProgress == null) return child;
-                                              return const Center(
-                                                child: SizedBox(
-                                                  width: 16,
-                                                  height: 16,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
+                                  );
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(22),
+                                    border: Border.all(color: AppColors.tileBorder, width: 1.2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withAlpha(6),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 72,
+                                        height: 72,
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: hasLogo
+                                              ? const Color(0xFFF8FAFC)
+                                              : palette['bg'],
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(
+                                            color: hasLogo
+                                                ? Colors.grey.shade200
+                                                : palette['border']!,
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        clipBehavior: Clip.antiAlias,
+                                        child: hasLogo
+                                            ? Image.network(
+                                                ex.logoUrl!,
+                                                width: 72,
+                                                height: 72,
+                                                fit: BoxFit.contain,
+                                                loadingBuilder: (context, child, loadingProgress) {
+                                                  if (loadingProgress == null) return child;
+                                                  return const Center(
+                                                    child: SizedBox(
+                                                      width: 18,
+                                                      height: 18,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: AppColors.primary,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                errorBuilder: (context, error, stackTrace) => Text(
+                                                  ex.initials,
+                                                  style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: palette['text'],
+                                                  ),
+                                                ),
+                                              )
+                                            : Text(
+                                                ex.initials,
+                                                style: TextStyle(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: palette['text'],
+                                                ),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              ex.name,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            if (ex.category.isNotEmpty) ...[
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary.withAlpha(15),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  ex.category.toUpperCase(),
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
                                                     color: AppColors.primary,
                                                   ),
                                                 ),
-                                              );
-                                            },
-                                            errorBuilder: (context, error, stackTrace) => Text(
-                                              ex.initials,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
                                               ),
-                                            ),
-                                          )
-                                        : Text(
-                                            ex.initials,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                  ),
-                                  title: Text(
-                                    ex.name,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  subtitle: Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text(
-                                      ex.boothCode.isNotEmpty && ex.boothZone.isNotEmpty
-                                          ? '${ex.category}  •  Stall: ${ex.boothZone}  •  ${ex.boothCode}'
-                                          : (ex.boothZone.isNotEmpty
-                                              ? '${ex.category}  •  Stall: ${ex.boothZone}'
-                                              : (ex.boothCode.isNotEmpty
-                                                  ? '${ex.category}  •  ${ex.boothCode}'
-                                                  : ex.category)),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
+                                              const SizedBox(height: 6),
+                                            ],
+                                            if (ex.boothCode.isNotEmpty || ex.boothZone.isNotEmpty)
+                                              Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.storefront_outlined,
+                                                    size: 13,
+                                                    color: AppColors.textSecondary,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      ex.boothZone.isNotEmpty && ex.boothCode.isNotEmpty
+                                                          ? 'Stall: ${ex.boothZone}  •  ${ex.boothCode}'
+                                                          : (ex.boothZone.isNotEmpty
+                                                              ? 'Stall: ${ex.boothZone}'
+                                                              : ex.boothCode),
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: AppColors.textSecondary,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  trailing: const Icon(
-                                    Icons.arrow_forward_ios_outlined,
-                                    size: 14,
-                                    color: AppColors.textLight,
-                                  ),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ExhibitorDetailsScreen(exhibitor: ex),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade50,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.grey.shade200, width: 1),
+                                        ),
+                                        child: const Icon(
+                                          Icons.chevron_right,
+                                          size: 18,
+                                          color: AppColors.primary,
+                                        ),
                                       ),
-                                    );
-                                  },
+                                    ],
+                                  ),
                                 ),
                               );
                             }),
@@ -411,27 +538,27 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                       Row(
                                         children: [
                                           Container(
-                                            width: 26,
-                                            height: 26,
+                                            width: 38,
+                                            height: 38,
                                             decoration: BoxDecoration(
                                               color: AppColors.primary.withAlpha(15),
-                                              borderRadius: BorderRadius.circular(7),
+                                              borderRadius: BorderRadius.circular(10),
                                             ),
                                             alignment: Alignment.center,
                                             child: booth.logo != null && booth.logo!.isNotEmpty
                                                 ? ClipRRect(
-                                                    borderRadius: BorderRadius.circular(5),
+                                                    borderRadius: BorderRadius.circular(8),
                                                     child: Image.network(
                                                       booth.logo!,
-                                                      width: 18,
-                                                      height: 18,
-                                                      fit: BoxFit.cover,
+                                                      width: 28,
+                                                      height: 28,
+                                                      fit: BoxFit.contain,
                                                       loadingBuilder: (context, child, loadingProgress) {
                                                         if (loadingProgress == null) return child;
                                                         return const Center(
                                                           child: SizedBox(
-                                                            width: 10,
-                                                            height: 10,
+                                                            width: 12,
+                                                            height: 12,
                                                             child: CircularProgressIndicator(
                                                               strokeWidth: 1.5,
                                                               color: AppColors.primary,
@@ -441,14 +568,14 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                                       },
                                                       errorBuilder: (c, o, s) => const Icon(
                                                         Icons.storefront_rounded,
-                                                        size: 16,
+                                                        size: 20,
                                                         color: AppColors.primary,
                                                       ),
                                                     ),
                                                   )
                                                 : const Icon(
                                                     Icons.storefront_rounded,
-                                                    size: 16,
+                                                    size: 20,
                                                     color: AppColors.primary,
                                                   ),
                                           ),

@@ -27,16 +27,16 @@ class _WaterDropletPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
 
-    // 1. Draw base background color
-    canvas.drawColor(const Color(0xFFDFE9F7), BlendMode.srcOver);
+    // 1. Draw base background color (soft light background)
+    canvas.drawColor(const Color(0xFFF6F8FC), BlendMode.srcOver);
 
     // 2. Draw soft ambient glow (fluid background gradient)
     final gradient = RadialGradient(
       center: Alignment.topLeft,
       radius: 1.4,
       colors: [
-        AppColors.primary.withAlpha(20),
-        const Color(0xFFDFE9F7),
+        AppColors.primary.withAlpha(12),
+        const Color(0xFFF1F5F9),
       ],
     );
     paint.shader = gradient.createShader(Offset.zero & size);

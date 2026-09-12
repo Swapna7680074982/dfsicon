@@ -360,6 +360,60 @@ class HomeTab extends StatelessWidget {
     );
   }
 
+  static final List<Map<String, Color>> _lightPalettes = [
+    {
+      'bg': Color(0xFFF1F5F9), // Light Slate
+      'border': Color(0xFFCBD5E1),
+      'text': Color(0xFF334155),
+    },
+    {
+      'bg': Color(0xFFEEF2FF), // Light Indigo
+      'border': Color(0xFFC7D2FE),
+      'text': Color(0xFF4338CA),
+    },
+    {
+      'bg': Color(0xFFF5F3FF), // Light Purple
+      'border': Color(0xFFDDD6FE),
+      'text': Color(0xFF6D28D9),
+    },
+    {
+      'bg': Color(0xFFECFDF5), // Light Emerald
+      'border': Color(0xFFA7F3D0),
+      'text': Color(0xFF047857),
+    },
+    {
+      'bg': Color(0xFFFFFBEB), // Light Amber
+      'border': Color(0xFFFDE68A),
+      'text': Color(0xFFB45309),
+    },
+    {
+      'bg': Color(0xFFFFF1F2), // Light Rose
+      'border': Color(0xFFFECDD3),
+      'text': Color(0xFFBE123C),
+    },
+    {
+      'bg': Color(0xFFF0FDF4), // Light Green
+      'border': Color(0xFFBBF7D0),
+      'text': Color(0xFF15803D),
+    },
+    {
+      'bg': Color(0xFFF0F9FF), // Light Sky
+      'border': Color(0xFFBAE6FD),
+      'text': Color(0xFF0284C7),
+    },
+    {
+      'bg': Color(0xFFFAF5FF), // Light Violet
+      'border': Color(0xFFE9D5FF),
+      'text': Color(0xFF7E22CE),
+    },
+  ];
+
+  static Map<String, Color> _getLightPalette(String name) {
+    if (name.isEmpty) return _lightPalettes[0];
+    final index = name.hashCode.abs() % _lightPalettes.length;
+    return _lightPalettes[index];
+  }
+
   Widget _buildExhibitorCard({
     required String initials,
     required Color color,
@@ -368,44 +422,60 @@ class HomeTab extends StatelessWidget {
     required String booth,
     String? imageUrl,
   }) {
+    final palette = _getLightPalette(title);
+    final hasLogo = imageUrl != null && imageUrl.isNotEmpty;
+
     return Container(
-      width: 140,
+      width: 175,
       margin: const EdgeInsets.only(right: 14),
-      padding: const EdgeInsets.all(14.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.tileBorder, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: double.infinity,
+            height: 92,
+            padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
-              color: imageUrl != null ? Colors.white : color,
-              borderRadius: BorderRadius.circular(12),
-              border: imageUrl != null
-                  ? Border.all(color: AppColors.tileBorder, width: 1)
-                  : null,
+              color: hasLogo
+                  ? const Color(0xFFF8FAFC)
+                  : palette['bg'],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: hasLogo
+                    ? Colors.grey.shade200
+                    : palette['border']!,
+                width: 1.2,
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             alignment: Alignment.center,
-            child: imageUrl != null && imageUrl.isNotEmpty
+            child: hasLogo
                 ? Image.network(
                     imageUrl,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.contain,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return const Center(
                         child: SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
-                            strokeWidth: 1.5,
+                            strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation(
                               AppColors.primary,
                             ),
@@ -413,29 +483,25 @@ class HomeTab extends StatelessWidget {
                         ),
                       );
                     },
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: color,
-                      alignment: Alignment.center,
-                      child: Text(
-                        initials.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    errorBuilder: (context, error, stackTrace) => Text(
+                      initials.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: palette['text'],
                       ),
                     ),
                   )
                 : Text(
                     initials.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: palette['text'],
                     ),
                   ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             title,
             maxLines: 1,
@@ -454,31 +520,40 @@ class HomeTab extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
             ),
           ),
+          const Spacer(),
           if (booth.trim().isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  size: 12,
-                  color: AppColors.textLight,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    booth,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 12,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      booth,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ],
@@ -732,16 +807,16 @@ class HomeTab extends StatelessWidget {
         const SizedBox(height: 14),
         // Exhibitors skeleton
         SizedBox(
-          height: 160,
+          height: 220,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 3,
             itemBuilder: (context, _) => Container(
-              width: 130,
+              width: 175,
               margin: const EdgeInsets.only(right: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: const Color(0xFFDDE4F0), width: 1.5),
               ),
               child: Padding(
@@ -749,11 +824,11 @@ class HomeTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildShimmerBox(width: 60, height: 60, radius: 14),
+                    _buildShimmerBox(width: double.infinity, height: 92, radius: 16),
                     const SizedBox(height: 10),
-                    _buildShimmerBox(width: 90, height: 14),
+                    _buildShimmerBox(width: 120, height: 14),
                     const SizedBox(height: 6),
-                    _buildShimmerBox(width: 70, height: 11),
+                    _buildShimmerBox(width: 80, height: 11),
                   ],
                 ),
               ),
@@ -1718,9 +1793,10 @@ class HomeTab extends StatelessWidget {
                                 )
                               else
                                 SizedBox(
-                                  height: 160,
+                                  height: 220,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
                                     itemCount: homeProvider.exhibitors.length,
                                     itemBuilder: (context, index) {
                                       final e = homeProvider.exhibitors[index];
