@@ -55,84 +55,120 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     super.dispose();
   }
 
-  DateTime? _parseDateTime(String str) {
-    str = str.trim();
+  DateTime? _parseDateTime(String? raw) {
+    if (raw == null) return null;
+    String str = raw.trim();
     if (str.isEmpty) return null;
-    
-    final parsed = DateTime.tryParse(str);
-    if (parsed != null) return parsed;
-    
-    try {
-      final parts = str.split(RegExp(r'[-/ ]'));
-      if (parts.length >= 3) {
-        if (parts[0].length <= 2 && parts[2].length >= 4) {
-          final day = int.tryParse(parts[0]);
-          final month = int.tryParse(parts[1]);
-          final year = int.tryParse(parts[2].substring(0, 4));
-          if (day != null && month != null && year != null) {
-            return DateTime(year, month, day);
-          }
-        }
-        if (parts[0].length == 4 && parts[2].length <= 2) {
-          final year = int.tryParse(parts[0]);
-          final month = int.tryParse(parts[1]);
-          final day = int.tryParse(parts[2].substring(0, 2));
-          if (year != null && month != null && day != null) {
-            return DateTime(year, month, day);
-          }
-        }
-      }
-    } catch (_) {}
 
-    try {
-      const months = [
-        'january', 'february', 'march', 'april', 'may', 'june',
-        'july', 'august', 'september', 'october', 'november', 'december'
-      ];
-      final lower = str.toLowerCase();
-      for (int m = 0; m < months.length; m++) {
-        if (lower.contains(months[m])) {
-          final numbers = RegExp(r'\d+').allMatches(str).map((match) => int.parse(match.group(0)!)).toList();
-          if (numbers.length >= 2) {
-            int day = numbers[0];
-            int year = numbers[1] > 1000 ? numbers[1] : (numbers.length > 2 ? numbers[2] : DateTime.now().year);
-            if (day > 31 && numbers.length > 1) {
-              year = day;
-              day = numbers[1];
-            }
-            return DateTime(year, m + 1, day);
-          }
+    final parsed = DateTime.tryParse(str);
+    if (parsed != null) return DateTime(parsed.year, parsed.month, parsed.day);
+
+    str = str.replaceAll(RegExp(r'(\d+)(st|nd|rd|th)', caseSensitive: false), r'$1');
+    str = str.replaceAll(',', ' ').trim();
+
+    const fullMonths = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    const shortMonths = [
+      'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+      'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+    ];
+
+    final lower = str.toLowerCase();
+    int? detectedMonth;
+    for (int m = 0; m < 12; m++) {
+      if (lower.contains(fullMonths[m]) || lower.contains(shortMonths[m])) {
+        detectedMonth = m + 1;
+        break;
+      }
+    }
+
+    final numbers = RegExp(r'\d+')
+        .allMatches(str)
+        .map((m) => int.parse(m.group(0)!))
+        .toList();
+
+    if (detectedMonth != null) {
+      if (numbers.length >= 2) {
+        int day = numbers[0];
+        int year = numbers[1];
+        if (day > 1000) {
+          final temp = day;
+          day = year;
+          year = temp;
+        } else if (year < 100) {
+          year += 2000;
+        }
+        return DateTime(year, detectedMonth, day);
+      } else if (numbers.length == 1) {
+        int day = numbers[0];
+        int year = DateTime.now().year;
+        return DateTime(year, detectedMonth, day);
+      }
+    }
+
+    final parts = str.split(RegExp(r'[-/ ]')).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 3) {
+      final p0 = int.tryParse(parts[0]);
+      final p1 = int.tryParse(parts[1]);
+      final p2 = int.tryParse(parts[2].length > 4 ? parts[2].substring(0, 4) : parts[2]);
+
+      if (p0 != null && p1 != null && p2 != null) {
+        if (parts[0].length <= 2 && parts[2].length >= 4) {
+          return DateTime(p2, p1, p0);
+        }
+        if (parts[0].length >= 4 && parts[2].length <= 2) {
+          return DateTime(p0, p1, p2);
+        }
+        if (p1 <= 12 && p0 <= 31 && p2 > 2000) {
+          return DateTime(p2, p1, p0);
         }
       }
-    } catch (_) {}
+    }
 
     return null;
   }
 
   int? _parseTimeToMinutes(String? timeStr) {
-    if (timeStr == null || timeStr.isEmpty) return null;
+    if (timeStr == null || timeStr.trim().isEmpty) return null;
     try {
       String clean = timeStr.trim().toUpperCase();
+      if (clean.contains('–') || clean.contains('-')) {
+        final fullRange = clean;
+        final startPart = clean.split(RegExp(r'[–-]')).first.trim();
+        clean = startPart;
+        if (!clean.contains('AM') && !clean.contains('PM')) {
+          if (fullRange.contains('AM')) clean += ' AM';
+          if (fullRange.contains('PM')) clean += ' PM';
+        }
+      }
+
       final hasAmPm = clean.contains('AM') || clean.contains('PM');
-      
-      final parts = clean.split(':');
-      if (parts.isNotEmpty) {
-        int? hour = int.tryParse(parts[0]);
-        int minute = 0;
-        if (parts.length > 1) {
-          final minStr = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
-          minute = int.tryParse(minStr) ?? 0;
-        }
-        if (hour != null) {
-          if (hasAmPm) {
-            if (clean.contains('PM') && hour < 12) {
-              hour += 12;
-            } else if (clean.contains('AM') && hour == 12) {
-              hour = 0;
-            }
+      final isPm = clean.contains('PM');
+      final isAm = clean.contains('AM');
+
+      final timeMatch = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(clean);
+      if (timeMatch != null) {
+        int hour = int.parse(timeMatch.group(1)!);
+        int minute = int.parse(timeMatch.group(2)!);
+        if (hasAmPm) {
+          if (isPm && hour < 12) {
+            hour += 12;
+          } else if (isAm && hour == 12) {
+            hour = 0;
           }
-          return hour * 60 + minute;
         }
+        return hour * 60 + minute;
+      }
+
+      final singleHourMatch = RegExp(r'(\d{1,2})\s*(AM|PM)').firstMatch(clean);
+      if (singleHourMatch != null) {
+        int hour = int.parse(singleHourMatch.group(1)!);
+        final ampm = singleHourMatch.group(2)!;
+        if (ampm == 'PM' && hour < 12) hour += 12;
+        if (ampm == 'AM' && hour == 12) hour = 0;
+        return hour * 60;
       }
     } catch (_) {}
     return null;
@@ -145,7 +181,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     }
     if (s.time.isNotEmpty) {
       final startPart = s.time.split(RegExp(r'[–-]')).first.trim();
-      final m = _parseTimeToMinutes(startPart);
+      final m = _parseTimeToMinutes(s.time) ?? _parseTimeToMinutes(startPart);
       if (m != null) return m;
     }
     return null;
@@ -176,11 +212,12 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     
     final startMin = _extractSessionStartMinutes(s);
     final endMin = _extractSessionEndMinutes(s) ?? (startMin != null ? startMin + 30 : null);
-    if (startMin == null) return true;
+    
+    if (startMin == null) return false;
 
     switch (timeFilter) {
       case TimeOfDayFilter.morning:
-        // Morning: < 12:00 PM
+        // Morning: < 12:00 PM (6 AM - 12 PM)
         return startMin < 12 * 60;
       case TimeOfDayFilter.afternoon:
         // Afternoon: 12:00 PM to 05:00 PM (12:00 to 16:59)
@@ -205,10 +242,32 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     return '${hour.toString().padLeft(2, '0')}:$minute $period';
   }
 
+  String _formatDateForDisplay(SessionItem s) {
+    if (s.date.isNotEmpty) {
+      return s.date;
+    }
+    if (s.scheduleDate != null && s.scheduleDate!.isNotEmpty) {
+      final parsed = _parseDateTime(s.scheduleDate!);
+      if (parsed != null) {
+        const months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
+      }
+      return s.scheduleDate!;
+    }
+    return '';
+  }
+
   String _getSessionDisplayTime(SessionItem session) {
     if (session.startTime != null && session.startTime!.isNotEmpty &&
         session.endTime != null && session.endTime!.isNotEmpty) {
-      return '${TimeFormatter.formatTime(session.startTime!)} - ${TimeFormatter.formatTime(session.endTime!)}';
+      final formattedStart = TimeFormatter.formatTime(session.startTime!);
+      final formattedEnd = TimeFormatter.formatTime(session.endTime!);
+      if (formattedStart.isNotEmpty && formattedEnd.isNotEmpty) {
+        return '$formattedStart - $formattedEnd';
+      }
     }
     if (session.time.isNotEmpty) {
       return TimeFormatter.formatTimeRange(session.time);
@@ -592,20 +651,29 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   }
 
   bool _matchesDate(SessionItem session, DateTime targetDate) {
-    final dateStr = (session.scheduleDate ?? session.date).trim();
-    if (dateStr.isEmpty) return false;
+    DateTime? sessionDt;
+    if (session.scheduleDate != null && session.scheduleDate!.trim().isNotEmpty) {
+      sessionDt = _parseDateTime(session.scheduleDate!);
+    }
+    if (sessionDt == null && session.date.trim().isNotEmpty) {
+      sessionDt = _parseDateTime(session.date);
+    }
 
-    final parsed = _parseDateTime(dateStr);
-    if (parsed != null) {
-      return parsed.year == targetDate.year &&
-          parsed.month == targetDate.month &&
-          parsed.day == targetDate.day;
+    if (sessionDt != null) {
+      return sessionDt.year == targetDate.year &&
+          sessionDt.month == targetDate.month &&
+          sessionDt.day == targetDate.day;
     }
 
     final yyyymmdd = "${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}";
     final ddmmyyyy = "${targetDate.day.toString().padLeft(2, '0')}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.year}";
     final slashFormat = "${targetDate.day.toString().padLeft(2, '0')}/${targetDate.month.toString().padLeft(2, '0')}/${targetDate.year}";
-    return dateStr.contains(yyyymmdd) || dateStr.contains(ddmmyyyy) || dateStr.contains(slashFormat);
+
+    final sDate = session.scheduleDate?.trim() ?? '';
+    final dDate = session.date.trim();
+
+    return (sDate.isNotEmpty && (sDate.contains(yyyymmdd) || sDate.contains(ddmmyyyy) || sDate.contains(slashFormat))) ||
+        (dDate.isNotEmpty && (dDate.contains(yyyymmdd) || dDate.contains(ddmmyyyy) || dDate.contains(slashFormat)));
   }
 
   String? _getSpeakerProfileImageUrl(String? path) {
@@ -657,14 +725,17 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   List<DateTime> _extractUniqueDates(List<SessionItem> allList) {
     final Map<String, DateTime> uniqueMap = {};
     for (final s in allList) {
-      final dateStr = (s.scheduleDate ?? s.date).trim();
-      if (dateStr.isNotEmpty) {
-        final parsed = _parseDateTime(dateStr);
-        if (parsed != null) {
-          final key = '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
-          if (!uniqueMap.containsKey(key)) {
-            uniqueMap[key] = DateTime(parsed.year, parsed.month, parsed.day);
-          }
+      DateTime? parsed;
+      if (s.scheduleDate != null && s.scheduleDate!.trim().isNotEmpty) {
+        parsed = _parseDateTime(s.scheduleDate!);
+      }
+      if (parsed == null && s.date.trim().isNotEmpty) {
+        parsed = _parseDateTime(s.date);
+      }
+      if (parsed != null) {
+        final key = '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
+        if (!uniqueMap.containsKey(key)) {
+          uniqueMap[key] = DateTime(parsed.year, parsed.month, parsed.day);
         }
       }
     }
@@ -694,9 +765,10 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
         break;
     }
 
-    // Extract calendar unique dates from available sessions
-    final combinedForDates = [...mySessions, ...allSessions];
-    final uniqueDates = _extractUniqueDates(combinedForDates);
+    // Extract calendar unique dates from available sessions (first try current list, fallback to combined)
+    final currentDates = _extractUniqueDates(currentList);
+    final combinedDates = _extractUniqueDates([...mySessions, ...allSessions]);
+    final uniqueDates = currentDates.isNotEmpty ? currentDates : combinedDates;
 
     // Apply Search, Date, and Time Filter
     final query = _searchQuery.toLowerCase().trim();
@@ -1325,7 +1397,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     String sectionTitle;
     switch (_selectedFilter) {
       case SpeakerSessionFilter.mySessions:
-        sectionTitle = 'Scheduled Sessions';
+        sectionTitle = 'My Sessions';
         break;
       case SpeakerSessionFilter.all:
         sectionTitle = 'Summit Sessions';
@@ -1723,9 +1795,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
         ? session.keywords!.split(',').first.trim()
         : 'Health Tech';
     final displayTime = _getSessionDisplayTime(session);
-    final displayDate = (session.scheduleDate != null && session.scheduleDate!.isNotEmpty)
-        ? session.scheduleDate!
-        : session.date;
+    final displayDate = _formatDateForDisplay(session);
 
     return GestureDetector(
       onTap: () {
@@ -1966,16 +2036,14 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   }
 
   // ==========================================
-  // Speaker's Own Session Card
+  // Speaker's Own Session Card (No Bookmark button)
   // ==========================================
   Widget _buildMySessionCard(SessionItem s) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final String tag = (s.keywords ?? 'Health Tech').split(',').first.trim();
     final String displaySpeaker = s.speakerName == 'You' ? auth.userName : s.speakerName;
     final myDisplayTime = _getSessionDisplayTime(s);
-    final myDisplayDate = (s.scheduleDate != null && s.scheduleDate!.isNotEmpty)
-        ? s.scheduleDate!
-        : s.date;
+    final myDisplayDate = _formatDateForDisplay(s);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1984,7 +2052,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: s.isBookmarked ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
+          color: AppColors.tileBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -1998,53 +2066,32 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (tag.isNotEmpty)
-                Row(
-                  children: [
-                    const Icon(Icons.local_offer_outlined, size: 13, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      tag.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                const SizedBox(),
-              GestureDetector(
-                onTap: () => _handleToggleBookmark(s),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: s.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: _loadingBookmarks.contains(s.id)
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.primary,
-                          ),
-                        )
-                      : Icon(
-                          s.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                          color: s.isBookmarked ? AppColors.primary : AppColors.textLight,
-                          size: 20,
-                        ),
-                ),
+          if (tag.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.local_offer_outlined, size: 12, color: AppColors.primary),
+                  const SizedBox(width: 5),
+                  Text(
+                    tag.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           Text(
             s.title.toUpperCase(),
             style: const TextStyle(
@@ -2124,8 +2171,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     MaterialPageRoute(
                       builder: (context) => SpeakerSessionDetailScreen(
                         title: s.title,
-                        date: s.date,
-                        time: s.time,
+                        date: myDisplayDate.isNotEmpty ? myDisplayDate : (s.date.isNotEmpty ? s.date : (s.scheduleDate ?? '')),
+                        time: myDisplayTime.isNotEmpty ? myDisplayTime : (s.time.isNotEmpty ? s.time : (s.startTime != null && s.endTime != null ? '${s.startTime} - ${s.endTime}' : '')),
                         location: s.location,
                         tag: tag,
                         coordinatorName: s.coordinatorName ?? '',

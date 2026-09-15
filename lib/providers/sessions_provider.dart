@@ -524,6 +524,7 @@ class SessionsProvider extends ChangeNotifier {
           _sessions = sessionsJson.asMap().entries.map((entry) {
             return _mapJsonToSession(entry.value, entry.key);
           }).toList();
+          _enrichMySessionsFromConfirmed();
           notifyListeners();
           return true;
         } else {
@@ -543,13 +544,64 @@ class SessionsProvider extends ChangeNotifier {
     }
   }
 
+  void _enrichMySessionsFromConfirmed() {
+    if (_sessions.isEmpty || _mySessions.isEmpty) return;
+    for (int i = 0; i < _mySessions.length; i++) {
+      final my = _mySessions[i];
+      try {
+        final matched = _sessions.firstWhere((s) =>
+            (my.topicId != null && my.topicId!.isNotEmpty && (s.topicId == my.topicId || s.id.toString() == my.topicId)) ||
+            (my.assignmentId != null && my.assignmentId!.isNotEmpty && s.assignmentId == my.assignmentId) ||
+            (s.title.toLowerCase().trim() == my.title.toLowerCase().trim()));
+
+        final finalDate = my.date.isNotEmpty ? my.date : matched.date;
+        final finalTime = my.time.isNotEmpty ? my.time : matched.time;
+        final finalScheduleDate = (my.scheduleDate != null && my.scheduleDate!.isNotEmpty) ? my.scheduleDate : matched.scheduleDate;
+        final finalStartTime = (my.startTime != null && my.startTime!.isNotEmpty) ? my.startTime : matched.startTime;
+        final finalEndTime = (my.endTime != null && my.endTime!.isNotEmpty) ? my.endTime : matched.endTime;
+        final finalLocation = my.location.isNotEmpty ? my.location : matched.location;
+
+        _mySessions[i] = SessionItem(
+          id: my.id,
+          title: my.title,
+          speakerName: my.speakerName,
+          speakerTitle: my.speakerTitle,
+          speakerInitials: my.speakerInitials,
+          speakerBg: my.speakerBg,
+          date: finalDate,
+          time: finalTime,
+          location: finalLocation,
+          isBookmarked: my.isBookmarked || matched.isBookmarked,
+          isAdded: my.isAdded || matched.isAdded,
+          topicId: my.topicId ?? matched.topicId,
+          assignmentId: my.assignmentId ?? matched.assignmentId,
+          bookmarkId: my.bookmarkId ?? matched.bookmarkId,
+          participantsCount: my.participantsCount > 0 ? my.participantsCount : matched.participantsCount,
+          description: (my.description != null && my.description!.isNotEmpty) ? my.description : matched.description,
+          thumbnail: my.thumbnail ?? matched.thumbnail,
+          keywords: my.keywords ?? matched.keywords,
+          acceptedFilePath: my.acceptedFilePath ?? matched.acceptedFilePath,
+          venueAddress: my.venueAddress ?? matched.venueAddress,
+          summitTitle: my.summitTitle ?? matched.summitTitle,
+          coordinatorName: my.coordinatorName ?? matched.coordinatorName,
+          coordinatorPhone: my.coordinatorPhone ?? matched.coordinatorPhone,
+          coordinatorEmail: my.coordinatorEmail ?? matched.coordinatorEmail,
+          speakerProfileImage: my.speakerProfileImage ?? matched.speakerProfileImage,
+          startTime: finalStartTime,
+          endTime: finalEndTime,
+          scheduleDate: finalScheduleDate,
+        );
+      } catch (_) {}
+    }
+  }
+
   // ==========================================
   // Fetch Speaker Confirmed Sessions
   // ==========================================
   SessionItem _mapTopicToSession(Map<String, dynamic> json, int index) {
-    final topicId = json['topic_id']?.toString() ?? '';
+    final topicId = json['topic_id']?.toString() ?? json['abstract_id']?.toString() ?? '';
     final id = int.tryParse(topicId) ?? index;
-    final title = json['title']?.toString() ?? 'Session';
+    final title = json['title']?.toString() ?? json['abstract_title']?.toString() ?? 'Session';
     final format = json['presentation_format']?.toString() ?? 'Oral/Poster';
     
     final speakerProfileImage = json['speaker_profile_image']?.toString() ?? json['speaker_image']?.toString() ?? json['profile_image']?.toString();
@@ -565,24 +617,46 @@ class SessionsProvider extends ChangeNotifier {
         ? json['session_details'] as Map<String, dynamic>
         : (json['session'] is Map)
             ? json['session'] as Map<String, dynamic>
-            : null;
+            : (json['session_data'] is Map)
+                ? json['session_data'] as Map<String, dynamic>
+                : (json['slot'] is Map)
+                    ? json['slot'] as Map<String, dynamic>
+                    : null;
+
+    final hallMap = (json['hall'] is Map) ? json['hall'] as Map<String, dynamic> : null;
 
     final hallLabel = sessDetails?['hall_label']?.toString() ??
         json['hall_label']?.toString() ??
-        (json['hall'] is Map ? json['hall']['hall_label']?.toString() : null) ??
+        hallMap?['hall_label']?.toString() ??
+        (sessDetails?['hall'] is Map ? sessDetails!['hall']['hall_label']?.toString() : null) ??
         '';
     final hallName = sessDetails?['hall_name']?.toString() ??
         json['hall_name']?.toString() ??
-        (json['hall'] is Map ? json['hall']['hall_name']?.toString() : null) ??
+        hallMap?['hall_name']?.toString() ??
         (json['hall'] is String ? json['hall'].toString() : null) ??
+        (sessDetails?['hall'] is Map ? sessDetails!['hall']['hall_name']?.toString() : null) ??
+        (sessDetails?['hall'] is String ? sessDetails!['hall'].toString() : null) ??
         '';
     final displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
 
     final slotLabel = sessDetails?['slot_label']?.toString() ?? json['slot_label']?.toString() ?? '';
     final slotName = sessDetails?['slot_name']?.toString() ?? json['slot_name']?.toString() ?? '';
 
-    final startTime = sessDetails?['start_time']?.toString() ?? json['start_time']?.toString() ?? '';
-    final endTime = sessDetails?['end_time']?.toString() ?? json['end_time']?.toString() ?? '';
+    final startTime = sessDetails?['start_time']?.toString() ??
+        json['start_time']?.toString() ??
+        sessDetails?['from_time']?.toString() ??
+        json['from_time']?.toString() ??
+        sessDetails?['slot_start_time']?.toString() ??
+        json['slot_start_time']?.toString() ??
+        '';
+    final endTime = sessDetails?['end_time']?.toString() ??
+        json['end_time']?.toString() ??
+        sessDetails?['to_time']?.toString() ??
+        json['to_time']?.toString() ??
+        sessDetails?['slot_end_time']?.toString() ??
+        json['slot_end_time']?.toString() ??
+        '';
+
     String timeStr = '';
     if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
       timeStr = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
@@ -590,6 +664,10 @@ class SessionsProvider extends ChangeNotifier {
       timeStr = slotLabel;
     } else if (slotName.isNotEmpty) {
       timeStr = slotName;
+    } else if (json['time'] != null && json['time'].toString().isNotEmpty) {
+      timeStr = json['time'].toString();
+    } else if (sessDetails?['time'] != null && sessDetails!['time'].toString().isNotEmpty) {
+      timeStr = sessDetails['time'].toString();
     }
 
     final venueName = sessDetails?['venue_name']?.toString() ?? json['venue_name']?.toString() ?? '';
@@ -598,12 +676,18 @@ class SessionsProvider extends ChangeNotifier {
         : displayHall;
 
     String displayDate = '';
-    final scheduleDateStr = sessDetails?['schedule_date']?.toString() ?? json['schedule_date']?.toString() ?? '';
+    final scheduleDateStr = sessDetails?['schedule_date']?.toString() ??
+        json['schedule_date']?.toString() ??
+        sessDetails?['session_date']?.toString() ??
+        json['session_date']?.toString() ??
+        sessDetails?['date']?.toString() ??
+        json['date']?.toString() ??
+        '';
     if (scheduleDateStr.isNotEmpty) {
       try {
         final dt = DateTime.tryParse(scheduleDateStr);
         if (dt != null) {
-          final months = [
+          const months = [
             'January', 'February', 'March', 'April', 'May', 'June',
             'July', 'August', 'September', 'October', 'November', 'December'
           ];
@@ -616,6 +700,36 @@ class SessionsProvider extends ChangeNotifier {
       }
     }
 
+    // Cross-reference with _sessions if available
+    SessionItem? matchedSession;
+    if (_sessions.isNotEmpty) {
+      try {
+        matchedSession = _sessions.firstWhere((s) =>
+            (topicId.isNotEmpty && (s.topicId == topicId || s.id.toString() == topicId)) ||
+            (json['assignment_id'] != null && s.assignmentId == json['assignment_id'].toString()) ||
+            (s.title.toLowerCase().trim() == title.toLowerCase().trim()));
+      } catch (_) {}
+    }
+
+    final finalStartTime = startTime.isNotEmpty && startTime.toLowerCase() != 'null'
+        ? startTime
+        : (matchedSession?.startTime ?? '');
+    final finalEndTime = endTime.isNotEmpty && endTime.toLowerCase() != 'null'
+        ? endTime
+        : (matchedSession?.endTime ?? '');
+    final finalScheduleDate = scheduleDateStr.isNotEmpty && scheduleDateStr.toLowerCase() != 'null'
+        ? scheduleDateStr
+        : (matchedSession?.scheduleDate ?? '');
+    final finalDisplayDate = displayDate.isNotEmpty
+        ? displayDate
+        : (matchedSession?.date ?? '');
+    final finalTimeStr = timeStr.isNotEmpty
+        ? timeStr
+        : (matchedSession?.time ?? (finalStartTime.isNotEmpty && finalEndTime.isNotEmpty ? '${TimeFormatter.formatTime(finalStartTime)} - ${TimeFormatter.formatTime(finalEndTime)}' : ''));
+    final finalLocation = locationStr.isNotEmpty
+        ? locationStr
+        : (matchedSession?.location ?? '');
+
     return SessionItem(
       id: id,
       title: title,
@@ -623,25 +737,25 @@ class SessionsProvider extends ChangeNotifier {
       speakerTitle: format,
       speakerInitials: 'YS',
       speakerBg: _getColorForIndex(index),
-      date: displayDate,
-      time: timeStr,
-      location: locationStr,
+      date: finalDisplayDate,
+      time: finalTimeStr,
+      location: finalLocation,
       isBookmarked: false,
       isAdded: false,
       topicId: topicId,
-      assignmentId: json['assignment_id']?.toString() ?? sessDetails?['assignment_id']?.toString(),
-      participantsCount: int.tryParse(json['participants_count']?.toString() ?? '0') ?? 0,
-      description: json['background_introduction']?.toString() ?? json['description']?.toString() ?? '',
-      keywords: json['keywords']?.toString(),
-      venueAddress: sessDetails?['address']?.toString() ?? json['venue_address']?.toString() ?? json['address']?.toString(),
-      summitTitle: json['summit_title']?.toString(),
-      coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString(),
-      coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString(),
-      coordinatorEmail: json['coordinator_email']?.toString(),
-      speakerProfileImage: cleanSpeakerProfileImage,
-      startTime: startTime,
-      endTime: endTime,
-      scheduleDate: scheduleDateStr,
+      assignmentId: json['assignment_id']?.toString() ?? sessDetails?['assignment_id']?.toString() ?? matchedSession?.assignmentId,
+      participantsCount: int.tryParse(json['participants_count']?.toString() ?? '0') ?? matchedSession?.participantsCount ?? 0,
+      description: json['background_introduction']?.toString() ?? json['description']?.toString() ?? matchedSession?.description ?? '',
+      keywords: json['keywords']?.toString() ?? matchedSession?.keywords,
+      venueAddress: sessDetails?['address']?.toString() ?? json['venue_address']?.toString() ?? json['address']?.toString() ?? matchedSession?.venueAddress,
+      summitTitle: json['summit_title']?.toString() ?? matchedSession?.summitTitle,
+      coordinatorName: json['coordinator_name']?.toString() ?? json['coordinator']?.toString() ?? matchedSession?.coordinatorName,
+      coordinatorPhone: (json['coordinator_phone'] ?? json['coordinator_mobile'] ?? json['coordinator_contact'])?.toString() ?? matchedSession?.coordinatorPhone,
+      coordinatorEmail: json['coordinator_email']?.toString() ?? matchedSession?.coordinatorEmail,
+      speakerProfileImage: cleanSpeakerProfileImage ?? matchedSession?.speakerProfileImage,
+      startTime: finalStartTime,
+      endTime: finalEndTime,
+      scheduleDate: finalScheduleDate,
     );
   }
 
@@ -673,6 +787,7 @@ class SessionsProvider extends ChangeNotifier {
           _mySessions = confirmedTopics.asMap().entries.map((entry) {
             return _mapTopicToSession(entry.value, entry.key);
           }).toList();
+          _enrichMySessionsFromConfirmed();
           notifyListeners();
           return true;
         } else {
