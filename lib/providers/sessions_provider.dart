@@ -179,6 +179,7 @@ class SessionsProvider extends ChangeNotifier {
   String _searchQuery = '';
   bool _showOnlyBookmarked = false;
   bool _isLoading = false;
+  bool _isLoadingMySessions = false;
   String? _errorMessage;
 
   List<SessionItem> _sessions = [];
@@ -189,7 +190,9 @@ class SessionsProvider extends ChangeNotifier {
 
   String get searchQuery => _searchQuery;
   bool get showOnlyBookmarked => _showOnlyBookmarked;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoading || _isLoadingMySessions;
+  bool get isLoadingConfirmedSessions => _isLoading;
+  bool get isLoadingMySessions => _isLoadingMySessions;
   String? get errorMessage => _errorMessage;
 
   List<SessionItem> get sessions => _sessions;
@@ -203,6 +206,7 @@ class SessionsProvider extends ChangeNotifier {
     _searchQuery = '';
     _showOnlyBookmarked = false;
     _isLoading = false;
+    _isLoadingMySessions = false;
     _errorMessage = null;
     _sessions = [];
     _mySessions = [];
@@ -296,15 +300,24 @@ class SessionsProvider extends ChangeNotifier {
   }
 
   Future<String?> toggleBookmark(int sessionId, String accessToken) async {
+    SessionItem? session;
     final index = _sessions.indexWhere((s) => s.id == sessionId);
-    if (index == -1) return 'Session not found';
+    if (index != -1) {
+      session = _sessions[index];
+    } else {
+      final myIndex = _mySessions.indexWhere((s) => s.id == sessionId);
+      if (myIndex != -1) {
+        session = _mySessions[myIndex];
+      }
+    }
+    if (session == null) return 'Session not found';
 
-    final session = _sessions[index];
     final isCurrentlyBookmarked = session.isBookmarked;
 
     if (!isCurrentlyBookmarked) {
-      for (final other in _sessions) {
-        if (other.isBookmarked && _isTimeOverlap(session, other)) {
+      final allSessionsToCheck = [..._sessions, ..._mySessions];
+      for (final other in allSessionsToCheck) {
+        if (other.id != session.id && other.isBookmarked && _isTimeOverlap(session, other)) {
           return 'This session conflicts with another bookmarked session ("${other.title}") scheduled at the same time!';
         }
       }
@@ -320,6 +333,16 @@ class SessionsProvider extends ChangeNotifier {
         final data = json.decode(response.body);
         if (data['status'] == true) {
           session.isBookmarked = !isCurrentlyBookmarked;
+          for (final s in _sessions) {
+            if (s.id == sessionId || (s.assignmentId != null && s.assignmentId == session.assignmentId)) {
+              s.isBookmarked = session.isBookmarked;
+            }
+          }
+          for (final s in _mySessions) {
+            if (s.id == sessionId || (s.assignmentId != null && s.assignmentId == session.assignmentId)) {
+              s.isBookmarked = session.isBookmarked;
+            }
+          }
           notifyListeners();
           return null; // Success
         } else {
@@ -629,15 +652,15 @@ class SessionsProvider extends ChangeNotifier {
       _lastMySessionsAccessToken = accessToken;
     }
     if (!forceRefresh && _mySessions.isNotEmpty) return true;
-    if (_isLoading) return false; // Prevent concurrent loading
-    _isLoading = true;
+    if (_isLoadingMySessions) return false; // Prevent concurrent loading
+    _isLoadingMySessions = true;
     _errorMessage = null;
     _mySessions = []; // Clear previous data
     notifyListeners();
 
     try {
       final response = await ApiService.fetchSpeakerMyTopics(accessToken: accessToken);
-      _isLoading = false;
+      _isLoadingMySessions = false;
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
         return false;
@@ -662,7 +685,7 @@ class SessionsProvider extends ChangeNotifier {
       return false;
     } catch (e, stack) {
       CustomLogger.logError('Fetch speaker confirmed sessions failed', e, stack);
-      _isLoading = false;
+      _isLoadingMySessions = false;
       _errorMessage = e.toString();
       notifyListeners();
       return false;

@@ -80,6 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await Future.wait([
           sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
           sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+          sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
           sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
           abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
           workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
@@ -171,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: EdgeInsets.only(bottom: 4.0),
                 child: Icon(Icons.calendar_month, size: 24),
               ),
-              label: 'My Sessions',
+              label: 'Sessions',
             ),
             BottomNavigationBarItem(
               icon: Padding(
