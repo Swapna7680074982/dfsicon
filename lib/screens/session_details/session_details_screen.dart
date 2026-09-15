@@ -291,6 +291,16 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
         .isBookmarked;
 
+    final isMySession = (auth.isSpeakerRole || auth.isSpeaker) &&
+        (widget.session.speakerName.toLowerCase().trim() == 'you' ||
+            (auth.userName.trim().isNotEmpty &&
+                widget.session.speakerName.toLowerCase().trim() == auth.userName.toLowerCase().trim()) ||
+            sessProvider.mySessions.any((m) =>
+                m.id == widget.session.id ||
+                (m.topicId != null && m.topicId!.isNotEmpty && (widget.session.topicId == m.topicId || widget.session.id.toString() == m.topicId)) ||
+                (m.assignmentId != null && m.assignmentId!.isNotEmpty && widget.session.assignmentId == m.assignmentId) ||
+                (m.title.trim().isNotEmpty && widget.session.title.trim().isNotEmpty && m.title.toLowerCase().trim() == widget.session.title.toLowerCase().trim())));
+
     final halls = sessProvider.halls.isNotEmpty
         ? sessProvider.halls
         : [
@@ -626,73 +636,75 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () async {
-                      if (_isSavingBookmark) return;
-                      setState(() {
-                        _isSavingBookmark = true;
-                      });
-                      final errorMessage = await sessProvider.toggleBookmark(widget.session.id, auth.accessToken);
-                      if (mounted) {
+                if (!isMySession) ...[
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (_isSavingBookmark) return;
                         setState(() {
-                          _isSavingBookmark = false;
+                          _isSavingBookmark = true;
                         });
-                      }
-                      if (errorMessage == null) {
-                        _loadParticipants();
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(errorMessage),
-                            behavior: SnackBarBehavior.floating,
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: isBookmarked ? const Color(0xFFEEF2FF) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isBookmarked ? const Color(0xFF818CF8) : AppColors.tileBorder,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _isSavingBookmark
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.primary,
-                                  ),
-                                )
-                              : Icon(
-                                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                                  color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
-                                  size: 18,
-                                ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isBookmarked ? 'Bookmarked' : 'Bookmark',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
+                        final errorMessage = await sessProvider.toggleBookmark(widget.session.id, auth.accessToken);
+                        if (mounted) {
+                          setState(() {
+                            _isSavingBookmark = false;
+                          });
+                        }
+                        if (errorMessage == null) {
+                          _loadParticipants();
+                        } else if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(errorMessage),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.redAccent,
                             ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isBookmarked ? const Color(0xFFEEF2FF) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isBookmarked ? const Color(0xFF818CF8) : AppColors.tileBorder,
+                            width: 1.5,
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _isSavingBookmark
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary,
+                                    ),
+                                  )
+                                : Icon(
+                                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                                    color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
+                                    size: 18,
+                                  ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isBookmarked ? 'Bookmarked' : 'Bookmark',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isBookmarked ? AppColors.primary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -846,7 +858,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                   widget.session.id,
             ),
             const SizedBox(height: 28),
-            if (isBookmarked) ...[
+            if (isBookmarked || isMySession) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

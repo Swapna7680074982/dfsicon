@@ -4,6 +4,7 @@ import '../../constants/colors.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../session_details/session_details_screen.dart';
+import '../speaker_sessions/speaker_session_detail_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -37,7 +38,14 @@ class _SessionsTabState extends State<SessionsTab> {
     if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
-    await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
+    if (auth.isSpeakerRole || auth.isSpeaker) {
+      await Future.wait([
+        sessions.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+        sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+      ]);
+    } else {
+      await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
+    }
   }
 
   @override
@@ -841,17 +849,59 @@ class _SessionsTabState extends State<SessionsTab> {
     );
   }
 
+  bool _isMySession(SessionItem s, List<SessionItem> mySessions, AuthProvider auth) {
+    if (auth.isSpeakerRole || auth.isSpeaker) {
+      if (s.speakerName.toLowerCase().trim() == 'you') return true;
+      if (auth.userName.trim().isNotEmpty &&
+          s.speakerName.toLowerCase().trim() == auth.userName.toLowerCase().trim()) {
+        return true;
+      }
+      for (final my in mySessions) {
+        if (my.id == s.id) return true;
+        if (my.topicId != null && my.topicId!.isNotEmpty && (s.topicId == my.topicId || s.id.toString() == my.topicId)) return true;
+        if (my.assignmentId != null && my.assignmentId!.isNotEmpty && s.assignmentId == my.assignmentId) return true;
+        if (my.title.trim().isNotEmpty && s.title.trim().isNotEmpty && my.title.toLowerCase().trim() == s.title.toLowerCase().trim()) return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final allSessions = sessionsProvider.sessions;
+    final mySessions = sessionsProvider.mySessions;
     final bookmarkedSessions = allSessions.where((s) => s.isBookmarked).toList();
 
-    // Determine current base list according to selected filter
-    List<SessionItem> currentList = _showOnlyBookmarked ? bookmarkedSessions : allSessions;
+    // In My Calendar view, we display bookmarked sessions (and if user is speaker, their own confirmed sessions too)
+    final Map<dynamic, SessionItem> myCalendarMap = {};
+    if (auth.isSpeakerRole || auth.isSpeaker) {
+      for (final s in mySessions) {
+        final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+        myCalendarMap[key] = s;
+      }
+    }
+    for (final s in bookmarkedSessions) {
+      final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+      if (!myCalendarMap.containsKey(key)) {
+        myCalendarMap[key] = s;
+      }
+    }
+    final myCalendarSessions = myCalendarMap.values.toList();
 
-    // Extract calendar unique dates
-    final uniqueDates = _extractUniqueDates(allSessions);
+    // Determine current base list according to selected filter
+    List<SessionItem> currentList;
+    if (_isCalendarView) {
+      currentList = myCalendarSessions;
+    } else {
+      currentList = _showOnlyBookmarked ? bookmarkedSessions : allSessions;
+    }
+
+    // Extract calendar unique dates from myCalendarSessions in calendar mode
+    final uniqueDates = _isCalendarView
+        ? _extractUniqueDates(myCalendarSessions)
+        : _extractUniqueDates(allSessions);
 
     // Apply Search, Date, and Time Filter in List View
     final query = _searchQuery.toLowerCase().trim();
@@ -937,7 +987,7 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _isCalendarView ? 'List View' : 'Calendar View',
+                      _isCalendarView ? 'List View' : 'My Calendar',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -1078,39 +1128,41 @@ class _SessionsTabState extends State<SessionsTab> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  // Filter Chips: ALL SESSIONS, BOOKMARKED
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        _buildFilterChip(
-                          label: 'ALL SESSIONS',
-                          isSelected: !_showOnlyBookmarked,
-                          count: allSessions.length,
-                          icon: Icons.groups_outlined,
-                          onTap: () {
-                            setState(() {
-                              _showOnlyBookmarked = false;
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(
-                          label: 'BOOKMARKED',
-                          isSelected: _showOnlyBookmarked,
-                          count: bookmarkedSessions.length,
-                          icon: Icons.bookmark,
-                          onTap: () {
-                            setState(() {
-                              _showOnlyBookmarked = true;
-                            });
-                          },
-                        ),
-                      ],
+                  if (!_isCalendarView) ...[
+                    const SizedBox(height: 10),
+                    // Filter Chips: ALL SESSIONS, BOOKMARKED
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildFilterChip(
+                            label: 'ALL SESSIONS',
+                            isSelected: !_showOnlyBookmarked,
+                            count: allSessions.length,
+                            icon: Icons.groups_outlined,
+                            onTap: () {
+                              setState(() {
+                                _showOnlyBookmarked = false;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            label: 'BOOKMARKED',
+                            isSelected: _showOnlyBookmarked,
+                            count: bookmarkedSessions.length,
+                            icon: Icons.bookmark,
+                            onTap: () {
+                              setState(() {
+                                _showOnlyBookmarked = true;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
 
                   // Active Filter Indicator Pill (Clear with 1 tap)
                   if (!_isCalendarView && (_selectedDate != null || _customStartTime != null || _customEndTime != null)) ...[
@@ -1200,8 +1252,8 @@ class _SessionsTabState extends State<SessionsTab> {
                         child: CircularProgressIndicator(color: AppColors.primary),
                       )
                     : !_isCalendarView
-                        ? _buildListView(filteredList)
-                        : _buildCalendarView(currentList, uniqueDates),
+                        ? _buildListView(filteredList, mySessions, auth)
+                        : _buildCalendarView(currentList, uniqueDates, mySessions, auth),
               ),
             ),
           ],
@@ -1285,7 +1337,7 @@ class _SessionsTabState extends State<SessionsTab> {
   // ==========================================
   // List View Mode
   // ==========================================
-  Widget _buildListView(List<SessionItem> list) {
+  Widget _buildListView(List<SessionItem> list, List<SessionItem> mySessions, AuthProvider auth) {
     if (list.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -1357,7 +1409,8 @@ class _SessionsTabState extends State<SessionsTab> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final session = list[index];
-        return _buildSessionCard(session);
+        final isMySession = _isMySession(session, mySessions, auth);
+        return _buildSessionCard(session, isMySession: isMySession);
       },
     );
   }
@@ -1365,9 +1418,68 @@ class _SessionsTabState extends State<SessionsTab> {
   // ==========================================
   // Calendar Flow View Mode (Neat Flow with Prominent Time)
   // ==========================================
-  Widget _buildCalendarView(List<SessionItem> baseList, List<DateTime> uniqueDates) {
+  Widget _buildCalendarView(List<SessionItem> baseList, List<DateTime> uniqueDates, List<SessionItem> mySessions, AuthProvider auth) {
     if (uniqueDates.isEmpty) {
-      return _buildListView(baseList);
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.45,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.bookmark_border_rounded,
+                      size: 52,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No Bookmarked Sessions in Calendar',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Bookmark sessions from the list view to add them to your calendar schedule.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textLight,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _isCalendarView = false;
+                        });
+                      },
+                      icon: const Icon(Icons.format_list_bulleted, size: 18),
+                      label: const Text('Browse All Sessions'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
     }
 
     if (_selectedCalendarDayIndex >= uniqueDates.length) {
@@ -1386,6 +1498,12 @@ class _SessionsTabState extends State<SessionsTab> {
 
       return matchesSearch && _matchesDate(s, activeDate);
     }).toList();
+
+    daySessions.sort((a, b) {
+      final aMin = _extractSessionStartMinutes(a) ?? 0;
+      final bMin = _extractSessionStartMinutes(b) ?? 0;
+      return aMin.compareTo(bMin);
+    });
 
     const monthNames = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -1556,17 +1674,28 @@ class _SessionsTabState extends State<SessionsTab> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.event_busy_rounded,
+                                Icons.bookmark_border_rounded,
                                 size: 48,
                                 color: Colors.grey.shade300,
                               ),
                               const SizedBox(height: 14),
                               Text(
                                 'No sessions on ${activeDate.day} ${monthNames[activeDate.month - 1]}',
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Bookmarked sessions for this day will appear here.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textLight,
+                                  height: 1.4,
                                 ),
                               ),
                             ],
@@ -1582,10 +1711,12 @@ class _SessionsTabState extends State<SessionsTab> {
                   itemCount: daySessions.length,
                   itemBuilder: (context, index) {
                     final session = daySessions[index];
+                    final isMySession = _isMySession(session, mySessions, auth);
                     return _buildCalendarTimelineItem(
                       session,
                       isFirst: index == 0,
                       isLast: index == daySessions.length - 1,
+                      isMySession: isMySession,
                     );
                   },
                 ),
@@ -1625,7 +1756,12 @@ class _SessionsTabState extends State<SessionsTab> {
     };
   }
 
-  Widget _buildCalendarTimelineItem(SessionItem session, {required bool isFirst, required bool isLast}) {
+  Widget _buildCalendarTimelineItem(
+    SessionItem session, {
+    required bool isFirst,
+    required bool isLast,
+    required bool isMySession,
+  }) {
     final timeParts = _extractTimelineTimeParts(session);
 
     return IntrinsicHeight(
@@ -1728,7 +1864,7 @@ class _SessionsTabState extends State<SessionsTab> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildCalendarSessionCard(session),
+              child: _buildCalendarSessionCard(session, isMySession: isMySession),
             ),
           ),
         ],
@@ -1736,15 +1872,38 @@ class _SessionsTabState extends State<SessionsTab> {
     );
   }
 
-  Widget _buildCalendarSessionCard(SessionItem session) {
+  Widget _buildCalendarSessionCard(SessionItem session, {required bool isMySession}) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SessionDetailsScreen(session: session),
-          ),
-        );
+        if (isMySession) {
+          final myDisplayTime = _getSessionDisplayTime(session);
+          final myDisplayDate = _formatDateForDisplay(session);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SpeakerSessionDetailScreen(
+                title: session.title,
+                date: myDisplayDate.isNotEmpty ? myDisplayDate : (session.date.isNotEmpty ? session.date : (session.scheduleDate ?? '')),
+                time: myDisplayTime.isNotEmpty ? myDisplayTime : (session.time.isNotEmpty ? session.time : (session.startTime != null && session.endTime != null ? '${session.startTime} - ${session.endTime}' : '')),
+                location: session.location,
+                tag: '',
+                coordinatorName: session.coordinatorName ?? '',
+                coordinatorPhone: session.coordinatorPhone ?? '',
+                coordinatorEmail: session.coordinatorEmail ?? '',
+                description: session.description,
+                topicId: session.topicId,
+                assignmentId: session.assignmentId,
+              ),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SessionDetailsScreen(session: session),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(14.0),
@@ -1781,31 +1940,33 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _handleToggleBookmark(session),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: _loadingBookmarks.contains(session.id)
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
+                if (!isMySession) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _handleToggleBookmark(session),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: _loadingBookmarks.contains(session.id)
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : Icon(
+                              session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                              color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
+                              size: 18,
                             ),
-                          )
-                        : Icon(
-                            session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                            color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
-                            size: 18,
-                          ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
 
@@ -1936,18 +2097,39 @@ class _SessionsTabState extends State<SessionsTab> {
   // ==========================================
   // Session Card (with Date & Time in Last Row)
   // ==========================================
-  Widget _buildSessionCard(SessionItem session) {
+  Widget _buildSessionCard(SessionItem session, {required bool isMySession}) {
     final displayTime = _getSessionDisplayTime(session);
     final displayDate = _formatDateForDisplay(session);
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SessionDetailsScreen(session: session),
-          ),
-        );
+        if (isMySession) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SpeakerSessionDetailScreen(
+                title: session.title,
+                date: displayDate.isNotEmpty ? displayDate : (session.date.isNotEmpty ? session.date : (session.scheduleDate ?? '')),
+                time: displayTime.isNotEmpty ? displayTime : (session.time.isNotEmpty ? session.time : (session.startTime != null && session.endTime != null ? '${session.startTime} - ${session.endTime}' : '')),
+                location: session.location,
+                tag: '',
+                coordinatorName: session.coordinatorName ?? '',
+                coordinatorPhone: session.coordinatorPhone ?? '',
+                coordinatorEmail: session.coordinatorEmail ?? '',
+                description: session.description,
+                topicId: session.topicId,
+                assignmentId: session.assignmentId,
+              ),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SessionDetailsScreen(session: session),
+            ),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -1985,31 +2167,33 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: () => _handleToggleBookmark(session),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: _loadingBookmarks.contains(session.id)
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
+                if (!isMySession) ...[
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () => _handleToggleBookmark(session),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: _loadingBookmarks.contains(session.id)
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : Icon(
+                              session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                              color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
+                              size: 20,
                             ),
-                          )
-                        : Icon(
-                            session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                            color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
-                            size: 20,
-                          ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
 

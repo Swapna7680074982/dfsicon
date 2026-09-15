@@ -8,7 +8,7 @@ import '../session_details/session_details_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
-enum SpeakerSessionFilter { mySessions, all, bookmarked }
+enum SpeakerSessionFilter { mySessions, otherSessions, bookmarked }
 
 class SpeakerSessionsTab extends StatefulWidget {
   const SpeakerSessionsTab({super.key});
@@ -839,31 +839,60 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     return dates;
   }
 
+  bool _isMySession(SessionItem s, List<SessionItem> mySessions) {
+    for (final my in mySessions) {
+      if (my.id == s.id) return true;
+      if (my.topicId != null && my.topicId!.isNotEmpty && (s.topicId == my.topicId || s.id.toString() == my.topicId)) return true;
+      if (my.assignmentId != null && my.assignmentId!.isNotEmpty && s.assignmentId == my.assignmentId) return true;
+      if (my.title.trim().isNotEmpty && s.title.trim().isNotEmpty && my.title.toLowerCase().trim() == s.title.toLowerCase().trim()) return true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final allSessions = sessionsProvider.sessions;
     final mySessions = sessionsProvider.mySessions;
+    final otherSessions = allSessions.where((s) => !_isMySession(s, mySessions)).toList();
     final bookmarkedSessions = allSessions.where((s) => s.isBookmarked).toList();
 
-    // Determine current base list according to selected filter chip
+    // In My Calendar view, we display both the speaker's own sessions AND their bookmarked sessions directly in the calendar timeline
+    final Map<dynamic, SessionItem> myCalendarMap = {};
+    for (final s in mySessions) {
+      final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+      myCalendarMap[key] = s;
+    }
+    for (final s in bookmarkedSessions) {
+      final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+      if (!myCalendarMap.containsKey(key)) {
+        myCalendarMap[key] = s;
+      }
+    }
+    final myCalendarSessions = myCalendarMap.values.toList();
+
+    // Determine current base list according to selected view mode and filter chip
     List<SessionItem> currentList;
-    switch (_selectedFilter) {
-      case SpeakerSessionFilter.mySessions:
-        currentList = mySessions;
-        break;
-      case SpeakerSessionFilter.all:
-        currentList = allSessions;
-        break;
-      case SpeakerSessionFilter.bookmarked:
-        currentList = bookmarkedSessions;
-        break;
+    if (_isCalendarView) {
+      currentList = myCalendarSessions;
+    } else {
+      switch (_selectedFilter) {
+        case SpeakerSessionFilter.mySessions:
+          currentList = mySessions;
+          break;
+        case SpeakerSessionFilter.otherSessions:
+          currentList = otherSessions;
+          break;
+        case SpeakerSessionFilter.bookmarked:
+          currentList = bookmarkedSessions;
+          break;
+      }
     }
 
-    // Extract calendar unique dates from available sessions (first try current list, fallback to combined)
-    final currentDates = _extractUniqueDates(currentList);
-    final combinedDates = _extractUniqueDates([...mySessions, ...allSessions]);
-    final uniqueDates = currentDates.isNotEmpty ? currentDates : combinedDates;
+    // Extract calendar unique dates from myCalendarSessions in My Calendar mode
+    final uniqueDates = _isCalendarView
+        ? _extractUniqueDates(myCalendarSessions)
+        : _extractUniqueDates([...mySessions, ...allSessions]);
 
     // Apply Search, Date, and Time Filter in List View
     final query = _searchQuery.toLowerCase().trim();
@@ -922,6 +951,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
               onTap: () {
                 setState(() {
                   _isCalendarView = !_isCalendarView;
+                  if (_isCalendarView && _selectedFilter == SpeakerSessionFilter.otherSessions) {
+                    _selectedFilter = SpeakerSessionFilter.mySessions;
+                  }
                 });
               },
               child: Container(
@@ -954,7 +986,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _isCalendarView ? 'List View' : 'Calendar View',
+                      _isCalendarView ? 'List View' : 'My Calendar',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -1095,51 +1127,53 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  // Filter Chips: MY SESSIONS, ALL SESSIONS, BOOKMARKED
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        _buildFilterChip(
-                          label: 'MY SESSIONS',
-                          isSelected: _selectedFilter == SpeakerSessionFilter.mySessions,
-                          count: mySessions.length,
-                          icon: Icons.person_pin_outlined,
-                          onTap: () {
-                            setState(() {
-                              _selectedFilter = SpeakerSessionFilter.mySessions;
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(
-                          label: 'ALL SESSIONS',
-                          isSelected: _selectedFilter == SpeakerSessionFilter.all,
-                          count: allSessions.length,
-                          icon: Icons.groups_outlined,
-                          onTap: () {
-                            setState(() {
-                              _selectedFilter = SpeakerSessionFilter.all;
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(
-                          label: 'BOOKMARKED',
-                          isSelected: _selectedFilter == SpeakerSessionFilter.bookmarked,
-                          count: bookmarkedSessions.length,
-                          icon: Icons.bookmark,
-                          onTap: () {
-                            setState(() {
-                              _selectedFilter = SpeakerSessionFilter.bookmarked;
-                            });
-                          },
-                        ),
-                      ],
+                  if (!_isCalendarView) ...[
+                    const SizedBox(height: 10),
+                    // Filter Chips: MY SESSIONS, OTHER SESSIONS, BOOKMARKED
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildFilterChip(
+                            label: 'MY SESSIONS',
+                            isSelected: _selectedFilter == SpeakerSessionFilter.mySessions,
+                            count: mySessions.length,
+                            icon: Icons.person_pin_outlined,
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = SpeakerSessionFilter.mySessions;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            label: 'OTHER SESSIONS',
+                            isSelected: _selectedFilter == SpeakerSessionFilter.otherSessions,
+                            count: otherSessions.length,
+                            icon: Icons.groups_outlined,
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = SpeakerSessionFilter.otherSessions;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            label: 'BOOKMARKED',
+                            isSelected: _selectedFilter == SpeakerSessionFilter.bookmarked,
+                            count: bookmarkedSessions.length,
+                            icon: Icons.bookmark,
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = SpeakerSessionFilter.bookmarked;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
 
                   // Active Filter Indicator Pill (Clear with 1 tap)
                   if (!_isCalendarView && (_selectedDate != null || _customStartTime != null || _customEndTime != null)) ...[
@@ -1230,7 +1264,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                       )
                     : !_isCalendarView
                         ? _buildListView(filteredList)
-                        : _buildCalendarView(currentList, uniqueDates),
+                        : _buildCalendarView(currentList, uniqueDates, mySessions),
               ),
             ),
           ],
@@ -1320,8 +1354,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       case SpeakerSessionFilter.mySessions:
         sectionTitle = 'My Sessions';
         break;
-      case SpeakerSessionFilter.all:
-        sectionTitle = 'Summit Sessions';
+      case SpeakerSessionFilter.otherSessions:
+        sectionTitle = 'Other Sessions';
         break;
       case SpeakerSessionFilter.bookmarked:
         sectionTitle = 'Bookmarked Sessions';
@@ -1338,6 +1372,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       } else if (_selectedFilter == SpeakerSessionFilter.mySessions) {
         emptyMessage = 'No speaker sessions confirmed yet';
         emptySubtitle = 'Your confirmed speaker sessions will appear here once assigned.';
+      } else if (_selectedFilter == SpeakerSessionFilter.otherSessions) {
+        emptyMessage = 'No other sessions found';
+        emptySubtitle = 'Sessions from other speakers will appear here.';
       } else if (_selectedDate != null || _customStartTime != null || _customEndTime != null) {
         emptyMessage = 'No sessions match the selected date & timings filter';
         emptySubtitle = 'Try resetting or adjusting the date or timings filter above.';
@@ -1436,7 +1473,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   // ==========================================
   // Calendar Flow View Mode (Neat Flow with Prominent Time)
   // ==========================================
-  Widget _buildCalendarView(List<SessionItem> baseList, List<DateTime> uniqueDates) {
+  Widget _buildCalendarView(List<SessionItem> baseList, List<DateTime> uniqueDates, List<SessionItem> mySessions) {
     if (uniqueDates.isEmpty) {
       return _buildListView(baseList);
     }
@@ -1453,10 +1490,17 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           s.speakerName.toLowerCase().contains(query) ||
           s.speakerTitle.toLowerCase().contains(query) ||
           s.location.toLowerCase().contains(query) ||
-          (s.keywords ?? '').toLowerCase().contains(query);
+          (s.keywords ?? '').toLowerCase().contains(query) ||
+          (s.coordinatorName ?? '').toLowerCase().contains(query);
 
       return matchesSearch && _matchesDate(s, activeDate);
     }).toList();
+
+    daySessions.sort((a, b) {
+      final aMin = _extractSessionStartMinutes(a) ?? 0;
+      final bMin = _extractSessionStartMinutes(b) ?? 0;
+      return aMin.compareTo(bMin);
+    });
 
     const monthNames = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -1634,10 +1678,21 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                               const SizedBox(height: 14),
                               Text(
                                 'No sessions on ${activeDate.day} ${monthNames[activeDate.month - 1]}',
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Your speaker & bookmarked sessions for this day will appear here.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textLight,
+                                  height: 1.4,
                                 ),
                               ),
                             ],
@@ -1657,6 +1712,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                       session,
                       isFirst: index == 0,
                       isLast: index == daySessions.length - 1,
+                      isMySession: _isMySession(session, mySessions),
                     );
                   },
                 ),
@@ -1696,9 +1752,13 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     };
   }
 
-  Widget _buildCalendarTimelineItem(SessionItem session, {required bool isFirst, required bool isLast}) {
+  Widget _buildCalendarTimelineItem(
+    SessionItem session, {
+    required bool isFirst,
+    required bool isLast,
+    required bool isMySession,
+  }) {
     final timeParts = _extractTimelineTimeParts(session);
-    final isMySession = _selectedFilter == SpeakerSessionFilter.mySessions;
 
     return IntrinsicHeight(
       child: Row(
@@ -2438,71 +2498,74 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     final myDisplayTime = _getSessionDisplayTime(s);
     final myDisplayDate = _formatDateForDisplay(s);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.tileBorder,
-          width: 1.5,
+    void openDetail() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SpeakerSessionDetailScreen(
+            title: s.title,
+            date: myDisplayDate.isNotEmpty ? myDisplayDate : (s.date.isNotEmpty ? s.date : (s.scheduleDate ?? '')),
+            time: myDisplayTime.isNotEmpty ? myDisplayTime : (s.time.isNotEmpty ? s.time : (s.startTime != null && s.endTime != null ? '${s.startTime} - ${s.endTime}' : '')),
+            location: s.location,
+            tag: '',
+            coordinatorName: s.coordinatorName ?? '',
+            coordinatorPhone: s.coordinatorPhone ?? '',
+            coordinatorEmail: s.coordinatorEmail ?? '',
+            description: s.description,
+            topicId: s.topicId,
+            assignmentId: s.assignmentId,
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+      );
+    }
+
+    return GestureDetector(
+      onTap: openDetail,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppColors.tileBorder,
+            width: 1.5,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title
-          Text(
-            s.title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.35,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
-          ),
-          const SizedBox(height: 10),
-
-          // Speaker / Coordinator Info
-          Row(
-            children: [
-              const Icon(Icons.person_outline, size: 14, color: AppColors.textLight),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  s.coordinatorName != null && s.coordinatorName!.isNotEmpty
-                      ? 'Coord: ${s.coordinatorName}'
-                      : 'Speaker: $displaySpeaker',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Text(
+              s.title.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                height: 1.35,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
 
-          // Location
-          if (s.location.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            // Speaker / Coordinator Info
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
+                const Icon(Icons.person_outline, size: 14, color: AppColors.textLight),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    s.location.toUpperCase(),
+                    s.coordinatorName != null && s.coordinatorName!.isNotEmpty
+                        ? 'Coord: ${s.coordinatorName}'
+                        : 'Speaker: $displaySpeaker',
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
@@ -2510,87 +2573,86 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                 ),
               ],
             ),
-          ],
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.tileBorder),
-          const SizedBox(height: 10),
 
-          // Last Row: Clean Highlighted Date & Time (Stacked) on Left, Details on Right
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (myDisplayDate.isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.calendar_today_rounded, size: 13, color: AppColors.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            myDisplayDate.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    if (myDisplayDate.isNotEmpty && myDisplayTime.isNotEmpty)
-                      const SizedBox(height: 4),
-                    if (myDisplayTime.isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.access_time_filled_rounded, size: 13, color: Color(0xFFD97706)),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              myDisplayTime.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SpeakerSessionDetailScreen(
-                        title: s.title,
-                        date: myDisplayDate.isNotEmpty ? myDisplayDate : (s.date.isNotEmpty ? s.date : (s.scheduleDate ?? '')),
-                        time: myDisplayTime.isNotEmpty ? myDisplayTime : (s.time.isNotEmpty ? s.time : (s.startTime != null && s.endTime != null ? '${s.startTime} - ${s.endTime}' : '')),
-                        location: s.location,
-                        tag: '',
-                        coordinatorName: s.coordinatorName ?? '',
-                        coordinatorPhone: s.coordinatorPhone ?? '',
-                        coordinatorEmail: s.coordinatorEmail ?? '',
-                        description: s.description,
-                        topicId: s.topicId,
-                        assignmentId: s.assignmentId,
+            // Location
+            if (s.location.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      s.location.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  );
-                },
-                child: Row(
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.tileBorder),
+            const SizedBox(height: 10),
+
+            // Last Row: Clean Highlighted Date & Time (Stacked) on Left, Details on Right
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (myDisplayDate.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, size: 13, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              myDisplayDate.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (myDisplayDate.isNotEmpty && myDisplayTime.isNotEmpty)
+                        const SizedBox(height: 4),
+                      if (myDisplayTime.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.access_time_filled_rounded, size: 13, color: Color(0xFFD97706)),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                myDisplayTime.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
                     Text(
@@ -2609,10 +2671,10 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
