@@ -329,9 +329,9 @@ class SessionsProvider extends ChangeNotifier {
           ? await ApiService.unbookmarkSession(assignmentId: assignmentId, accessToken: accessToken)
           : await ApiService.bookmarkSession(assignmentId: assignmentId, accessToken: accessToken);
 
+      final dynamic data = _safeJsonDecode(response.body);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == true) {
+        if (data is Map && data['status'] == true) {
           session.isBookmarked = !isCurrentlyBookmarked;
           for (final s in _sessions) {
             if (s.id == sessionId || (s.assignmentId != null && s.assignmentId == session.assignmentId)) {
@@ -345,10 +345,15 @@ class SessionsProvider extends ChangeNotifier {
           }
           notifyListeners();
           return null; // Success
+        } else if (data is Map && data['message'] != null) {
+          return data['message'].toString();
         } else {
-          return data['message'] ?? 'Failed to update bookmark status';
+          return 'Failed to update bookmark status';
         }
       } else {
+        if (data is Map && data['message'] != null && data['message'].toString().trim().isNotEmpty) {
+          return data['message'].toString();
+        }
         return 'Server error: ${response.statusCode}';
       }
     } catch (e, stack) {
@@ -784,11 +789,45 @@ class SessionsProvider extends ChangeNotifier {
         if (data['status'] == true) {
           final List topicsJson = data['data'] ?? [];
           final confirmedTopics = topicsJson.where((t) => t['status'] == 'Confirmed').toList();
+          
+          // Initial map so topics appear immediately
           _mySessions = confirmedTopics.asMap().entries.map((entry) {
             return _mapTopicToSession(entry.value, entry.key);
           }).toList();
           _enrichMySessionsFromConfirmed();
           notifyListeners();
+
+          // Fetch topic_details in parallel to obtain full session_details (hall, slot, schedule_date, start_time, end_time)
+          if (confirmedTopics.isNotEmpty) {
+            final detailFutures = confirmedTopics.map((topic) async {
+              final topicId = topic['topic_id']?.toString() ?? topic['abstract_id']?.toString() ?? '';
+              if (topicId.isNotEmpty) {
+                try {
+                  final detailResp = await ApiService.fetchSpeakerTopicDetails(
+                    topicId: topicId,
+                    accessToken: accessToken,
+                  );
+                  if (detailResp.statusCode == 200) {
+                    final detailData = _safeJsonDecode(detailResp.body);
+                    if (detailData['status'] == true && detailData['data'] is Map<String, dynamic>) {
+                      return detailData['data'] as Map<String, dynamic>;
+                    }
+                  }
+                } catch (e, stack) {
+                  CustomLogger.logError('Fetch topic details for $topicId in fetchMyConfirmedSessions failed', e, stack);
+                }
+              }
+              return topic is Map<String, dynamic> ? topic : Map<String, dynamic>.from(topic);
+            }).toList();
+
+            final detailedTopics = await Future.wait(detailFutures);
+            _mySessions = detailedTopics.asMap().entries.map((entry) {
+              return _mapTopicToSession(entry.value, entry.key);
+            }).toList();
+            _enrichMySessionsFromConfirmed();
+            notifyListeners();
+          }
+
           return true;
         } else {
           _errorMessage = data['message'] ?? 'Failed to load speaker sessions';

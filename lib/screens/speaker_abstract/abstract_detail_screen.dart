@@ -114,11 +114,20 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
     final String slotLabel = sessDetails?['slot_label']?.toString() ?? details?['slot_label']?.toString() ?? '';
 
     SessionItem? matchedSession;
+    final topicTitle = (details?['title'] ?? details?['abstract_title'] ?? widget.initialTitle).toString().toLowerCase().trim();
     try {
       matchedSession = sessionsProv.mySessions.firstWhere(
-        (s) => s.topicId == widget.abstractId || s.id.toString() == widget.abstractId,
+        (s) => s.topicId == widget.abstractId || s.id.toString() == widget.abstractId || (topicTitle.isNotEmpty && s.title.toLowerCase().trim() == topicTitle),
       );
     } catch (_) {}
+
+    if (matchedSession == null) {
+      try {
+        matchedSession = sessionsProv.sessions.firstWhere(
+          (s) => s.topicId == widget.abstractId || s.id.toString() == widget.abstractId || (topicTitle.isNotEmpty && s.title.toLowerCase().trim() == topicTitle),
+        );
+      } catch (_) {}
+    }
 
     if (displayHall.isEmpty && matchedSession != null) {
       displayHall = matchedSession.location;
@@ -337,7 +346,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                             _buildHallDetailRow(
                               Icons.meeting_room_outlined,
                               'Hall / Location',
-                              displayHall.isNotEmpty ? displayHall : 'Confirmed Hall Assigned',
+                              displayHall.isNotEmpty ? displayHall : 'To be announced',
                               isHighlight: true,
                             ),
                             if (dateStr.isNotEmpty) ...[

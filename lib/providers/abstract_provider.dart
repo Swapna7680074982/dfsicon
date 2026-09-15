@@ -335,8 +335,45 @@ class AbstractProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
-          _myTopics = List<Map<String, dynamic>>.from(data['data'] ?? []);
+          final List rawList = data['data'] ?? [];
+          _myTopics = List<Map<String, dynamic>>.from(rawList);
           notifyListeners();
+
+          // Fetch topic_details in parallel for confirmed topics so session_details (hall, venue, slot, etc.) are available immediately
+          final confirmedTopics = _myTopics.where((t) => t['status'] == 'Confirmed').toList();
+          if (confirmedTopics.isNotEmpty) {
+            final futures = confirmedTopics.map((topic) async {
+              final topicId = topic['topic_id']?.toString() ?? topic['abstract_id']?.toString() ?? '';
+              if (topicId.isNotEmpty) {
+                try {
+                  final detailResp = await ApiService.fetchSpeakerTopicDetails(
+                    topicId: topicId,
+                    accessToken: accessToken,
+                  );
+                  if (detailResp.statusCode == 200) {
+                    final detailData = json.decode(detailResp.body);
+                    if (detailData['status'] == true && detailData['data'] is Map<String, dynamic>) {
+                      return detailData['data'] as Map<String, dynamic>;
+                    }
+                  }
+                } catch (e, stack) {
+                  CustomLogger.logError('Fetch topic details for $topicId in fetchMyTopics failed', e, stack);
+                }
+              }
+              return topic;
+            }).toList();
+
+            final detailedList = await Future.wait(futures);
+            for (final detailed in detailedList) {
+              final id = detailed['topic_id']?.toString() ?? detailed['abstract_id']?.toString() ?? '';
+              final index = _myTopics.indexWhere((t) => (t['topic_id']?.toString() ?? t['abstract_id']?.toString()) == id);
+              if (index != -1) {
+                _myTopics[index] = detailed;
+              }
+            }
+            notifyListeners();
+          }
+
           return true;
         }
       }

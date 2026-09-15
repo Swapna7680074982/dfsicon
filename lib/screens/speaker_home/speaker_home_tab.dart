@@ -390,10 +390,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         Text(
                           homeProvider.eventInfo.name,
                           style: const TextStyle(
-                            fontSize: 24,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
-                            letterSpacing: 0.2,
+                            letterSpacing: 0.1,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -763,9 +763,8 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             child: Builder(
                               builder: (context) {
                                 final topicMap = myTopics.first;
-                                final statusStr = (topicMap['status'] ?? '').toString();
                                 final hallLoc = _getHallLocationString(topicMap, sessionsProvider);
-                                final hasHall = statusStr == 'Confirmed' || hallLoc.isNotEmpty;
+                                final subtitleDateStr = _getTopicScheduleOrCreatedDate(topicMap, sessionsProvider);
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -779,7 +778,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
-                                            'ID: ${topicMap['topic_id']}',
+                                            'ID: ${topicMap['topic_id'] ?? topicMap['abstract_id'] ?? ''}',
                                             style: const TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
@@ -793,7 +792,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      (topicMap['title'] ?? '').toString(),
+                                      (topicMap['title'] ?? topicMap['abstract_title'] ?? '').toString().toUpperCase(),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
@@ -804,13 +803,13 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${(topicMap['category_of_submission'] ?? 'Oral Presentation').toString()} · ${TimeFormatter.formatString(topicMap['created_on']?.toString() ?? '')}',
+                                      '${(topicMap['category_of_submission'] ?? 'Oral Presentation').toString().toUpperCase()} · $subtitleDateStr',
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: AppColors.textLight,
                                       ),
                                     ),
-                                    if (hasHall) ...[
+                                    if (hallLoc.isNotEmpty) ...[
                                       const SizedBox(height: 6),
                                       Row(
                                         children: [
@@ -822,9 +821,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                           const SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
-                                              hallLoc.isNotEmpty
-                                                  ? (hallLoc.toLowerCase().startsWith('hall') ? hallLoc : 'Hall: $hallLoc')
-                                                  : 'Hall: Confirmed & Assigned',
+                                              hallLoc.toLowerCase().startsWith('hall') ? hallLoc : 'Hall: $hallLoc',
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w600,
@@ -1031,8 +1028,16 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
   String _getHallLocationString(Map<String, dynamic> topicData, SessionsProvider? sessionsProv) {
     final sessDetails = (topicData['session_details'] is Map)
         ? topicData['session_details'] as Map<String, dynamic>
-        : null;
-    final hallMap = (topicData['hall'] is Map) ? topicData['hall'] as Map<String, dynamic> : null;
+        : (topicData['session'] is Map)
+            ? topicData['session'] as Map<String, dynamic>
+            : (topicData['session_data'] is Map)
+                ? topicData['session_data'] as Map<String, dynamic>
+                : (topicData['slot'] is Map)
+                    ? topicData['slot'] as Map<String, dynamic>
+                    : null;
+    final hallMap = (topicData['hall'] is Map)
+        ? topicData['hall'] as Map<String, dynamic>
+        : (sessDetails?['hall'] is Map ? sessDetails!['hall'] as Map<String, dynamic> : null);
 
     final String hallLabel = sessDetails?['hall_label']?.toString() ??
         topicData['hall_label']?.toString() ??
@@ -1043,6 +1048,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
         topicData['hall_name']?.toString() ??
         hallMap?['hall_name']?.toString() ??
         (topicData['hall'] is String ? topicData['hall'].toString() : null) ??
+        (sessDetails?['hall'] is String ? sessDetails!['hall'].toString() : null) ??
         '';
 
     final String displayHall = hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim();
@@ -1058,10 +1064,23 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
 
     if (sessionsProv != null) {
       final topicIdStr = topicData['topic_id']?.toString() ?? topicData['abstract_id']?.toString() ?? '';
-      if (topicIdStr.isNotEmpty) {
+      final titleStr = (topicData['title'] ?? topicData['abstract_title'] ?? '').toString().toLowerCase().trim();
+
+      if (topicIdStr.isNotEmpty || titleStr.isNotEmpty) {
         try {
           final match = sessionsProv.mySessions.firstWhere(
-            (s) => s.topicId == topicIdStr || s.id.toString() == topicIdStr,
+            (s) => (topicIdStr.isNotEmpty && (s.topicId == topicIdStr || s.id.toString() == topicIdStr)) ||
+                (titleStr.isNotEmpty && s.title.toLowerCase().trim() == titleStr),
+          );
+          if (match.location.isNotEmpty) {
+            return match.location;
+          }
+        } catch (_) {}
+
+        try {
+          final match = sessionsProv.sessions.firstWhere(
+            (s) => (topicIdStr.isNotEmpty && (s.topicId == topicIdStr || s.id.toString() == topicIdStr)) ||
+                (titleStr.isNotEmpty && s.title.toLowerCase().trim() == titleStr),
           );
           if (match.location.isNotEmpty) {
             return match.location;
@@ -1070,6 +1089,85 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
       }
     }
 
+    return '';
+  }
+
+  String _getTopicScheduleOrCreatedDate(Map<String, dynamic> topicData, SessionsProvider? sessionsProv) {
+    final sessDetails = (topicData['session_details'] is Map)
+        ? topicData['session_details'] as Map<String, dynamic>
+        : (topicData['session'] is Map)
+            ? topicData['session'] as Map<String, dynamic>
+            : (topicData['session_data'] is Map)
+                ? topicData['session_data'] as Map<String, dynamic>
+                : (topicData['slot'] is Map)
+                    ? topicData['slot'] as Map<String, dynamic>
+                    : null;
+
+    final String scheduleDateStr = sessDetails?['schedule_date']?.toString() ??
+        topicData['schedule_date']?.toString() ??
+        '';
+    final String startTime = sessDetails?['start_time']?.toString() ??
+        topicData['start_time']?.toString() ??
+        '';
+    final String endTime = sessDetails?['end_time']?.toString() ??
+        topicData['end_time']?.toString() ??
+        '';
+    final String slotLabel = sessDetails?['slot_label']?.toString() ??
+        topicData['slot_label']?.toString() ??
+        '';
+
+    String matchedDate = '';
+    String matchedTime = '';
+
+    if (sessionsProv != null) {
+      final topicIdStr = topicData['topic_id']?.toString() ?? topicData['abstract_id']?.toString() ?? '';
+      final titleStr = (topicData['title'] ?? topicData['abstract_title'] ?? '').toString().toLowerCase().trim();
+
+      if (topicIdStr.isNotEmpty || titleStr.isNotEmpty) {
+        try {
+          final match = sessionsProv.mySessions.firstWhere(
+            (s) => (topicIdStr.isNotEmpty && (s.topicId == topicIdStr || s.id.toString() == topicIdStr)) ||
+                (titleStr.isNotEmpty && s.title.toLowerCase().trim() == titleStr),
+          );
+          matchedDate = match.date.isNotEmpty ? match.date : (match.scheduleDate ?? '');
+          matchedTime = match.time.isNotEmpty ? match.time : (match.startTime != null && match.endTime != null ? '${TimeFormatter.formatTime(match.startTime!)} - ${TimeFormatter.formatTime(match.endTime!)}' : '');
+        } catch (_) {}
+
+        if (matchedDate.isEmpty && matchedTime.isEmpty) {
+          try {
+            final match = sessionsProv.sessions.firstWhere(
+              (s) => (topicIdStr.isNotEmpty && (s.topicId == topicIdStr || s.id.toString() == topicIdStr)) ||
+                  (titleStr.isNotEmpty && s.title.toLowerCase().trim() == titleStr),
+            );
+            matchedDate = match.date.isNotEmpty ? match.date : (match.scheduleDate ?? '');
+            matchedTime = match.time.isNotEmpty ? match.time : (match.startTime != null && match.endTime != null ? '${TimeFormatter.formatTime(match.startTime!)} - ${TimeFormatter.formatTime(match.endTime!)}' : '');
+          } catch (_) {}
+        }
+      }
+    }
+
+    final finalScheduleDate = scheduleDateStr.isNotEmpty ? scheduleDateStr : matchedDate;
+    String finalTime = '';
+    if (startTime.isNotEmpty && endTime.isNotEmpty && startTime.toLowerCase() != 'null' && endTime.toLowerCase() != 'null') {
+      finalTime = '${TimeFormatter.formatTime(startTime)} - ${TimeFormatter.formatTime(endTime)}';
+    } else if (slotLabel.isNotEmpty) {
+      finalTime = slotLabel;
+    } else if (matchedTime.isNotEmpty) {
+      finalTime = matchedTime;
+    }
+
+    if (finalScheduleDate.isNotEmpty) {
+      final formattedDate = TimeFormatter.formatString(finalScheduleDate);
+      if (finalTime.isNotEmpty) {
+        return '$formattedDate · $finalTime';
+      }
+      return formattedDate;
+    }
+
+    final createdOn = topicData['created_on']?.toString() ?? '';
+    if (createdOn.isNotEmpty) {
+      return TimeFormatter.formatString(createdOn);
+    }
     return '';
   }
 
