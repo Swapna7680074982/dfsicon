@@ -9,6 +9,7 @@ import '../../providers/sessions_provider.dart';
 import '../../providers/workshops_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/abstract_provider.dart';
+import '../../providers/admin_provider.dart';
 import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
@@ -18,6 +19,7 @@ import '../gallery/gallery_tab.dart';
 import '../speaker_home/speaker_home_tab.dart';
 import '../speaker_abstract/speaker_abstract_tab.dart';
 import '../speaker_sessions/speaker_sessions_tab.dart';
+import '../admin/admin_dashboard_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,7 +31,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressTime;
-  bool? _lastSpeakerMode;
+  String? _lastRoleCode;
 
   @override
   void initState() {
@@ -37,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     MyApp.resetRedirectFlag();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      _lastSpeakerMode = auth.isSpeaker;
+      _lastRoleCode = auth.isAdmin ? 'AD' : (auth.isSpeaker ? 'SK' : 'DL');
       _loadDashboardData(auth, forceRefresh: false);
     });
   }
@@ -46,8 +48,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final auth = Provider.of<AuthProvider>(context);
-    if (_lastSpeakerMode != null && _lastSpeakerMode != auth.isSpeaker) {
-      _lastSpeakerMode = auth.isSpeaker;
+    final currentRole = auth.isAdmin ? 'AD' : (auth.isSpeaker ? 'SK' : 'DL');
+    if (_lastRoleCode != null && _lastRoleCode != currentRole) {
+      _lastRoleCode = currentRole;
       _currentIndex = 0;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadDashboardData(auth, forceRefresh: true);
@@ -63,11 +66,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final workshopsProvider = Provider.of<WorkshopsProvider>(context, listen: false);
     final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
 
     try {
       auth.registerDeviceToken();
       auth.fetchMyQr(forceRefresh: forceRefresh);
       notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
+
+      if (auth.isAdmin) {
+        await adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh);
+        return;
+      }
 
       await homeProvider.fetchSummits(auth.accessToken);
       if (!mounted) return;
@@ -104,7 +113,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final isAdmin = auth.isAdmin;
     final isSpeaker = auth.isSpeaker;
+
+    if (isAdmin) {
+      return const AdminDashboardTab();
+    }
 
     final List<Widget> tabs = isSpeaker
         ? [

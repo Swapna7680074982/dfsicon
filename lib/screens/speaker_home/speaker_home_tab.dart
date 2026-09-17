@@ -320,7 +320,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${mySessions.length} sessions confirmed',
+                              '${mySessions.length} sessions assigned',
                               style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -390,7 +390,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         Text(
                           homeProvider.eventInfo.name,
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
                             letterSpacing: 0.1,
@@ -611,7 +611,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     ),
                     child: const Center(
                       child: Text(
-                        'No sessions confirmed yet',
+                        'No sessions assigned yet',
                         style: TextStyle(color: AppColors.textLight, fontSize: 13),
                       ),
                     ),
@@ -622,7 +622,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                     GestureDetector(
                       onTap: () {
                         final s = mySessions[i];
-                        final String tag = (s.keywords ?? 'Health Tech').split(',').first;
+                        final String tag = (s.keywords ?? '').split(',').first.trim();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1172,18 +1172,24 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
   }
 
   Widget _buildStatusBadge(String status) {
+    final isConfirmed = status.toLowerCase() == 'confirmed';
+    final isApproved = status.toLowerCase() == 'approved';
+    final displayStatus = isConfirmed
+        ? 'Slot Assigned'
+        : (isApproved ? 'Slot Not Assigned' : status);
+
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
 
-    if (status == 'Confirmed') {
+    if (isConfirmed) {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
     } else {
-      badgeBgColor = const Color(0xFFEFF6FF);
-      badgeTextColor = const Color(0xFF3B82F6);
-      badgeIcon = Icons.check_circle_outline;
+      badgeBgColor = const Color(0xFFFFFBEB);
+      badgeTextColor = const Color(0xFFD97706);
+      badgeIcon = Icons.pending_outlined;
     }
 
     return Container(
@@ -1201,7 +1207,7 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
           ),
           const SizedBox(width: 2),
           Text(
-            status,
+            displayStatus,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
@@ -1237,36 +1243,13 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'Confirmed',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF10B981),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           if (time.isNotEmpty || date.isNotEmpty) ...[
             const SizedBox(height: 18),
@@ -1275,10 +1258,10 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
               time.isNotEmpty && date.isNotEmpty ? '$time ($date)' : '$time$date',
             ),
           ],
-          if (location.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _buildSessionDetailItem(Icons.location_on_outlined, location),
-          ],
+          // if (location.isNotEmpty) ...[
+          //   const SizedBox(height: 10),
+          //   _buildSessionDetailItem(Icons.location_on_outlined, location),
+          // ],
         ],
       ),
     );

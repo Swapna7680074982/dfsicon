@@ -552,44 +552,6 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               ),
               const SizedBox(height: 20),
             ],
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    (widget.session.keywords != null && widget.session.keywords!.isNotEmpty)
-                        ? widget.session.keywords!.split(',').first.trim()
-                        : 'Health Tech',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Confirmed',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
             Text(
               widget.session.title.toUpperCase(),
               style: const TextStyle(
@@ -831,16 +793,44 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.session.speakerTitle.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        if (widget.session.speakerDesignation != null && widget.session.speakerDesignation!.isNotEmpty) ...[
+                          const SizedBox(height: 2.5),
+                          Text(
+                            widget.session.speakerDesignation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
+                        ],
+                        if (widget.session.speakerOrganisation != null && widget.session.speakerOrganisation!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.session.speakerOrganisation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if ((widget.session.speakerDesignation == null || widget.session.speakerDesignation!.isEmpty) &&
+                            (widget.session.speakerOrganisation == null || widget.session.speakerOrganisation!.isEmpty) &&
+                            widget.session.speakerTitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.session.speakerTitle.toUpperCase(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

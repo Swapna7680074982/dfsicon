@@ -340,7 +340,8 @@ class HomeTab extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '$time • $hall',
+                        // '$time • $hall',
+                        time,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1012,7 +1013,7 @@ class HomeTab extends StatelessWidget {
                         bottomRight: Radius.circular(32),
                       ),
                     ),
-                    padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
+                    padding: const EdgeInsets.fromLTRB(24, 60, 24, 30),
                     child: Row(
                       children: [
                         Expanded(
@@ -1020,7 +1021,7 @@ class HomeTab extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Welcome Back',
+                                'Welcome back',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.white70,
@@ -1321,7 +1322,6 @@ class HomeTab extends StatelessWidget {
                                         homeProvider.stats[0].iconBgColor,
                                     value: homeProvider.stats[0].value,
                                     label: homeProvider.stats[0].label,
-                                    onTap: onNavigateToSessions,
                                   ),
                                   const SizedBox(width: 8),
                                   _buildStatCard(
@@ -1340,15 +1340,6 @@ class HomeTab extends StatelessWidget {
                                         homeProvider.stats[4].iconBgColor,
                                     value: homeProvider.stats[4].value,
                                     label: homeProvider.stats[4].label,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const WorkshopsListScreen(),
-                                        ),
-                                      );
-                                    },
                                   ),
                                   const SizedBox(width: 8),
                                   _buildStatCard(
@@ -1358,15 +1349,6 @@ class HomeTab extends StatelessWidget {
                                         homeProvider.stats[2].iconBgColor,
                                     value: homeProvider.stats[2].value,
                                     label: homeProvider.stats[2].label,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const ExhibitorsListScreen(),
-                                        ),
-                                      );
-                                    },
                                   ),
                                 ],
                               ),

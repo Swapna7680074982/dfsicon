@@ -445,18 +445,24 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
     final sessionsProv = Provider.of<SessionsProvider>(context, listen: false);
     final hallLoc = _getHallLocationString(abs, sessionsProv);
 
+    final isConfirmed = status.toLowerCase() == 'confirmed';
+    final isApproved = status.toLowerCase() == 'approved';
+    final displayStatus = isConfirmed
+        ? 'SLOT ASSIGNED'
+        : (isApproved ? 'SLOT NOT ASSIGNED' : status.toUpperCase());
+
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
 
-    if (status == 'Confirmed') {
+    if (isConfirmed) {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
     } else {
-      badgeBgColor = const Color(0xFFEFF6FF);
-      badgeTextColor = const Color(0xFF3B82F6);
-      badgeIcon = Icons.check_circle_outline;
+      badgeBgColor = const Color(0xFFFFFBEB);
+      badgeTextColor = const Color(0xFFD97706);
+      badgeIcon = Icons.pending_outlined;
     }
 
     final String displayVersion = "ID: ${abs['topic_id']}";
@@ -549,7 +555,7 @@ class _SpeakerAbstractTabState extends State<SpeakerAbstractTab> {
                             ),
                             const SizedBox(width: 2),
                             Text(
-                              status.toUpperCase(),
+                              displayStatus,
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,

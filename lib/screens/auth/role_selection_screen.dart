@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/photo_provider.dart';
 import '../../main.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -22,6 +24,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.selectedRole != null && auth.selectedRole!.isNotEmpty) {
       _selectedMode = auth.selectedRole!;
+    } else if (auth.isAdminRole) {
+      _selectedMode = 'AD';
+    } else if (auth.isSpeakerRole) {
+      _selectedMode = 'SK';
+    } else {
+      _selectedMode = 'DL';
     }
   }
 
@@ -50,6 +58,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final photoProvider = Provider.of<PhotoProvider>(context);
     final String rawName = authProvider.userName.trim();
     final String doctorName = rawName.isNotEmpty ? rawName : 'Doctor';
     final String initials = _getInitials(doctorName);
@@ -113,17 +122,48 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         ),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                              child: Text(
-                                initials,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                  width: 1.0,
                                 ),
                               ),
+                              clipBehavior: Clip.antiAlias,
+                              child: photoProvider.hasPhoto
+                                  ? Image.file(
+                                      File(photoProvider.imagePath!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : authProvider.hasValidProfileImage
+                                      ? Image.network(
+                                          authProvider.profileImage,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Center(
+                                            child: Text(
+                                              initials,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            initials,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -176,6 +216,25 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           ),
                         ),
                       ),
+
+                      // Mode Option: Admin Portal (If Admin Role)
+                      if (authProvider.isAdminRole) ...[
+                        _buildNeatRoleCard(
+                          modeKey: 'AD',
+                          badgeColor: const Color(0xFF6366F1),
+                          badgeBg: const Color(0xFFEEF2FF),
+                          title: 'Admin Portal',
+                          description:
+                              'Manage conference overview, all speakers, topics, workshops, sponsors & booths.',
+                          icon: Icons.admin_panel_settings_rounded,
+                          features: [
+                            'Conference Stats',
+                            'Speakers & Topics',
+                            'Workshops & Stalls',
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Mode Option 1: Speaker Portal
                       _buildNeatRoleCard(
@@ -279,9 +338,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      _selectedMode == 'SK'
-                                          ? 'Continue as Speaker'
-                                          : 'Continue as Delegate',
+                                      _selectedMode == 'AD'
+                                          ? 'Continue as Admin'
+                                          : (_selectedMode == 'SK'
+                                              ? 'Continue as Speaker'
+                                              : 'Continue as Delegate'),
                                       style: const TextStyle(
                                         fontSize: 14.5,
                                         fontWeight: FontWeight.w600,

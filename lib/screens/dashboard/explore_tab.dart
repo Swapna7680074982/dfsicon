@@ -98,8 +98,8 @@ class _ExploreTabState extends State<ExploreTab> {
                 _buildCategoryCard(
                   context,
                   title: 'EXHIBITORS',
-                  subtitle: '120+ Healthcare brands, startups & booths',
-                  badgeText: '120+ Stalls',
+                  subtitle: '100+ Healthcare brands, startups & booths',
+                  badgeText: '100+ Stalls',
                   icon: Icons.storefront_rounded,
                   iconBg: const Color(0xFFEEECF9),
                   iconColor: AppColors.primary,

@@ -474,7 +474,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
-                              "Are you a Doctor?",
+                              "Not registered?",
                               style: TextStyle(
                                 fontSize: 15,
                                 color: AppColors.textSecondary,
@@ -502,10 +502,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 }
                               },
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 6),
                               ),
                               child: const Text(
-                                'Add Doctor',
+                                'Register here',
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,

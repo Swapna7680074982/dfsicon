@@ -75,5 +75,25 @@ class ApiUrls {
   static const String qaDeleteReply = '$baseUrl/qa/delete_reply';
   static const String qaMyQuestions = '$baseUrl/qa/my_questions';
   static const String qaSessionThread = '$baseUrl/qa/session_thread';
+
+  // Admin Module APIs
+  static const String adminDashboardStats = '$baseUrl/admin/dashboard_stats';
+  static const String adminAllSpeakers = '$baseUrl/admin/all_speakers';
+  static const String adminSpeakerDetails = '$baseUrl/admin/speaker_details';
+  static const String adminAllDelegates = '$baseUrl/admin/all_delegates';
+  static const String adminDelegateDetails = '$baseUrl/admin/delegate_details';
+  static const String adminAllTopics = '$baseUrl/admin/all_topics';
+  static const String adminTopicDetails = '$baseUrl/admin/topic_details';
+  static const String adminTopicBookmarks = '$baseUrl/admin/topic_bookmarks';
+  static const String adminAllWorkshops = '$baseUrl/admin/all_workshops';
+  static const String adminWorkshopParticipants = '$baseUrl/admin/workshop_participants';
+  static const String adminAllSponsors = '$baseUrl/admin/all_sponsors';
+  static const String adminSponsorDetails = '$baseUrl/admin/sponsor_details';
+  static const String adminAllSponsorCategories = '$baseUrl/admin/all_sponsor_categories';
+  static const String adminAllBooths = '$baseUrl/admin/all_booths';
+  static const String adminAllSponsorBooths = '$baseUrl/admin/all_booths';
+  static const String adminBoothDetails = '$baseUrl/admin/booth_details';
+  static const String adminAllSlots = '$baseUrl/admin/all_slots';
+  static const String adminSlotDetails = '$baseUrl/admin/slot_details';
 }
 

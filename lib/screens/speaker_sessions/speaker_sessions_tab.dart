@@ -1370,8 +1370,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
         emptyMessage = 'No bookmarked sessions yet';
         emptySubtitle = 'Tap the bookmark icon on any session to save it here.';
       } else if (_selectedFilter == SpeakerSessionFilter.mySessions) {
-        emptyMessage = 'No speaker sessions confirmed yet';
-        emptySubtitle = 'Your confirmed speaker sessions will appear here once assigned.';
+        emptyMessage = 'No speaker sessions assigned yet';
+        emptySubtitle = 'Your assigned speaker sessions will appear here once assigned.';
       } else if (_selectedFilter == SpeakerSessionFilter.otherSessions) {
         emptyMessage = 'No other sessions found';
         emptySubtitle = 'Sessions from other speakers will appear here.';
@@ -1996,10 +1996,37 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        if (session.speakerTitle.isNotEmpty) ...[
+                        if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            session.speakerDesignation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
+                          const SizedBox(height: 1.5),
+                          Text(
+                            session.speakerOrganisation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if ((session.speakerDesignation == null || session.speakerDesignation!.isEmpty) &&
+                            (session.speakerOrganisation == null || session.speakerOrganisation!.isEmpty) &&
+                            session.speakerTitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
                           Text(
                             session.speakerTitle.toUpperCase(),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 9,
@@ -2015,27 +2042,27 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             ],
 
             // Location
-            if (session.location.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      session.location.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // if (session.location.isNotEmpty) ...[
+            //   const SizedBox(height: 6),
+            //   Row(
+            //     children: [
+            //       const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
+            //       const SizedBox(width: 4),
+            //       Expanded(
+            //         child: Text(
+            //           session.location.toUpperCase(),
+            //           maxLines: 1,
+            //           overflow: TextOverflow.ellipsis,
+            //           style: const TextStyle(
+            //             fontSize: 10,
+            //             color: AppColors.textSecondary,
+            //             fontWeight: FontWeight.w500,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
 
             const SizedBox(height: 8),
             const Divider(height: 1, color: AppColors.tileBorder),
@@ -2181,27 +2208,27 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             ],
 
             // Location
-            if (s.location.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      s.location.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // if (s.location.isNotEmpty) ...[
+            //   const SizedBox(height: 6),
+            //   Row(
+            //     children: [
+            //       const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
+            //       const SizedBox(width: 4),
+            //       Expanded(
+            //         child: Text(
+            //           s.location.toUpperCase(),
+            //           maxLines: 1,
+            //           overflow: TextOverflow.ellipsis,
+            //           style: const TextStyle(
+            //             fontSize: 10,
+            //             color: AppColors.textSecondary,
+            //             fontWeight: FontWeight.w500,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
 
             const SizedBox(height: 8),
             const Divider(height: 1, color: AppColors.tileBorder),
@@ -2364,11 +2391,37 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        if (session.speakerTitle.isNotEmpty) ...[
+                        if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
+                          const SizedBox(height: 2.5),
+                          Text(
+                            session.speakerDesignation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            session.speakerOrganisation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if ((session.speakerDesignation == null || session.speakerDesignation!.isEmpty) &&
+                            (session.speakerOrganisation == null || session.speakerOrganisation!.isEmpty) &&
+                            session.speakerTitle.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
                             session.speakerTitle.toUpperCase(),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 11,
@@ -2384,25 +2437,25 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             ],
 
             // Location
-            if (session.location.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      session.location.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // if (session.location.isNotEmpty) ...[
+            //   const SizedBox(height: 10),
+            //   Row(
+            //     children: [
+            //       const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
+            //       const SizedBox(width: 6),
+            //       Expanded(
+            //         child: Text(
+            //           session.location.toUpperCase(),
+            //           style: const TextStyle(
+            //             fontSize: 11,
+            //             color: AppColors.textSecondary,
+            //             fontWeight: FontWeight.w500,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
 
             const SizedBox(height: 12),
             const Divider(height: 1, color: AppColors.tileBorder),
@@ -2575,25 +2628,25 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             ),
 
             // Location
-            if (s.location.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      s.location.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // if (s.location.isNotEmpty) ...[
+            //   const SizedBox(height: 8),
+            //   Row(
+            //     children: [
+            //       const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
+            //       const SizedBox(width: 6),
+            //       Expanded(
+            //         child: Text(
+            //           s.location.toUpperCase(),
+            //           style: const TextStyle(
+            //             fontSize: 11,
+            //             color: AppColors.textSecondary,
+            //             fontWeight: FontWeight.w500,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
             const SizedBox(height: 12),
             const Divider(height: 1, color: AppColors.tileBorder),
             const SizedBox(height: 10),

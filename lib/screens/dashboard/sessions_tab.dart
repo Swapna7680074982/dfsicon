@@ -2023,10 +2023,37 @@ class _SessionsTabState extends State<SessionsTab> {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        if (session.speakerTitle.isNotEmpty) ...[
+                        if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            session.speakerDesignation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
+                          const SizedBox(height: 1.5),
+                          Text(
+                            session.speakerOrganisation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if ((session.speakerDesignation == null || session.speakerDesignation!.isEmpty) &&
+                            (session.speakerOrganisation == null || session.speakerOrganisation!.isEmpty) &&
+                            session.speakerTitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
                           Text(
                             session.speakerTitle.toUpperCase(),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 9,
@@ -2042,27 +2069,27 @@ class _SessionsTabState extends State<SessionsTab> {
             ],
 
             // Location
-            if (session.location.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      session.location.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // if (session.location.isNotEmpty) ...[
+            //   const SizedBox(height: 6),
+            //   Row(
+            //     children: [
+            //       const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textLight),
+            //       const SizedBox(width: 4),
+            //       Expanded(
+            //         child: Text(
+            //           session.location.toUpperCase(),
+            //           maxLines: 1,
+            //           overflow: TextOverflow.ellipsis,
+            //           style: const TextStyle(
+            //             fontSize: 10,
+            //             color: AppColors.textSecondary,
+            //             fontWeight: FontWeight.w500,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
 
             const SizedBox(height: 8),
             const Divider(height: 1, color: AppColors.tileBorder),
@@ -2248,11 +2275,37 @@ class _SessionsTabState extends State<SessionsTab> {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        if (session.speakerTitle.isNotEmpty) ...[
+                        if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
+                          const SizedBox(height: 2.5),
+                          Text(
+                            session.speakerDesignation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            session.speakerOrganisation!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if ((session.speakerDesignation == null || session.speakerDesignation!.isEmpty) &&
+                            (session.speakerOrganisation == null || session.speakerOrganisation!.isEmpty) &&
+                            session.speakerTitle.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
                             session.speakerTitle.toUpperCase(),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 11,
@@ -2268,25 +2321,25 @@ class _SessionsTabState extends State<SessionsTab> {
             ],
 
             // Location
-            if (session.location.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      session.location.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // if (session.location.isNotEmpty) ...[
+            //   const SizedBox(height: 10),
+            //   Row(
+            //     children: [
+            //       const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
+            //       const SizedBox(width: 6),
+            //       Expanded(
+            //         child: Text(
+            //           session.location.toUpperCase(),
+            //           style: const TextStyle(
+            //             fontSize: 11,
+            //             color: AppColors.textSecondary,
+            //             fontWeight: FontWeight.w500,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
 
             const SizedBox(height: 12),
             const Divider(height: 1, color: AppColors.tileBorder),

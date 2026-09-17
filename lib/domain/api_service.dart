@@ -1698,6 +1698,523 @@ class ApiService {
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }
+
+  // ==========================================
+  // Admin Module API Calls
+  // ==========================================
+
+  // Admin – Dashboard Stats
+  static Future<http.Response> fetchAdminDashboardStats({
+    required String accessToken,
+    int summitId = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminDashboardStats);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "summit_id": summitId,
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Speakers
+  static Future<http.Response> fetchAdminAllSpeakers({
+    required String accessToken,
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? state,
+    String? city,
+    String? category,
+    String? citizenType,
+    String? qualification,
+    String sortBy = 'full_name',
+    String sortOrder = 'ASC',
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllSpeakers);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+      "sort_by": sortBy,
+      "sort_order": sortOrder,
+    };
+    if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
+    if (state != null && state.isNotEmpty) bodyMap['state'] = state;
+    if (city != null && city.isNotEmpty) bodyMap['city'] = city;
+    if (category != null && category.isNotEmpty) bodyMap['category'] = category;
+    if (citizenType != null && citizenType.isNotEmpty) bodyMap['citizen_type'] = citizenType;
+    if (qualification != null && qualification.isNotEmpty) bodyMap['qualification'] = qualification;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Speaker Details
+  static Future<http.Response> fetchAdminSpeakerDetails({
+    required String accessToken,
+    required dynamic userId,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminSpeakerDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "user_id": userId is int ? userId : (int.tryParse(userId.toString()) ?? userId),
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Delegates
+  static Future<http.Response> fetchAdminAllDelegates({
+    required String accessToken,
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? state,
+    String? city,
+    String? category,
+    String? citizenType,
+    String? qualification,
+    String sortBy = 'full_name',
+    String sortOrder = 'ASC',
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllDelegates);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+      "sort_by": sortBy,
+      "sort_order": sortOrder,
+    };
+    if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
+    if (state != null && state.isNotEmpty) bodyMap['state'] = state;
+    if (city != null && city.isNotEmpty) bodyMap['city'] = city;
+    if (category != null && category.isNotEmpty) bodyMap['category'] = category;
+    if (citizenType != null && citizenType.isNotEmpty) bodyMap['citizen_type'] = citizenType;
+    if (qualification != null && qualification.isNotEmpty) bodyMap['qualification'] = qualification;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Delegate Details
+  static Future<http.Response> fetchAdminDelegateDetails({
+    required String accessToken,
+    required dynamic userId,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminDelegateDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "user_id": userId is int ? userId : (int.tryParse(userId.toString()) ?? userId),
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Topics
+  static Future<http.Response> fetchAdminAllTopics({
+    required String accessToken,
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? categoryOfSubmission,
+    String? status,
+    String? topicStatus,
+    dynamic speakerId,
+    int summitId = 1,
+    String sortBy = 'created_on',
+    String sortOrder = 'DESC',
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllTopics);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+      "summit_id": summitId,
+      "sort_by": sortBy,
+      "sort_order": sortOrder,
+    };
+    if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
+    if (categoryOfSubmission != null && categoryOfSubmission.isNotEmpty) {
+      bodyMap['category_of_submission'] = categoryOfSubmission;
+    }
+    if (status != null && status.isNotEmpty) bodyMap['status'] = status;
+    if (topicStatus != null && topicStatus.isNotEmpty) bodyMap['topic_status'] = topicStatus;
+    if (speakerId != null) {
+      bodyMap['speaker_id'] = speakerId is int ? speakerId : (int.tryParse(speakerId.toString()) ?? speakerId);
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Topic Details
+  static Future<http.Response> fetchAdminTopicDetails({
+    required String accessToken,
+    required dynamic topicId,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminTopicDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "topic_id": topicId is int ? topicId : (int.tryParse(topicId.toString()) ?? topicId),
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Topic Bookmarks
+  static Future<http.Response> fetchAdminTopicBookmarks({
+    required String accessToken,
+    required dynamic topicId,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminTopicBookmarks);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "topic_id": topicId is int ? topicId : (int.tryParse(topicId.toString()) ?? topicId),
+      "page": page,
+      "limit": limit,
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Workshops
+  static Future<http.Response> fetchAdminAllWorkshops({
+    required String accessToken,
+    int page = 1,
+    int limit = 10,
+    String? search,
+    int? workshopStatus = 1,
+    int summitId = 1,
+    String sortBy = 'workshop_start',
+    String sortOrder = 'ASC',
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllWorkshops);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+      "summit_id": summitId,
+      "sort_by": sortBy,
+      "sort_order": sortOrder,
+    };
+    if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
+    if (workshopStatus != null) bodyMap['workshop_status'] = workshopStatus;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Workshop Participants
+  static Future<http.Response> fetchAdminWorkshopParticipants({
+    required String accessToken,
+    required dynamic workshopId,
+    int speakerPage = 1,
+    int speakerLimit = 10,
+    int delegatePage = 1,
+    int delegateLimit = 10,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminWorkshopParticipants);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "workshop_id": workshopId is int ? workshopId : (int.tryParse(workshopId.toString()) ?? workshopId),
+      "speaker_page": speakerPage,
+      "speaker_limit": speakerLimit,
+      "delegate_page": delegatePage,
+      "delegate_limit": delegateLimit,
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Sponsors
+  static Future<http.Response> fetchAdminAllSponsors({
+    required String accessToken,
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? sponsorType,
+    String? sponsorCategory,
+    int? status = 1,
+    int summitId = 1,
+    String sortBy = 'company_name',
+    String sortOrder = 'ASC',
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllSponsors);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+      "summit_id": summitId,
+      "sort_by": sortBy,
+      "sort_order": sortOrder,
+    };
+    if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
+    if (sponsorType != null && sponsorType.isNotEmpty) bodyMap['sponsor_type'] = sponsorType;
+    if (sponsorCategory != null && sponsorCategory.isNotEmpty) bodyMap['sponsor_category'] = sponsorCategory;
+    if (status != null) bodyMap['status'] = status;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Sponsor Details
+  static Future<http.Response> fetchAdminSponsorDetails({
+    required String accessToken,
+    required dynamic sponsorId,
+    int summitId = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminSponsorDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "sponsor_id": sponsorId is int ? sponsorId : (int.tryParse(sponsorId.toString()) ?? sponsorId),
+      "summit_id": summitId,
+    });
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Sponsor Categories
+  static Future<http.Response> fetchAdminAllSponsorCategories({
+    required String accessToken,
+    int page = 1,
+    int limit = 20,
+    String? search,
+    int? status = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllSponsorCategories);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+    };
+    if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
+    if (status != null) bodyMap['status'] = status;
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Booths
+  static Future<http.Response> fetchAdminAllBooths({
+    required String accessToken,
+    int page = 1,
+    int limit = 150,
+    String search = '',
+    dynamic sponsorId,
+    String? boothType,
+    int? status = 1,
+    String? assignmentFilter,
+    int summitId = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllBooths);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "page": page,
+      "limit": limit,
+      "search": search,
+      "status": status ?? 1,
+      "summit_id": summitId,
+    };
+    if (sponsorId != null) {
+      bodyMap["sponsor_id"] = sponsorId is int ? sponsorId : int.tryParse(sponsorId.toString());
+    }
+    if (boothType != null && boothType.isNotEmpty) {
+      bodyMap["booth_type"] = boothType;
+    }
+    if (assignmentFilter != null && assignmentFilter.isNotEmpty) {
+      bodyMap["assignment_filter"] = assignmentFilter;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Sponsor Booths (Alias)
+  static Future<http.Response> fetchAdminAllSponsorBooths({
+    required String accessToken,
+    int page = 1,
+    int limit = 150,
+    String search = '',
+    dynamic sponsorId,
+    String? boothType,
+    int? status = 1,
+    int summitId = 1,
+  }) =>
+      fetchAdminAllBooths(
+        accessToken: accessToken,
+        page: page,
+        limit: limit,
+        search: search,
+        sponsorId: sponsorId,
+        boothType: boothType,
+        status: status,
+        summitId: summitId,
+      );
+
+  // Admin – Booth Details
+  static Future<http.Response> fetchAdminBoothDetails({
+    required String accessToken,
+    required dynamic boothId,
+    int summitId = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminBoothDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "booth_id": boothId is int ? boothId : int.tryParse(boothId.toString()) ?? boothId,
+      "summit_id": summitId,
+    };
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – All Slots
+  static Future<http.Response> fetchAdminAllSlots({
+    required String accessToken,
+    int summitId = 1,
+    dynamic hallId,
+    dynamic scheduleDay,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminAllSlots);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "summit_id": summitId,
+    };
+    if (hallId != null) {
+      bodyMap["hall_id"] = hallId is int ? hallId : int.tryParse(hallId.toString());
+    }
+    if (scheduleDay != null) {
+      bodyMap["schedule_day"] = scheduleDay is int ? scheduleDay : int.tryParse(scheduleDay.toString());
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Slot Details
+  static Future<http.Response> fetchAdminSlotDetails({
+    required String accessToken,
+    dynamic slotId,
+    int summitId = 1,
+    dynamic hallId,
+    dynamic scheduleDay,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminSlotDetails);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "summit_id": summitId,
+    };
+    if (slotId != null && slotId.toString().isNotEmpty) {
+      bodyMap["slot_id"] = slotId is int ? slotId : int.tryParse(slotId.toString()) ?? slotId;
+    }
+    if (hallId != null && hallId.toString().isNotEmpty) {
+      bodyMap["hall_id"] = hallId is int ? hallId : int.tryParse(hallId.toString()) ?? hallId;
+    }
+    if (scheduleDay != null && scheduleDay.toString().isNotEmpty) {
+      bodyMap["schedule_day"] = scheduleDay is int ? scheduleDay : int.tryParse(scheduleDay.toString()) ?? scheduleDay;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }
 
 

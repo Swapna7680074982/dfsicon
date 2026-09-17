@@ -37,6 +37,8 @@ class SessionItem {
   final String? startTime;
   final String? endTime;
   final String? scheduleDate;
+  final String? speakerDesignation;
+  final String? speakerOrganisation;
 
   SessionItem({
     required this.id,
@@ -67,6 +69,8 @@ class SessionItem {
     this.startTime,
     this.endTime,
     this.scheduleDate,
+    this.speakerDesignation,
+    this.speakerOrganisation,
   });
 }
 
@@ -595,6 +599,8 @@ class SessionsProvider extends ChangeNotifier {
           startTime: finalStartTime,
           endTime: finalEndTime,
           scheduleDate: finalScheduleDate,
+          speakerDesignation: my.speakerDesignation ?? matched.speakerDesignation,
+          speakerOrganisation: my.speakerOrganisation ?? matched.speakerOrganisation,
         );
       } catch (_) {}
     }
@@ -761,6 +767,8 @@ class SessionsProvider extends ChangeNotifier {
       startTime: finalStartTime,
       endTime: finalEndTime,
       scheduleDate: finalScheduleDate,
+      speakerDesignation: matchedSession?.speakerDesignation,
+      speakerOrganisation: matchedSession?.speakerOrganisation,
     );
   }
 
@@ -875,11 +883,34 @@ class SessionsProvider extends ChangeNotifier {
     final id = int.tryParse(abstractId) ?? index;
     final title = json['abstract_title']?.toString() ?? json['title']?.toString() ?? 'Session';
     final speakerName = json['speaker_name']?.toString() ?? '';
-    final designation = json['designation']?.toString() ?? '';
-    final clinicName = json['organisation']?.toString() ?? json['hospital_clinic_name']?.toString() ?? '';
-    final speakerTitle = designation.isNotEmpty && clinicName.isNotEmpty
-        ? '$designation, $clinicName'
-        : (designation.isNotEmpty ? designation : (clinicName.isNotEmpty ? clinicName : 'Speaker'));
+    final rawDesignation = json['designation']?.toString().trim() ?? '';
+    final rawClinicName = (json['organisation'] ?? json['hospital_clinic_name'] ?? json['organisation_name'])?.toString().trim() ?? '';
+
+    String? speakerDesignation;
+    if (rawDesignation.isNotEmpty && rawDesignation.toLowerCase() != 'null') {
+      if (rawDesignation.toUpperCase().contains('INFORMATION IS PRIVATE') || rawDesignation.toUpperCase() == 'PRIVATE') {
+        speakerDesignation = 'Designation: This information is private';
+      } else {
+        speakerDesignation = 'Designation: $rawDesignation';
+      }
+    }
+
+    String? speakerOrganisation;
+    if (rawClinicName.isNotEmpty && rawClinicName.toLowerCase() != 'null') {
+      final isPrivate = rawClinicName.toUpperCase().contains('INFORMATION IS PRIVATE') || rawClinicName.toUpperCase() == 'PRIVATE';
+      if (isPrivate) {
+        speakerOrganisation = 'Organisation: This information is private';
+      } else {
+        final prefix = (rawClinicName.toLowerCase().contains('hospital') || rawClinicName.toLowerCase().contains('clinic'))
+            ? 'Hospital'
+            : 'Organisation';
+        speakerOrganisation = '$prefix: $rawClinicName';
+      }
+    }
+
+    final speakerTitle = [speakerDesignation, speakerOrganisation]
+        .where((s) => s != null && s.isNotEmpty)
+        .join(', ');
 
     final sessDetails = (json['session_details'] is Map)
         ? json['session_details'] as Map<String, dynamic>
@@ -976,6 +1007,8 @@ class SessionsProvider extends ChangeNotifier {
       startTime: startTime,
       endTime: endTime,
       scheduleDate: scheduleDateStr,
+      speakerDesignation: speakerDesignation,
+      speakerOrganisation: speakerOrganisation,
     );
   }
 }

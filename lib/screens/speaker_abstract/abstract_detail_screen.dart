@@ -149,18 +149,24 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
       dateStr = matchedSession.date;
     }
 
+    final isConfirmed = status.toLowerCase() == 'confirmed';
+    final isApproved = status.toLowerCase() == 'approved';
+    final String displayStatus = isConfirmed
+        ? 'SLOT ASSIGNED'
+        : (isApproved ? 'SLOT NOT ASSIGNED' : status.toUpperCase());
+
     Color badgeBgColor;
     Color badgeTextColor;
     IconData? badgeIcon;
 
-    if (status == 'Confirmed') {
+    if (isConfirmed) {
       badgeBgColor = const Color(0xFFECFDF5);
       badgeTextColor = const Color(0xFF10B981);
       badgeIcon = Icons.check;
-    } else if (status == 'Approved') {
-      badgeBgColor = const Color(0xFFEFF6FF);
-      badgeTextColor = const Color(0xFF3B82F6);
-      badgeIcon = Icons.check_circle_outline;
+    } else if (isApproved) {
+      badgeBgColor = const Color(0xFFFFFBEB);
+      badgeTextColor = const Color(0xFFD97706);
+      badgeIcon = Icons.pending_outlined;
     } else if (status == 'Submitted' || status == 'Under Review' || status == 'Active' || status == 'Draft') {
       badgeBgColor = const Color(0xFFFEF3C7);
       badgeTextColor = const Color(0xFFF59E0B);
@@ -281,7 +287,7 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                                           ),
                                           const SizedBox(width: 2),
                                           Text(
-                                            status.toUpperCase(),
+                                            displayStatus,
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
@@ -336,10 +342,10 @@ class _AbstractDetailScreenState extends State<AbstractDetailScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Confirmed Session & Hall Details Section
-                    if (status == 'Confirmed' || displayHall.isNotEmpty) ...[
+                    // Session & Hall Details Section
+                    if (status.toLowerCase() == 'confirmed' || displayHall.isNotEmpty) ...[
                       _buildSectionCard(
-                        title: 'Confirmed Session & Hall Details',
+                        title: 'Session & Hall Details',
                         content: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

@@ -125,8 +125,31 @@ class AuthProvider with ChangeNotifier {
   String get userId => (_profileData['user_id'] ?? _profileData['id'] ?? '').toString();
   String get userRole => _profileData['role_code'] ?? _userRole;
   String get userName => _profileData['full_name'] ?? _userName;
-  bool get isSpeakerRole => (_profileData['role_code'] ?? _userRole).toString().toUpperCase() == 'SK';
-  bool get isSpeaker => (_selectedRole ?? userRole).toUpperCase() == 'SK';
+  
+  bool get isAdminRole {
+    final code = (_profileData['role_code'] ?? _userRole).toString().toUpperCase();
+    return code == 'AD' || code == 'ADMIN' || code == 'ADM';
+  }
+
+  bool get isAdmin {
+    if (isAdminRole) {
+      final sel = (_selectedRole ?? userRole).toString().toUpperCase();
+      return sel == 'AD' || sel == 'ADMIN' || sel == 'ADM';
+    }
+    return false;
+  }
+
+  bool get isSpeakerRole {
+    final code = (_profileData['role_code'] ?? _userRole).toString().toUpperCase();
+    return code == 'SK' || isAdminRole;
+  }
+
+  bool get isSpeaker {
+    if (isAdmin) return false;
+    final sel = (_selectedRole ?? userRole).toString().toUpperCase();
+    return sel == 'SK';
+  }
+
   String? get selectedRole => _selectedRole;
 
   void setSelectedRole(String? role) {

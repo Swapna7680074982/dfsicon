@@ -581,17 +581,20 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                 : 'STALL $displayZone')
             : '';
 
-        final String boothNumText = (displayBooth.isNotEmpty &&
-                displayBooth != 'ASSIGNED' &&
-                displayBooth.toLowerCase() != displayZone.toLowerCase())
-            ? (displayBooth.startsWith('BOOTH') || displayBooth.startsWith('STALL')
-                ? displayBooth
-                : 'BOOTH : $displayBooth')
-            : (stallText.isEmpty
-                ? (displayBooth.startsWith('BOOTH') || displayBooth.startsWith('STALL')
-                    ? displayBooth
-                    : 'BOOTH : $displayBooth')
-                : '');
+        String cleanBooth = displayBooth.trim();
+        if (cleanBooth.toUpperCase().startsWith('BOOTH :')) {
+          cleanBooth = cleanBooth.substring(7).trim();
+        } else if (cleanBooth.toUpperCase().startsWith('BOOTH:')) {
+          cleanBooth = cleanBooth.substring(6).trim();
+        } else if (cleanBooth.toUpperCase().startsWith('BOOTH ')) {
+          cleanBooth = cleanBooth.substring(6).trim();
+        }
+
+        final String boothNumText = (cleanBooth.isNotEmpty &&
+                cleanBooth != 'ASSIGNED' &&
+                cleanBooth.toLowerCase() != displayZone.toLowerCase())
+            ? cleanBooth
+            : (stallText.isEmpty ? cleanBooth : '');
 
         return Container(
           width: double.infinity,
