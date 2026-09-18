@@ -303,22 +303,41 @@ class SessionsProvider extends ChangeNotifier {
     return false;
   }
 
-  Future<String?> toggleBookmark(int sessionId, String accessToken) async {
+  Future<String?> toggleBookmark(
+    int sessionId,
+    String accessToken, {
+    String? assignmentIdOverride,
+    String? topicIdOverride,
+    String? titleOverride,
+  }) async {
     SessionItem? session;
-    final index = _sessions.indexWhere((s) => s.id == sessionId);
+    final index = _sessions.indexWhere((s) =>
+        s.id == sessionId ||
+        (assignmentIdOverride != null && s.assignmentId == assignmentIdOverride) ||
+        (topicIdOverride != null && s.topicId == topicIdOverride));
     if (index != -1) {
       session = _sessions[index];
     } else {
-      final myIndex = _mySessions.indexWhere((s) => s.id == sessionId);
+      final myIndex = _mySessions.indexWhere((s) =>
+          s.id == sessionId ||
+          (assignmentIdOverride != null && s.assignmentId == assignmentIdOverride) ||
+          (topicIdOverride != null && s.topicId == topicIdOverride));
       if (myIndex != -1) {
         session = _mySessions[myIndex];
       }
     }
-    if (session == null) return 'Session not found';
 
-    final isCurrentlyBookmarked = session.isBookmarked;
+    final String assignmentId = (assignmentIdOverride != null && assignmentIdOverride.isNotEmpty)
+        ? assignmentIdOverride
+        : (session?.assignmentId ?? session?.id.toString() ?? sessionId.toString());
 
-    if (!isCurrentlyBookmarked) {
+    if (assignmentId.isEmpty || assignmentId == '0') {
+      return 'Invalid session assignment ID';
+    }
+
+    final isCurrentlyBookmarked = session?.isBookmarked ?? true;
+
+    if (!isCurrentlyBookmarked && session != null) {
       final allSessionsToCheck = [..._sessions, ..._mySessions];
       for (final other in allSessionsToCheck) {
         if (other.id != session.id && other.isBookmarked && _isTimeOverlap(session, other)) {
@@ -328,7 +347,6 @@ class SessionsProvider extends ChangeNotifier {
     }
 
     try {
-      final assignmentId = session.assignmentId ?? session.id.toString();
       final response = isCurrentlyBookmarked
           ? await ApiService.unbookmarkSession(assignmentId: assignmentId, accessToken: accessToken)
           : await ApiService.bookmarkSession(assignmentId: assignmentId, accessToken: accessToken);
@@ -336,16 +354,21 @@ class SessionsProvider extends ChangeNotifier {
       final dynamic data = _safeJsonDecode(response.body);
       if (response.statusCode == 200) {
         if (data is Map && data['status'] == true) {
-          session.isBookmarked = !isCurrentlyBookmarked;
+          if (session != null) {
+            session.isBookmarked = !isCurrentlyBookmarked;
+          }
           for (final s in _sessions) {
-            if (s.id == sessionId || (s.assignmentId != null && s.assignmentId == session.assignmentId)) {
-              s.isBookmarked = session.isBookmarked;
+            if (s.id == sessionId || (assignmentId.isNotEmpty && s.assignmentId == assignmentId)) {
+              s.isBookmarked = !isCurrentlyBookmarked;
             }
           }
           for (final s in _mySessions) {
-            if (s.id == sessionId || (s.assignmentId != null && s.assignmentId == session.assignmentId)) {
-              s.isBookmarked = session.isBookmarked;
+            if (s.id == sessionId || (assignmentId.isNotEmpty && s.assignmentId == assignmentId)) {
+              s.isBookmarked = !isCurrentlyBookmarked;
             }
+          }
+          if (isCurrentlyBookmarked) {
+            fetchConfirmedSessions(accessToken, forceRefresh: true);
           }
           notifyListeners();
           return null; // Success

@@ -6,6 +6,7 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../profile/profile_screen.dart';
+import '../calendar/event_calendar_screen.dart';
 import 'admin_detail_sheets.dart';
 
 class AdminDashboardTab extends StatefulWidget {
@@ -515,6 +516,111 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                     onTap: () => _tabController.animateTo(6),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+
+              // Master Schedule Calendar Card
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E1B4B), Color(0xFF312E81), Color(0xFF4338CA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF312E81).withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EventCalendarScreen(role: CalendarRole.admin),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Master Schedule Calendar',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Day-wise sessions, workshops & halls timeline',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFFC7D2FE),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Open',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
 
@@ -1300,7 +1406,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                             );
                           }
                           final topic = filteredTopics[index];
-                          return _buildTopicCard(topic);
+                          return _buildTopicCard(topic, admin);
                         },
                       ),
           ),
@@ -1309,7 +1415,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     );
   }
 
-  Widget _buildTopicCard(AdminTopic topic) {
+  Widget _buildTopicCard(AdminTopic topic, AdminProvider admin) {
     final bool isConfirmed = topic.status.toLowerCase() == 'confirmed';
     String displayStatus = topic.status;
     if (isConfirmed) {
@@ -1318,12 +1424,36 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
       displayStatus = 'Slot Not Assigned';
     }
 
+    final scheduleInfo = admin.getTopicScheduleInfo(topic.topicId);
+    final scheduleDate = topic.scheduleDate.isNotEmpty
+        ? topic.scheduleDate
+        : (scheduleInfo?['schedule_date'] ?? '');
+    final scheduleDay = topic.scheduleDay.isNotEmpty
+        ? topic.scheduleDay
+        : (scheduleInfo?['schedule_day'] ?? '');
+    final startTime = topic.startTime.isNotEmpty
+        ? topic.startTime
+        : (scheduleInfo?['start_time'] ?? '');
+    final endTime = topic.endTime.isNotEmpty
+        ? topic.endTime
+        : (scheduleInfo?['end_time'] ?? '');
+    final hallName = topic.hallLabel.isNotEmpty
+        ? topic.hallLabel
+        : (topic.hallName.isNotEmpty
+            ? topic.hallName
+            : (scheduleInfo?['hall_label'] ?? scheduleInfo?['hall_name'] ?? ''));
+
+    final hasTimingInfo = isConfirmed || scheduleDate.isNotEmpty || startTime.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(
+          color: isConfirmed ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+          width: isConfirmed ? 1.2 : 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -1398,9 +1528,78 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 12),
 
-                // Stacked Two-Row Details
+                // Stacked Details
                 _buildStackedField(label: 'Speaker', value: topic.speakerName, icon: Icons.person_outline_rounded),
                 _buildStackedField(label: 'Category', value: topic.categoryOfSubmission, icon: Icons.category_outlined),
+
+                // Slot Assigned Date & Time Highlight Box
+                if (hasTimingInfo && (scheduleDate.isNotEmpty || startTime.isNotEmpty || hallName.isNotEmpty)) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.event_available_rounded, size: 14, color: Color(0xFF16A34A)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                [
+                                  if (scheduleDate.isNotEmpty) scheduleDate,
+                                  if (scheduleDay.isNotEmpty) 'Day $scheduleDay',
+                                ].join('  •  '),
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF15803D),
+                                ),
+                              ),
+                            ),
+                            if (startTime.isNotEmpty) ...[
+                              const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 4),
+                              Text(
+                                endTime.isNotEmpty ? '$startTime - $endTime' : startTime,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF15803D),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (hallName.isNotEmpty) ...[
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              const Icon(Icons.meeting_room_rounded, size: 13, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  hallName,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF166534),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

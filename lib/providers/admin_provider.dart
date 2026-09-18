@@ -330,6 +330,18 @@ class AdminTopic {
   final String updatedByName;
   final String updatedOn;
 
+  // Slot timing & schedule fields
+  final String slotId;
+  final String slotName;
+  final String slotLabel;
+  final String startTime;
+  final String endTime;
+  final String scheduleDate;
+  final String scheduleDay;
+  final String hallId;
+  final String hallName;
+  final String hallLabel;
+
   const AdminTopic({
     this.topicId = '',
     this.speakerId = '',
@@ -345,15 +357,43 @@ class AdminTopic {
     this.updatedBy = '',
     this.updatedByName = '',
     this.updatedOn = '',
+    this.slotId = '',
+    this.slotName = '',
+    this.slotLabel = '',
+    this.startTime = '',
+    this.endTime = '',
+    this.scheduleDate = '',
+    this.scheduleDay = '',
+    this.hallId = '',
+    this.hallName = '',
+    this.hallLabel = '',
   });
 
   factory AdminTopic.fromJson(Map<String, dynamic> json) {
+    // Check direct fields or nested slot/session/hall
+    final Map<String, dynamic>? slotMap = json['slot'] is Map ? (json['slot'] as Map<String, dynamic>) : null;
+    final Map<String, dynamic>? hallMap = json['hall'] is Map ? (json['hall'] as Map<String, dynamic>) : null;
+    final Map<String, dynamic>? sessionMap = json['session'] is Map
+        ? (json['session'] as Map<String, dynamic>)
+        : (json['session_details'] is Map ? json['session_details'] as Map<String, dynamic> : null);
+
+    final rawSlotId = json['slot_id'] ?? slotMap?['slot_id'] ?? sessionMap?['slot_id'] ?? '';
+    final rawSlotName = json['slot_name'] ?? slotMap?['slot_name'] ?? sessionMap?['slot_name'] ?? '';
+    final rawSlotLabel = json['slot_label'] ?? slotMap?['slot_label'] ?? sessionMap?['slot_label'] ?? '';
+    final rawStartTime = json['start_time'] ?? json['from_time'] ?? json['slot_start_time'] ?? slotMap?['start_time'] ?? sessionMap?['start_time'] ?? json['time'] ?? '';
+    final rawEndTime = json['end_time'] ?? json['to_time'] ?? json['slot_end_time'] ?? slotMap?['end_time'] ?? sessionMap?['end_time'] ?? '';
+    final rawScheduleDate = json['schedule_date'] ?? json['session_date'] ?? json['date'] ?? slotMap?['schedule_date'] ?? sessionMap?['schedule_date'] ?? '';
+    final rawScheduleDay = json['schedule_day'] ?? json['day'] ?? slotMap?['schedule_day'] ?? sessionMap?['schedule_day'] ?? '';
+    final rawHallId = json['hall_id'] ?? hallMap?['hall_id'] ?? slotMap?['hall_id'] ?? sessionMap?['hall_id'] ?? '';
+    final rawHallName = json['hall_name'] ?? hallMap?['hall_name'] ?? slotMap?['hall_name'] ?? sessionMap?['hall_name'] ?? '';
+    final rawHallLabel = json['hall_label'] ?? hallMap?['hall_label'] ?? slotMap?['hall_label'] ?? sessionMap?['hall_label'] ?? '';
+
     return AdminTopic(
       topicId: (json['topic_id'] ?? '').toString(),
       speakerId: (json['speaker_id'] ?? '').toString(),
-      title: (json['title'] ?? '').toString().trim(),
-      speakerName: (json['speaker_name'] ?? '').toString().trim(),
-      categoryOfSubmission: (json['category_of_submission'] ?? '').toString().trim(),
+      title: (json['title'] ?? json['abstract_title'] ?? '').toString().trim(),
+      speakerName: (json['speaker_name'] ?? json['speaker_full_name'] ?? json['full_name'] ?? '').toString().trim(),
+      categoryOfSubmission: (json['category_of_submission'] ?? json['category'] ?? '').toString().trim(),
       status: (json['status'] ?? '').toString().trim(),
       topicStatus: (json['topic_status'] ?? '').toString().trim(),
       isPublished: (json['is_published'] ?? '').toString().trim(),
@@ -363,6 +403,16 @@ class AdminTopic {
       updatedBy: (json['updated_by'] ?? '').toString().trim(),
       updatedByName: (json['updated_by_name'] ?? '').toString().trim(),
       updatedOn: (json['updated_on'] ?? '').toString().trim(),
+      slotId: rawSlotId.toString().trim(),
+      slotName: rawSlotName.toString().trim(),
+      slotLabel: rawSlotLabel.toString().trim(),
+      startTime: rawStartTime.toString().trim(),
+      endTime: rawEndTime.toString().trim(),
+      scheduleDate: rawScheduleDate.toString().trim(),
+      scheduleDay: rawScheduleDay.toString().trim(),
+      hallId: rawHallId.toString().trim(),
+      hallName: rawHallName.toString().trim(),
+      hallLabel: rawHallLabel.toString().trim(),
     );
   }
 }
@@ -393,6 +443,19 @@ class AdminTopicDetail {
   final String updatedByName;
   final String updatedOn;
 
+  // Slot timing & schedule fields
+  final String slotId;
+  final String slotName;
+  final String slotLabel;
+  final String startTime;
+  final String endTime;
+  final String scheduleDate;
+  final String scheduleDay;
+  final String hallId;
+  final String hallName;
+  final String hallLabel;
+  final String venueName;
+
   const AdminTopicDetail({
     this.topicId = '',
     this.speakerId = '',
@@ -418,18 +481,47 @@ class AdminTopicDetail {
     this.updatedBy = '',
     this.updatedByName = '',
     this.updatedOn = '',
+    this.slotId = '',
+    this.slotName = '',
+    this.slotLabel = '',
+    this.startTime = '',
+    this.endTime = '',
+    this.scheduleDate = '',
+    this.scheduleDay = '',
+    this.hallId = '',
+    this.hallName = '',
+    this.hallLabel = '',
+    this.venueName = '',
   });
 
   factory AdminTopicDetail.fromJson(Map<String, dynamic> json) {
+    final Map<String, dynamic>? slotMap = json['slot'] is Map ? (json['slot'] as Map<String, dynamic>) : null;
+    final Map<String, dynamic>? hallMap = json['hall'] is Map ? (json['hall'] as Map<String, dynamic>) : null;
+    final Map<String, dynamic>? sessionMap = json['session'] is Map
+        ? (json['session'] as Map<String, dynamic>)
+        : (json['session_details'] is Map ? json['session_details'] as Map<String, dynamic> : null);
+
+    final rawSlotId = json['slot_id'] ?? slotMap?['slot_id'] ?? sessionMap?['slot_id'] ?? '';
+    final rawSlotName = json['slot_name'] ?? slotMap?['slot_name'] ?? sessionMap?['slot_name'] ?? '';
+    final rawSlotLabel = json['slot_label'] ?? slotMap?['slot_label'] ?? sessionMap?['slot_label'] ?? '';
+    final rawStartTime = json['start_time'] ?? json['from_time'] ?? json['slot_start_time'] ?? slotMap?['start_time'] ?? sessionMap?['start_time'] ?? json['time'] ?? '';
+    final rawEndTime = json['end_time'] ?? json['to_time'] ?? json['slot_end_time'] ?? slotMap?['end_time'] ?? sessionMap?['end_time'] ?? '';
+    final rawScheduleDate = json['schedule_date'] ?? json['session_date'] ?? json['date'] ?? slotMap?['schedule_date'] ?? sessionMap?['schedule_date'] ?? '';
+    final rawScheduleDay = json['schedule_day'] ?? json['day'] ?? slotMap?['schedule_day'] ?? sessionMap?['schedule_day'] ?? '';
+    final rawHallId = json['hall_id'] ?? hallMap?['hall_id'] ?? slotMap?['hall_id'] ?? sessionMap?['hall_id'] ?? '';
+    final rawHallName = json['hall_name'] ?? hallMap?['hall_name'] ?? slotMap?['hall_name'] ?? sessionMap?['hall_name'] ?? '';
+    final rawHallLabel = json['hall_label'] ?? hallMap?['hall_label'] ?? slotMap?['hall_label'] ?? sessionMap?['hall_label'] ?? '';
+    final rawVenueName = json['venue_name'] ?? slotMap?['venue_name'] ?? sessionMap?['venue_name'] ?? '';
+
     return AdminTopicDetail(
       topicId: (json['topic_id'] ?? '').toString(),
       speakerId: (json['speaker_id'] ?? '').toString(),
-      title: (json['title'] ?? '').toString().trim(),
-      speakerName: (json['speaker_name'] ?? '').toString().trim(),
-      speakerEmail: (json['speaker_email'] ?? '').toString().trim(),
+      title: (json['title'] ?? json['abstract_title'] ?? '').toString().trim(),
+      speakerName: (json['speaker_name'] ?? json['speaker_full_name'] ?? json['full_name'] ?? '').toString().trim(),
+      speakerEmail: (json['speaker_email'] ?? json['email'] ?? '').toString().trim(),
       contributingAuthor1Name: (json['contributing_author1_name'] ?? '').toString().trim(),
       contributingAuthor2Name: (json['contributing_author2_name'] ?? '').toString().trim(),
-      categoryOfSubmission: (json['category_of_submission'] ?? '').toString().trim(),
+      categoryOfSubmission: (json['category_of_submission'] ?? json['category'] ?? '').toString().trim(),
       presentationFormat: (json['presentation_format'] ?? '').toString().trim(),
       backgroundIntroduction: (json['background_introduction'] ?? '').toString().trim(),
       aimsObjectives: (json['aims_objectives'] ?? '').toString().trim(),
@@ -446,6 +538,17 @@ class AdminTopicDetail {
       updatedBy: (json['updated_by'] ?? '').toString().trim(),
       updatedByName: (json['updated_by_name'] ?? '').toString().trim(),
       updatedOn: (json['updated_on'] ?? '').toString().trim(),
+      slotId: rawSlotId.toString().trim(),
+      slotName: rawSlotName.toString().trim(),
+      slotLabel: rawSlotLabel.toString().trim(),
+      startTime: rawStartTime.toString().trim(),
+      endTime: rawEndTime.toString().trim(),
+      scheduleDate: rawScheduleDate.toString().trim(),
+      scheduleDay: rawScheduleDay.toString().trim(),
+      hallId: rawHallId.toString().trim(),
+      hallName: rawHallName.toString().trim(),
+      hallLabel: rawHallLabel.toString().trim(),
+      venueName: rawVenueName.toString().trim(),
     );
   }
 }
@@ -921,6 +1024,9 @@ class AdminSlotItem {
   final String? topicId;
   final String? topicTitle;
   final String? speakerName;
+  final String? assignmentId;
+
+  bool get isCancelled => slotStatus.toUpperCase() == 'CANCELLED';
 
   const AdminSlotItem({
     this.slotId = '',
@@ -934,21 +1040,117 @@ class AdminSlotItem {
     this.topicId,
     this.topicTitle,
     this.speakerName,
+    this.assignmentId,
   });
 
   factory AdminSlotItem.fromJson(Map<String, dynamic> json) {
+    String? rawTopicId = json['topic_id']?.toString();
+    String? rawTopicTitle = json['topic_title']?.toString() ?? json['title']?.toString() ?? json['topic_name']?.toString();
+    String? rawSpeakerName = json['speaker_name']?.toString() ?? json['full_name']?.toString() ?? json['speaker_full_name']?.toString() ?? json['candidate_name']?.toString();
+    String? rawAssignmentId = (json['assignment_id'] ?? json['session_assignment_id'] ?? json['slot_assignment_id'])?.toString();
+
+    // Check nested topic map
+    if (json['topic'] is Map) {
+      final t = json['topic'] as Map<String, dynamic>;
+      rawTopicId ??= t['topic_id']?.toString() ?? t['id']?.toString();
+      rawTopicTitle ??= t['title']?.toString() ?? t['topic_title']?.toString() ?? t['topic_name']?.toString();
+      rawSpeakerName ??= t['speaker_name']?.toString() ?? t['full_name']?.toString();
+    }
+
+    // Check nested speaker map
+    if (json['speaker'] is Map) {
+      final s = json['speaker'] as Map<String, dynamic>;
+      rawSpeakerName ??= s['full_name']?.toString() ?? s['speaker_name']?.toString() ?? s['name']?.toString();
+    }
+
+    // Check nested sessions list
+    if (json['sessions'] is List && (json['sessions'] as List).isNotEmpty) {
+      final firstSess = (json['sessions'] as List).first;
+      if (firstSess is Map<String, dynamic>) {
+        if (firstSess['topic'] is Map) {
+          final t = firstSess['topic'] as Map<String, dynamic>;
+          rawTopicId ??= t['topic_id']?.toString() ?? t['id']?.toString();
+          rawTopicTitle ??= t['title']?.toString() ?? t['topic_title']?.toString();
+        } else {
+          rawTopicId ??= firstSess['topic_id']?.toString();
+          rawTopicTitle ??= firstSess['topic_title']?.toString() ?? firstSess['title']?.toString();
+        }
+
+        if (firstSess['speaker'] is Map) {
+          final s = firstSess['speaker'] as Map<String, dynamic>;
+          rawSpeakerName ??= s['full_name']?.toString() ?? s['speaker_name']?.toString();
+        } else {
+          rawSpeakerName ??= firstSess['speaker_name']?.toString() ?? firstSess['full_name']?.toString();
+        }
+      }
+    } else if (json['session'] is Map) {
+      final sMap = json['session'] as Map<String, dynamic>;
+      if (sMap['topic'] is Map) {
+        final t = sMap['topic'] as Map<String, dynamic>;
+        rawTopicId ??= t['topic_id']?.toString() ?? t['id']?.toString();
+        rawTopicTitle ??= t['title']?.toString() ?? t['topic_title']?.toString();
+      } else {
+        rawTopicId ??= sMap['topic_id']?.toString();
+        rawTopicTitle ??= sMap['topic_title']?.toString() ?? sMap['title']?.toString();
+      }
+
+      if (sMap['speaker'] is Map) {
+        final sp = sMap['speaker'] as Map<String, dynamic>;
+        rawSpeakerName ??= sp['full_name']?.toString() ?? sp['speaker_name']?.toString();
+      } else {
+        rawSpeakerName ??= sMap['speaker_name']?.toString() ?? sMap['full_name']?.toString();
+      }
+    }
+
+    if (rawTopicId != null && (rawTopicId.isEmpty || rawTopicId == 'null')) rawTopicId = null;
+    if (rawTopicTitle != null && (rawTopicTitle.isEmpty || rawTopicTitle == 'null')) rawTopicTitle = null;
+    if (rawSpeakerName != null && (rawSpeakerName.isEmpty || rawSpeakerName == 'null')) rawSpeakerName = null;
+
+    final String rawStatus = (json['slot_status'] ?? json['status'] ?? '').toString().trim();
+    final String upperStatus = rawStatus.toUpperCase();
+    final bool isCancelled = upperStatus == 'CANCELLED';
+
+    final bool hasAssignedTopic = (rawTopicId != null && rawTopicId.isNotEmpty && rawTopicId != '0') ||
+        (rawTopicTitle != null && rawTopicTitle.isNotEmpty);
+
+    final bool statusIsAssigned = upperStatus == 'ASSIGNED' || upperStatus == 'BOOKED' || upperStatus == 'ALLOCATED';
+
+    final bool explicitAssigned = json['is_assigned'] == true ||
+        json['is_assigned'] == 1 ||
+        json['is_assigned'] == '1';
+
+    final bool isAssigned = !isCancelled && (statusIsAssigned || (explicitAssigned && hasAssignedTopic) || (upperStatus.isNotEmpty && upperStatus != 'FREE' && upperStatus != 'UNASSIGNED'));
+
+    final String finalSlotStatus = rawStatus.isNotEmpty
+        ? rawStatus
+        : (isAssigned ? 'ASSIGNED' : 'FREE');
+
+    final rawStartTime = (json['start_time'] ?? json['from_time'] ?? json['slot_start_time'] ?? json['start'] ?? json['schedule_time'] ?? json['time'] ?? json['slot_time'] ?? json['time_slot'] ?? '').toString().trim();
+    final rawEndTime = (json['end_time'] ?? json['to_time'] ?? json['slot_end_time'] ?? json['end'] ?? '').toString().trim();
+
+    String finalStartTime = rawStartTime;
+    String finalEndTime = rawEndTime;
+    if (finalEndTime.isEmpty && (finalStartTime.contains('-') || finalStartTime.contains('–'))) {
+      final parts = finalStartTime.split(RegExp(r'[-–]'));
+      if (parts.length >= 2) {
+        finalStartTime = parts[0].trim();
+        finalEndTime = parts[1].trim();
+      }
+    }
+
     return AdminSlotItem(
-      slotId: (json['slot_id'] ?? '').toString(),
+      slotId: (json['slot_id'] ?? json['id'] ?? '').toString(),
       slotName: (json['slot_name'] ?? '').toString().trim(),
       slotLabel: (json['slot_label'] ?? '').toString().trim(),
       slotNumber: (json['slot_number'] ?? '').toString().trim(),
-      startTime: (json['start_time'] ?? '').toString().trim(),
-      endTime: (json['end_time'] ?? '').toString().trim(),
-      slotStatus: (json['slot_status'] ?? 'FREE').toString().trim(),
-      isAssigned: json['is_assigned'] == true || json['is_assigned'] == 1 || json['is_assigned'] == '1',
-      topicId: json['topic_id']?.toString(),
-      topicTitle: json['topic_title']?.toString(),
-      speakerName: json['speaker_name']?.toString(),
+      startTime: finalStartTime,
+      endTime: finalEndTime,
+      slotStatus: finalSlotStatus,
+      isAssigned: isAssigned,
+      topicId: isCancelled ? null : rawTopicId,
+      topicTitle: isCancelled ? null : rawTopicTitle,
+      speakerName: isCancelled ? null : rawSpeakerName,
+      assignmentId: rawAssignmentId,
     );
   }
 }
@@ -1107,6 +1309,8 @@ class AdminSlotDetail {
   final AdminSlotDetailTopic? topic;
   final AdminSlotDetailSpeaker? speaker;
 
+  bool get isCancelled => slotStatus.toUpperCase() == 'CANCELLED' || status.toUpperCase() == 'CANCELLED';
+
   const AdminSlotDetail({
     this.slotId = '',
     this.venueId = '',
@@ -1151,6 +1355,33 @@ class AdminSlotDetail {
       directSpeaker = sessionsList.first.speaker;
     }
 
+    final rawSlotStatus = (json['slot_status'] ?? '').toString().trim();
+    final rawGeneralStatus = (json['status'] ?? '').toString().trim();
+    final bool isCancelled = rawSlotStatus.toUpperCase() == 'CANCELLED' || rawGeneralStatus.toUpperCase() == 'CANCELLED';
+
+    final bool isAssigned = !isCancelled && (
+        json['is_assigned'] == true ||
+        json['is_assigned'] == 1 ||
+        json['is_assigned'] == '1' ||
+        rawSlotStatus.toUpperCase() == 'ASSIGNED' ||
+        rawSlotStatus.toUpperCase() == 'BOOKED' ||
+        rawSlotStatus.toUpperCase() == 'ALLOCATED' ||
+        (sessionsList.isNotEmpty && !isCancelled)
+    );
+
+    final rawStartTime = (json['start_time'] ?? json['from_time'] ?? json['slot_start_time'] ?? json['start'] ?? json['schedule_time'] ?? json['time'] ?? json['slot_time'] ?? json['time_slot'] ?? '').toString().trim();
+    final rawEndTime = (json['end_time'] ?? json['to_time'] ?? json['slot_end_time'] ?? json['end'] ?? '').toString().trim();
+
+    String finalStartTime = rawStartTime;
+    String finalEndTime = rawEndTime;
+    if (finalEndTime.isEmpty && (finalStartTime.contains('-') || finalStartTime.contains('–'))) {
+      final parts = finalStartTime.split(RegExp(r'[-–]'));
+      if (parts.length >= 2) {
+        finalStartTime = parts[0].trim();
+        finalEndTime = parts[1].trim();
+      }
+    }
+
     return AdminSlotDetail(
       slotId: (json['slot_id'] ?? '').toString(),
       venueId: (json['venue_id'] ?? '').toString(),
@@ -1164,17 +1395,14 @@ class AdminSlotDetail {
       slotName: (json['slot_name'] ?? '').toString().trim(),
       slotLabel: (json['slot_label'] ?? '').toString().trim(),
       slotNumber: (json['slot_number'] ?? '').toString().trim(),
-      startTime: (json['start_time'] ?? '').toString().trim(),
-      endTime: (json['end_time'] ?? '').toString().trim(),
-      slotStatus: (json['slot_status'] ?? 'FREE').toString().trim(),
-      status: (json['status'] ?? '').toString().trim(),
-      isAssigned: json['is_assigned'] == true ||
-          json['is_assigned'] == 1 ||
-          json['is_assigned'] == '1' ||
-          sessionsList.isNotEmpty,
-      sessions: sessionsList,
-      topic: directTopic,
-      speaker: directSpeaker,
+      startTime: finalStartTime,
+      endTime: finalEndTime,
+      slotStatus: rawSlotStatus.isNotEmpty ? rawSlotStatus : (isAssigned ? 'ASSIGNED' : 'FREE'),
+      status: rawGeneralStatus,
+      isAssigned: isAssigned,
+      sessions: isCancelled ? const [] : sessionsList,
+      topic: isCancelled ? null : directTopic,
+      speaker: isCancelled ? null : directSpeaker,
     );
   }
 }
@@ -1319,6 +1547,8 @@ class AdminProvider with ChangeNotifier {
       fetchBooths(accessToken, summitId: summitId, forceRefresh: forceRefresh),
       fetchSlots(accessToken, summitId: summitId, forceRefresh: forceRefresh),
     ]);
+    _enrichTopicsWithSlotSchedule();
+    notifyListeners();
   }
 
   // ==========================================
@@ -1534,7 +1764,7 @@ class AdminProvider with ChangeNotifier {
       final response = await ApiService.fetchAdminAllTopics(
         accessToken: accessToken,
         page: targetPage,
-        limit: 10,
+        limit: 100,
         summitId: summitId,
         search: _topicSearch.isNotEmpty ? _topicSearch : null,
         categoryOfSubmission: categoryOfSubmission,
@@ -1552,6 +1782,7 @@ class AdminProvider with ChangeNotifier {
           } else {
             _topics = newTopics;
           }
+          _enrichTopicsWithSlotSchedule();
 
           if (body['pagination'] != null) {
             _topicsPagination = AdminPagination.fromJson(body['pagination']);
@@ -1606,6 +1837,7 @@ class AdminProvider with ChangeNotifier {
         accessToken: accessToken,
         page: targetPage,
         limit: 50,
+        workshopStatus: 1,
         summitId: summitId,
         search: _workshopSearch.isNotEmpty ? _workshopSearch : null,
       );
@@ -2062,6 +2294,7 @@ class AdminProvider with ChangeNotifier {
         if (body['status'] == true && body['data'] is List) {
           final List rawList = body['data'];
           _hallTracks = rawList.map((e) => AdminHallTrack.fromJson(e)).toList();
+          _enrichTopicsWithSlotSchedule();
         } else {
           _slotsError = body['message']?.toString() ?? 'Failed to load slots';
         }
@@ -2104,5 +2337,91 @@ class AdminProvider with ChangeNotifier {
       CustomLogger.logError('Fetch admin slot details failed', e, stack);
     }
     return null;
+  }
+
+  // Helper to look up slot & schedule details for a given topicId across loaded tracks
+  Map<String, String>? getTopicScheduleInfo(String topicId, {String? topicTitle}) {
+    final targetId = topicId.trim();
+    final targetTitle = topicTitle?.trim().toLowerCase();
+
+    for (final track in _hallTracks) {
+      for (final day in track.days) {
+        for (final slot in day.slots) {
+          if (slot.isCancelled) continue;
+          bool isMatch = false;
+          if (targetId.isNotEmpty && slot.topicId != null && slot.topicId.toString().trim() == targetId) {
+            isMatch = true;
+          } else if (targetTitle != null && targetTitle.isNotEmpty && slot.topicTitle != null && slot.topicTitle!.trim().toLowerCase() == targetTitle) {
+            isMatch = true;
+          }
+
+          if (isMatch) {
+            return {
+              'slot_id': slot.slotId,
+              'slot_name': slot.slotName,
+              'slot_label': slot.slotLabel,
+              'start_time': slot.startTime,
+              'end_time': slot.endTime,
+              'schedule_date': day.scheduleDate,
+              'schedule_day': day.scheduleDay,
+              'hall_id': track.hallId,
+              'hall_name': track.hallName,
+              'hall_label': track.hallLabel,
+              'speaker_name': slot.speakerName ?? '',
+              'topic_title': slot.topicTitle ?? '',
+            };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // Cross-reference and enrich all loaded topics with slot timings and schedule data
+  void _enrichTopicsWithSlotSchedule() {
+    if (_topics.isEmpty || _hallTracks.isEmpty) return;
+    for (int i = 0; i < _topics.length; i++) {
+      final t = _topics[i];
+      final info = getTopicScheduleInfo(t.topicId, topicTitle: t.title);
+      if (info != null) {
+        final finalSlotId = t.slotId.isNotEmpty ? t.slotId : (info['slot_id'] ?? '');
+        final finalSlotName = t.slotName.isNotEmpty ? t.slotName : (info['slot_name'] ?? '');
+        final finalSlotLabel = t.slotLabel.isNotEmpty ? t.slotLabel : (info['slot_label'] ?? '');
+        final finalStartTime = t.startTime.isNotEmpty ? t.startTime : (info['start_time'] ?? '');
+        final finalEndTime = t.endTime.isNotEmpty ? t.endTime : (info['end_time'] ?? '');
+        final finalScheduleDate = t.scheduleDate.isNotEmpty ? t.scheduleDate : (info['schedule_date'] ?? '');
+        final finalScheduleDay = t.scheduleDay.isNotEmpty ? t.scheduleDay : (info['schedule_day'] ?? '');
+        final finalHallId = t.hallId.isNotEmpty ? t.hallId : (info['hall_id'] ?? '');
+        final finalHallName = t.hallName.isNotEmpty ? t.hallName : (info['hall_name'] ?? '');
+        final finalHallLabel = t.hallLabel.isNotEmpty ? t.hallLabel : (info['hall_label'] ?? '');
+
+        _topics[i] = AdminTopic(
+          topicId: t.topicId,
+          speakerId: t.speakerId,
+          title: t.title,
+          speakerName: t.speakerName,
+          categoryOfSubmission: t.categoryOfSubmission,
+          status: t.status.isNotEmpty ? t.status : 'confirmed',
+          topicStatus: t.topicStatus.isNotEmpty ? t.topicStatus : 'confirmed',
+          isPublished: t.isPublished,
+          createdBy: t.createdBy,
+          createdByName: t.createdByName,
+          createdOn: t.createdOn,
+          updatedBy: t.updatedBy,
+          updatedByName: t.updatedByName,
+          updatedOn: t.updatedOn,
+          slotId: finalSlotId,
+          slotName: finalSlotName,
+          slotLabel: finalSlotLabel,
+          startTime: finalStartTime,
+          endTime: finalEndTime,
+          scheduleDate: finalScheduleDate,
+          scheduleDay: finalScheduleDay,
+          hallId: finalHallId,
+          hallName: finalHallName,
+          hallLabel: finalHallLabel,
+        );
+      }
+    }
   }
 }

@@ -70,13 +70,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       auth.registerDeviceToken();
-      auth.fetchMyQr(forceRefresh: forceRefresh);
-      notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
 
       if (auth.isAdmin) {
         await adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh);
         return;
       }
+
+      auth.fetchMyQr(forceRefresh: forceRefresh);
+      notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
 
       await homeProvider.fetchSummits(auth.accessToken);
       if (!mounted) return;

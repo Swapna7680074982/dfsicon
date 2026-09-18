@@ -1927,7 +1927,7 @@ class ApiService {
   static Future<http.Response> fetchAdminAllWorkshops({
     required String accessToken,
     int page = 1,
-    int limit = 10,
+    int limit = 50,
     String? search,
     int? workshopStatus = 1,
     int summitId = 1,
@@ -1945,9 +1945,9 @@ class ApiService {
       "summit_id": summitId,
       "sort_by": sortBy,
       "sort_order": sortOrder,
+      "workshop_status": workshopStatus ?? 1,
     };
     if (search != null && search.trim().isNotEmpty) bodyMap['search'] = search.trim();
-    if (workshopStatus != null) bodyMap['workshop_status'] = workshopStatus;
 
     final requestBody = json.encode(bodyMap);
     CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);

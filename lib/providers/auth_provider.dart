@@ -70,6 +70,7 @@ class AuthProvider with ChangeNotifier {
   bool get isQrGenerated => _isQrGenerated && _myQrData != null && _myQrData!.qrImage.isNotEmpty;
 
   Future<MyQrData?> fetchMyQr({bool forceRefresh = false}) async {
+    if (isAdminRole || isAdmin) return null;
     if (!forceRefresh && _myQrData != null) {
       return _myQrData;
     }
@@ -124,6 +125,7 @@ class AuthProvider with ChangeNotifier {
   // Dynamic profile fields with mock fallbacks
   String get userId => (_profileData['user_id'] ?? _profileData['id'] ?? '').toString();
   String get userRole => _profileData['role_code'] ?? _userRole;
+  String get roleCode => _profileData['role_code']?.toString() ?? _userRole;
   String get userName => _profileData['full_name'] ?? _userName;
   
   bool get isAdminRole {

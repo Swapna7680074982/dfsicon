@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/admin_provider.dart';
+import '../../utils/time_formatter.dart';
 
 /// Entry helper functions to show modal bottom sheets for Admin details
 
@@ -904,6 +905,42 @@ class _AdminTopicDetailsSheetState extends State<AdminTopicDetailsSheet> {
     final author1 = _topicDetail?.contributingAuthor1Name ?? '';
     final author2 = _topicDetail?.contributingAuthor2Name ?? '';
     final bool isConfirmed = status.toLowerCase() == 'confirmed';
+    final admin = Provider.of<AdminProvider>(context, listen: false);
+    final scheduleInfo = admin.getTopicScheduleInfo(widget.topicId);
+    final scheduleDate = (_topicDetail?.scheduleDate.isNotEmpty == true
+        ? _topicDetail!.scheduleDate
+        : (widget.initialTopic?.scheduleDate.isNotEmpty == true
+            ? widget.initialTopic!.scheduleDate
+            : scheduleInfo?['schedule_date'])) ?? '';
+    final scheduleDay = (_topicDetail?.scheduleDay.isNotEmpty == true
+        ? _topicDetail!.scheduleDay
+        : (widget.initialTopic?.scheduleDay.isNotEmpty == true
+            ? widget.initialTopic!.scheduleDay
+            : scheduleInfo?['schedule_day'])) ?? '';
+    final startTime = (_topicDetail?.startTime.isNotEmpty == true
+        ? _topicDetail!.startTime
+        : (widget.initialTopic?.startTime.isNotEmpty == true
+            ? widget.initialTopic!.startTime
+            : scheduleInfo?['start_time'])) ?? '';
+    final endTime = (_topicDetail?.endTime.isNotEmpty == true
+        ? _topicDetail!.endTime
+        : (widget.initialTopic?.endTime.isNotEmpty == true
+            ? widget.initialTopic!.endTime
+            : scheduleInfo?['end_time'])) ?? '';
+    final hallName = (_topicDetail?.hallLabel.isNotEmpty == true
+        ? _topicDetail!.hallLabel
+        : (_topicDetail?.hallName.isNotEmpty == true
+            ? _topicDetail!.hallName
+            : (widget.initialTopic?.hallLabel.isNotEmpty == true
+                ? widget.initialTopic!.hallLabel
+                : (scheduleInfo?['hall_label'] ?? scheduleInfo?['hall_name'])))) ?? '';
+    final slotTitle = (_topicDetail?.slotLabel.isNotEmpty == true
+        ? _topicDetail!.slotLabel
+        : (_topicDetail?.slotName.isNotEmpty == true
+            ? _topicDetail!.slotName
+            : (widget.initialTopic?.slotLabel.isNotEmpty == true
+                ? widget.initialTopic!.slotLabel
+                : (scheduleInfo?['slot_label'] ?? scheduleInfo?['slot_name'])))) ?? '';
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.88,
@@ -1050,6 +1087,31 @@ class _AdminTopicDetailsSheetState extends State<AdminTopicDetailsSheet> {
                               ),
                             ),
                             const SizedBox(height: 16),
+
+                            // Assigned Presentation Slot & Timing (Date, Time, Hall)
+                            if (isConfirmed || scheduleDate.isNotEmpty || startTime.isNotEmpty || hallName.isNotEmpty) ...[
+                              _buildSectionHeader('ASSIGNED PRESENTATION SLOT & TIMING', Icons.event_available_rounded),
+                              const SizedBox(height: 8),
+                              _buildInfoCard([
+                                if (scheduleDate.isNotEmpty || scheduleDay.isNotEmpty)
+                                  _buildInfoRow(
+                                    'Schedule Date & Day',
+                                    [scheduleDate, scheduleDay.isNotEmpty ? 'Day $scheduleDay' : ''].where((s) => s.isNotEmpty).join('  •  '),
+                                    Icons.calendar_today_rounded,
+                                  ),
+                                if (startTime.isNotEmpty)
+                                  _buildInfoRow(
+                                    'Time Window',
+                                    endTime.isNotEmpty ? '$startTime - $endTime' : startTime,
+                                    Icons.access_time_rounded,
+                                  ),
+                                if (hallName.isNotEmpty)
+                                  _buildInfoRow('Hall / Track', hallName, Icons.meeting_room_rounded),
+                                if (slotTitle.isNotEmpty)
+                                  _buildInfoRow('Slot', slotTitle, Icons.layers_outlined),
+                              ]),
+                              const SizedBox(height: 16),
+                            ],
 
                             // Speaker & Author Info Card
                             _buildSectionHeader('PRIMARY SPEAKER & AUTHORS', Icons.person_outline_rounded),
@@ -2633,7 +2695,9 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
         ? _details!.slotStatus
         : (widget.initialSlot?.slotStatus ?? 'FREE');
 
-    final bool isBooked = slotStatus.toUpperCase() == 'BOOKED';
+    final cleanSlotStatus = slotStatus.trim().toUpperCase();
+    final bool isCancelled = cleanSlotStatus == 'CANCELLED';
+    final bool isBooked = !isCancelled && (cleanSlotStatus == 'BOOKED' || cleanSlotStatus == 'ASSIGNED' || cleanSlotStatus == 'ALLOCATED' || (_details?.isAssigned ?? widget.initialSlot?.isAssigned ?? false));
 
     final hallName = _details?.hallName.isNotEmpty == true
         ? _details!.hallName
@@ -2642,8 +2706,6 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
     final hallLabel = _details?.hallLabel.isNotEmpty == true
         ? _details!.hallLabel
         : (widget.hallLabel ?? '');
-
-    final venueName = _details?.venueName ?? '';
 
     final scheduleDate = _details?.scheduleDate.isNotEmpty == true
         ? _details!.scheduleDate
@@ -2661,7 +2723,11 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
         ? _details!.endTime
         : (widget.initialSlot?.endTime ?? '');
 
-    final timeWindow = (startTime.isNotEmpty && endTime.isNotEmpty) ? '$startTime - $endTime' : startTime;
+    final formattedStart = TimeFormatter.formatTime(startTime);
+    final formattedEnd = TimeFormatter.formatTime(endTime);
+    final timeWindow = (formattedStart.isNotEmpty && formattedEnd.isNotEmpty)
+        ? '$formattedStart - $formattedEnd'
+        : (formattedStart.isNotEmpty ? formattedStart : (startTime.isNotEmpty ? startTime : ''));
 
     final topic = _details?.topic;
     final speaker = _details?.speaker;
@@ -2792,59 +2858,130 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
                                     width: 50,
                                     height: 50,
                                     decoration: BoxDecoration(
-                                      color: isBooked ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA),
+                                      color: isCancelled
+                                          ? const Color(0xFFFEF2F2)
+                                          : (isBooked ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA)),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: isBooked ? const Color(0xFFA7F3D0) : const Color(0xFF99F6E4),
+                                        color: isCancelled
+                                            ? const Color(0xFFFECACA)
+                                            : (isBooked ? const Color(0xFFA7F3D0) : const Color(0xFF99F6E4)),
                                       ),
                                     ),
                                     child: Icon(
-                                      isBooked ? Icons.event_available_rounded : Icons.access_time_rounded,
-                                      color: isBooked ? const Color(0xFF059669) : const Color(0xFF0D9488),
+                                      isCancelled
+                                          ? Icons.cancel_outlined
+                                          : (isBooked ? Icons.event_available_rounded : Icons.access_time_rounded),
+                                      color: isCancelled
+                                          ? const Color(0xFFDC2626)
+                                          : (isBooked ? const Color(0xFF059669) : const Color(0xFF0D9488)),
                                       size: 26,
                                     ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          slotTitle,
-                                          style: const TextStyle(
-                                            fontSize: 16.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
+                                    child: () {
+                                      String cleanText(String s) =>
+                                          s.replaceAll('#', '').replaceAll(RegExp(r'\s+'), ' ').trim();
+
+                                      String mainSlotTitle = '';
+                                      String slotBadgeLabel = '';
+
+                                      if (slotTitle.contains('#')) {
+                                        final parts = slotTitle.split('#');
+                                        final prefix = cleanText(parts[0]);
+                                        final suffix = cleanText(parts.sublist(1).join(' '));
+
+                                        if (suffix.isNotEmpty) {
+                                          mainSlotTitle = suffix;
+                                          if (prefix.isNotEmpty && prefix.toLowerCase() != suffix.toLowerCase()) {
+                                            slotBadgeLabel = prefix;
+                                          }
+                                        } else {
+                                          mainSlotTitle = prefix;
+                                        }
+                                      } else {
+                                        mainSlotTitle = cleanText(slotTitle);
+                                      }
+
+                                      if (mainSlotTitle.isEmpty) {
+                                        if (rawSlotName.contains('#')) {
+                                          final parts = rawSlotName.split('#');
+                                          final prefix = cleanText(parts[0]);
+                                          final suffix = cleanText(parts.sublist(1).join(' '));
+                                          mainSlotTitle = suffix.isNotEmpty ? suffix : prefix;
+                                          if (prefix.isNotEmpty && suffix.isNotEmpty && prefix.toLowerCase() != suffix.toLowerCase()) {
+                                            slotBadgeLabel = prefix;
+                                          }
+                                        } else {
+                                          mainSlotTitle = cleanText(rawSlotName);
+                                        }
+                                      }
+
+                                      if (mainSlotTitle.isEmpty) {
+                                        mainSlotTitle = slotNumber.isNotEmpty ? 'Slot $slotNumber' : 'Slot';
+                                      }
+
+                                      if (slotBadgeLabel.isEmpty && slotNumber.isNotEmpty) {
+                                        if (!mainSlotTitle.toLowerCase().contains('slot $slotNumber') &&
+                                            mainSlotTitle.toLowerCase() != 'slot $slotNumber'.toLowerCase() &&
+                                            mainSlotTitle != slotNumber) {
+                                          slotBadgeLabel = 'Slot $slotNumber';
+                                        }
+                                      }
+
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  mainSlotTitle,
+                                                  style: const TextStyle(
+                                                    fontSize: 15.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppColors.textPrimary,
+                                                    height: 1.3,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (slotBadgeLabel.isNotEmpty) ...[
+                                                const SizedBox(width: 8),
+                                                _buildBadge(slotBadgeLabel, const Color(0xFF0D9488), const Color(0xFFF0FDFA)),
+                                              ],
+                                            ],
                                           ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            _buildBadge(
-                                              slotStatus,
-                                              isBooked ? const Color(0xFF059669) : const Color(0xFF0D9488),
-                                              isBooked ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA),
-                                            ),
-                                            if (slotNumber.isNotEmpty && !rawSlotName.contains(slotNumber)) ...[
-                                              const SizedBox(width: 6),
-                                              _buildBadge('Slot $slotNumber', const Color(0xFF0D9488), const Color(0xFFF0FDFA)),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              _buildBadge(
+                                                slotStatus,
+                                                isCancelled
+                                                    ? const Color(0xFFDC2626)
+                                                    : (isBooked ? const Color(0xFF059669) : const Color(0xFF0D9488)),
+                                                isCancelled
+                                                    ? const Color(0xFFFEF2F2)
+                                                    : (isBooked ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA)),
+                                              ),
+                                              if (hallLabel.isNotEmpty) ...[
+                                                const SizedBox(width: 6),
+                                                _buildBadge(hallLabel, const Color(0xFF4F46E5), const Color(0xFFEEF2FF)),
+                                              ],
                                             ],
-                                            if (hallLabel.isNotEmpty) ...[
-                                              const SizedBox(width: 6),
-                                              _buildBadge(hallLabel, const Color(0xFF4F46E5), const Color(0xFFEEF2FF)),
-                                            ],
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                          ),
+                                        ],
+                                      );
+                                    }(),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(height: 18),
 
-                            // Schedule & Location Info
-                            _buildSectionHeader('SCHEDULE & VENUE', Icons.calendar_month_rounded),
+                            // Schedule Info
+                            _buildSectionHeader('SCHEDULE', Icons.calendar_month_rounded),
                             const SizedBox(height: 8),
                             _buildInfoCard([
                               if (hallLabel.isNotEmpty || hallName.isNotEmpty)
@@ -2853,8 +2990,6 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
                                   hallLabel.trim().isNotEmpty ? hallLabel.trim() : hallName.trim(),
                                   Icons.meeting_room_rounded,
                                 ),
-                              if (venueName.isNotEmpty)
-                                _buildInfoRow('Venue', venueName, Icons.location_on_outlined),
                               if (scheduleDate.isNotEmpty || scheduleDay.isNotEmpty)
                                 _buildInfoRow(
                                   'Schedule Date & Day',
@@ -2872,32 +3007,7 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
                               const SizedBox(height: 10),
                               ..._details!.sessions.asMap().entries.map((e) => _buildSessionAssignmentCard(e.key, e.value)),
                               const SizedBox(height: 16),
-                            ] else if (!isBooked && topicTitle.isEmpty)
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: const Column(
-                                  children: [
-                                    Icon(Icons.event_note_rounded, size: 28, color: Color(0xFF94A3B8)),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      'This presentation slot is currently free and available for topic scheduling.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        color: AppColors.textSecondary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else ...[
+                            ] else if (isBooked || topicTitle.isNotEmpty) ...[
                               _buildSectionHeader('SCIENTIFIC PRESENTATION', Icons.description_rounded),
                               const SizedBox(height: 8),
                               _buildInfoCard([
@@ -3092,10 +3202,6 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
                       _buildInfoRow('Email', speaker.email, Icons.mail_outline_rounded, copyable: true),
                   ],
                 ],
-                if (sess.assignedOn.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _buildInfoRow('Assigned On', sess.assignedOn, Icons.calendar_today_outlined),
-                ],
               ],
             ),
           ),
@@ -3229,16 +3335,23 @@ class _AdminAllSlotsSheetState extends State<AdminAllSlotsSheet> {
     }
     final sortedDaysList = allDaysSet.toList()..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
 
-    // Calculate total slots, free and booked from filtered results
     int totalSlots = 0;
     int bookedSlots = 0;
+    int cancelledSlots = 0;
     for (final day in groupedDays) {
       for (final hall in day.halls) {
         totalSlots += hall.slots.length;
-        bookedSlots += hall.slots.where((s) => s.slotStatus.toUpperCase() == 'BOOKED' || s.isAssigned).length;
+        for (final s in hall.slots) {
+          final st = s.slotStatus.toUpperCase();
+          if (st == 'CANCELLED' || s.isCancelled) {
+            cancelledSlots++;
+          } else if (st != 'FREE' && st != 'UNASSIGNED' && (st == 'BOOKED' || st == 'ASSIGNED' || st == 'ALLOCATED' || s.isAssigned)) {
+            bookedSlots++;
+          }
+        }
       }
     }
-    final freeSlots = totalSlots - bookedSlots;
+    final freeSlots = (totalSlots - bookedSlots - cancelledSlots).clamp(0, totalSlots);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.90,
@@ -3401,7 +3514,23 @@ class _AdminAllSlotsSheetState extends State<AdminAllSlotsSheet> {
                       '$freeSlots Free',
                       style: const TextStyle(fontSize: 11, color: Color(0xFF4D8F14), fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(width: 12),
+                    if (cancelledSlots > 0) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFDC2626),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$cancelledSlots Cancelled',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                    const SizedBox(width: 10),
                     Container(
                       width: 8,
                       height: 8,
@@ -3609,13 +3738,34 @@ class _AdminAllSlotsSheetState extends State<AdminAllSlotsSheet> {
                                                   spacing: 8,
                                                   runSpacing: 8,
                                                   children: hall.slots.map((slot) {
-                                                    final isBooked = slot.slotStatus.toUpperCase() == 'BOOKED' || slot.isAssigned;
-                                                    final slotTitle = slot.slotLabel.trim().isNotEmpty
+                                                    final cleanStatus = slot.slotStatus.toUpperCase();
+                                                    final isCancelled = cleanStatus == 'CANCELLED' || slot.isCancelled;
+                                                    final isBooked = !isCancelled && (cleanStatus == 'BOOKED' || cleanStatus == 'ASSIGNED' || cleanStatus == 'ALLOCATED' || slot.isAssigned);
+                                                    final rawSlotTitle = slot.slotLabel.trim().isNotEmpty
                                                         ? slot.slotLabel.trim()
                                                         : (slot.slotName.trim().isNotEmpty ? slot.slotName.trim() : 'Slot ${slot.slotNumber}');
-                                                    final timeStr = (slot.startTime.isNotEmpty && slot.endTime.isNotEmpty)
-                                                        ? '${slot.startTime} - ${slot.endTime}'
-                                                        : (slot.startTime.isNotEmpty ? slot.startTime : '');
+
+                                                    // Clean title for card display
+                                                    String cardSlotTitle = rawSlotTitle;
+                                                    for (final delimiter in ['#', '|', '–', '—', '-']) {
+                                                      if (cardSlotTitle.contains(delimiter)) {
+                                                        final prefix = cardSlotTitle.split(delimiter)[0].trim();
+                                                        if (prefix.isNotEmpty && prefix.length <= 10) {
+                                                          cardSlotTitle = prefix;
+                                                          break;
+                                                        }
+                                                      }
+                                                    }
+                                                    cardSlotTitle = cardSlotTitle.replaceAll('#', '').trim();
+                                                    if (cardSlotTitle.isEmpty && slot.slotNumber.isNotEmpty) {
+                                                      cardSlotTitle = 'Slot ${slot.slotNumber}';
+                                                    }
+
+                                                    final formattedStart = TimeFormatter.formatTime(slot.startTime);
+                                                    final formattedEnd = TimeFormatter.formatTime(slot.endTime);
+                                                    final timeStr = (formattedStart.isNotEmpty && formattedEnd.isNotEmpty)
+                                                        ? '$formattedStart - $formattedEnd'
+                                                        : (formattedStart.isNotEmpty ? formattedStart : (slot.startTime.isNotEmpty ? slot.startTime : ''));
 
                                                     return Material(
                                                       color: Colors.transparent,
@@ -3638,10 +3788,14 @@ class _AdminAllSlotsSheetState extends State<AdminAllSlotsSheet> {
                                                           width: itemWidth,
                                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                                                           decoration: BoxDecoration(
-                                                            color: isBooked ? const Color(0xFFFFFBEB) : const Color(0xFFF1FCE8),
+                                                            color: isCancelled
+                                                                ? const Color(0xFFFEF2F2)
+                                                                : (isBooked ? const Color(0xFFFFFBEB) : const Color(0xFFF1FCE8)),
                                                             borderRadius: BorderRadius.circular(12),
                                                             border: Border.all(
-                                                              color: isBooked ? const Color(0xFFFDE68A) : const Color(0xFF84CC16),
+                                                              color: isCancelled
+                                                                  ? const Color(0xFFFECACA)
+                                                                  : (isBooked ? const Color(0xFFFDE68A) : const Color(0xFF84CC16)),
                                                               width: 1.1,
                                                             ),
                                                           ),
@@ -3649,24 +3803,28 @@ class _AdminAllSlotsSheetState extends State<AdminAllSlotsSheet> {
                                                             mainAxisSize: MainAxisSize.min,
                                                             children: [
                                                               Text(
-                                                                slotTitle,
+                                                                cardSlotTitle,
                                                                 style: TextStyle(
                                                                   fontSize: 12,
                                                                   fontWeight: FontWeight.bold,
-                                                                  color: isBooked ? const Color(0xFF92400E) : const Color(0xFF2E6B08),
+                                                                  color: isCancelled
+                                                                      ? const Color(0xFF991B1B)
+                                                                      : (isBooked ? const Color(0xFF92400E) : const Color(0xFF2E6B08)),
                                                                 ),
                                                                 textAlign: TextAlign.center,
                                                                 maxLines: 1,
                                                                 overflow: TextOverflow.ellipsis,
                                                               ),
-                                                              if (isBooked && timeStr.isNotEmpty) ...[
+                                                              if (timeStr.isNotEmpty) ...[
                                                                 const SizedBox(height: 2),
                                                                 Text(
                                                                   timeStr,
-                                                                  style: const TextStyle(
-                                                                    fontSize: 9,
-                                                                    fontWeight: FontWeight.w500,
-                                                                    color: Color(0xFF78350F),
+                                                                  style: TextStyle(
+                                                                    fontSize: 8.5,
+                                                                    fontWeight: FontWeight.w600,
+                                                                    color: isCancelled
+                                                                        ? const Color(0xFFB91C1C)
+                                                                        : (isBooked ? const Color(0xFF78350F) : const Color(0xFF3F6212)),
                                                                   ),
                                                                   textAlign: TextAlign.center,
                                                                   maxLines: 1,
@@ -3675,11 +3833,13 @@ class _AdminAllSlotsSheetState extends State<AdminAllSlotsSheet> {
                                                               ],
                                                               const SizedBox(height: 3),
                                                               Text(
-                                                                isBooked ? 'BOOKED' : 'FREE',
+                                                                isCancelled ? 'CANCELLED' : (isBooked ? 'BOOKED' : 'FREE'),
                                                                 style: TextStyle(
                                                                   fontSize: 9.5,
                                                                   fontWeight: FontWeight.w800,
-                                                                  color: isBooked ? const Color(0xFFD97706) : const Color(0xFF4D8F14),
+                                                                  color: isCancelled
+                                                                      ? const Color(0xFFDC2626)
+                                                                      : (isBooked ? const Color(0xFFD97706) : const Color(0xFF4D8F14)),
                                                                   letterSpacing: 0.4,
                                                                 ),
                                                                 textAlign: TextAlign.center,

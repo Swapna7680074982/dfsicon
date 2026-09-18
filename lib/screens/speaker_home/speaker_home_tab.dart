@@ -19,6 +19,7 @@ import '../profile/profile_screen.dart';
 import '../workshops/workshops_list_screen.dart';
 import '../workshops/workshop_details_screen.dart';
 import '../explore/invited_speakers_screen.dart';
+import '../calendar/event_calendar_screen.dart';
 import '../../widgets/water_droplets_background.dart';
 import '../../utils/time_formatter.dart';
 
@@ -410,21 +411,22 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                         const SizedBox(height: 20),
                         ElevatedButton.icon(
                           onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => EventQrModal(
-                                userName: authProvider.userName,
-                                eventName: homeProvider.eventInfo.name,
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const EventCalendarScreen(
+                                  role: CalendarRole.speaker,
+                                ),
                               ),
                             );
                           },
                           icon: const Icon(
-                            Icons.qr_code_2_outlined,
+                            Icons.schedule_rounded,
                             color: Colors.white,
                             size: 20,
                           ),
                           label: const Text(
-                            'MY QR CODE',
+                            'MY SCHEDULE',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
