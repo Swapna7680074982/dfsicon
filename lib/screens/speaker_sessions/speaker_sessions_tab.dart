@@ -27,6 +27,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   TimeOfDay? _customEndTime;
   final Set<int> _loadingBookmarks = {};
   int _selectedCalendarDayIndex = 0;
+  bool _isInitialLoading = true;
+  String? _lastToken;
 
   @override
   void initState() {
@@ -36,14 +38,35 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context);
+    final sessions = Provider.of<SessionsProvider>(context, listen: false);
+    if (auth.accessToken.isNotEmpty &&
+        (_lastToken != auth.accessToken || ((sessions.sessions.isEmpty || sessions.mySessions.isEmpty) && !sessions.isLoading))) {
+      _lastToken = auth.accessToken;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchSessions(forceRefresh: false);
+      });
+    }
+  }
+
   Future<void> _fetchSessions({bool forceRefresh = false}) async {
     if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
-    await Future.wait([
-      sessions.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-      sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-    ]);
+    if (mounted) setState(() => _isInitialLoading = true);
+    try {
+      await Future.wait([
+        sessions.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+        sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+      ]);
+    } finally {
+      if (mounted) {
+        setState(() => _isInitialLoading = false);
+      }
+    }
   }
 
   @override
@@ -919,8 +942,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     }).toList();
 
     final bool isOverallLoading = _selectedFilter == SpeakerSessionFilter.mySessions
-        ? sessionsProvider.isLoadingMySessions && mySessions.isEmpty
-        : sessionsProvider.isLoadingConfirmedSessions && allSessions.isEmpty;
+        ? (_isInitialLoading || sessionsProvider.isLoadingMySessions) && mySessions.isEmpty
+        : (_isInitialLoading || sessionsProvider.isLoadingConfirmedSessions) && allSessions.isEmpty;
 
     return WaterDropletsBackground(
       child: Scaffold(

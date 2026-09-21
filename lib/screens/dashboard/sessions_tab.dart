@@ -25,6 +25,8 @@ class _SessionsTabState extends State<SessionsTab> {
   TimeOfDay? _customEndTime;
   final Set<int> _loadingBookmarks = {};
   int _selectedCalendarDayIndex = 0;
+  bool _isInitialLoading = true;
+  String? _lastToken;
 
   @override
   void initState() {
@@ -34,17 +36,38 @@ class _SessionsTabState extends State<SessionsTab> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context);
+    final sessions = Provider.of<SessionsProvider>(context, listen: false);
+    if (auth.accessToken.isNotEmpty &&
+        (_lastToken != auth.accessToken || (sessions.sessions.isEmpty && !sessions.isLoadingConfirmedSessions))) {
+      _lastToken = auth.accessToken;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchSessions(forceRefresh: false);
+      });
+    }
+  }
+
   Future<void> _fetchSessions({bool forceRefresh = false}) async {
     if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
-    if (auth.isSpeakerRole || auth.isSpeaker) {
-      await Future.wait([
-        sessions.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-        sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-      ]);
-    } else {
-      await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
+    if (mounted) setState(() => _isInitialLoading = true);
+    try {
+      if (auth.isSpeakerRole || auth.isSpeaker) {
+        await Future.wait([
+          sessions.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+          sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+        ]);
+      } else {
+        await sessions.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isInitialLoading = false);
+      }
     }
   }
 
@@ -1247,7 +1270,7 @@ class _SessionsTabState extends State<SessionsTab> {
                 onRefresh: () => _fetchSessions(forceRefresh: true),
                 color: AppColors.primary,
                 backgroundColor: Colors.white,
-                child: sessionsProvider.isLoadingConfirmedSessions && allSessions.isEmpty
+                child: (_isInitialLoading || sessionsProvider.isLoadingConfirmedSessions) && allSessions.isEmpty
                     ? const Center(
                         child: CircularProgressIndicator(color: AppColors.primary),
                       )

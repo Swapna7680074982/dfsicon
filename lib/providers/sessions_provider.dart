@@ -529,6 +529,9 @@ class SessionsProvider extends ChangeNotifier {
     return false;
   }
 
+  Future<bool>? _ongoingConfirmedSessionsFuture;
+  Future<bool>? _ongoingMySessionsFuture;
+
   Future<bool> fetchConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     if (accessToken.isEmpty) return false;
     if (accessToken != _lastAccessToken) {
@@ -536,10 +539,23 @@ class SessionsProvider extends ChangeNotifier {
       _lastAccessToken = accessToken;
     }
     if (!forceRefresh && _sessions.isNotEmpty) return true;
-    if (_isLoading) return false; // Prevent concurrent loading
+    if (_ongoingConfirmedSessionsFuture != null) {
+      return _ongoingConfirmedSessionsFuture!;
+    }
+    _ongoingConfirmedSessionsFuture = _doFetchConfirmedSessions(accessToken, forceRefresh: forceRefresh);
+    try {
+      return await _ongoingConfirmedSessionsFuture!;
+    } finally {
+      _ongoingConfirmedSessionsFuture = null;
+    }
+  }
+
+  Future<bool> _doFetchConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     _isLoading = true;
     _errorMessage = null;
-    _sessions = []; // Clear previous data
+    if (forceRefresh && _sessions.isEmpty) {
+      _sessions = [];
+    }
     notifyListeners();
 
     try {
@@ -802,10 +818,23 @@ class SessionsProvider extends ChangeNotifier {
       _lastMySessionsAccessToken = accessToken;
     }
     if (!forceRefresh && _mySessions.isNotEmpty) return true;
-    if (_isLoadingMySessions) return false; // Prevent concurrent loading
+    if (_ongoingMySessionsFuture != null) {
+      return _ongoingMySessionsFuture!;
+    }
+    _ongoingMySessionsFuture = _doFetchMyConfirmedSessions(accessToken, forceRefresh: forceRefresh);
+    try {
+      return await _ongoingMySessionsFuture!;
+    } finally {
+      _ongoingMySessionsFuture = null;
+    }
+  }
+
+  Future<bool> _doFetchMyConfirmedSessions(String accessToken, {bool forceRefresh = false}) async {
     _isLoadingMySessions = true;
     _errorMessage = null;
-    _mySessions = []; // Clear previous data
+    if (forceRefresh && _mySessions.isEmpty) {
+      _mySessions = [];
+    }
     notifyListeners();
 
     try {

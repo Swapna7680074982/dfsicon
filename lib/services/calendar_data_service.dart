@@ -167,6 +167,7 @@ class CalendarDataService {
       // ✅ ALWAYS fetch master admin data for ALL roles
       futures.add(adminProv.fetchSlots(token, forceRefresh: forceRefresh));
       futures.add(adminProv.fetchWorkshops(token, forceRefresh: forceRefresh));
+      futures.add(adminProv.fetchTopics(token, forceRefresh: forceRefresh));
 
       // For non-admin (speaker & delegate): fetch registered workshops & confirmed sessions
       if (!isUserAdmin) {

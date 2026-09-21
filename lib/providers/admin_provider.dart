@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../domain/api_service.dart';
 import '../utils/custom_logger.dart';
+import 'workshops_provider.dart';
 
 // ==========================================
 // Admin Models
@@ -640,6 +641,37 @@ class AdminWorkshop {
       workshopStatus: (json['workshop_status'] ?? '').toString().trim(),
       speakersCount: (json['speakers_count'] ?? '0').toString().trim(),
       delegatesCount: (json['delegates_count'] ?? '0').toString().trim(),
+    );
+  }
+
+  WorkshopItem toWorkshopItem() {
+    return WorkshopItem(
+      workshopId: workshopId,
+      workshopCode: workshopCode,
+      workshopName: workshopName,
+      workshopType: workshopType,
+      description: '',
+      venueName: venueName,
+      address: '',
+      state: state,
+      city: city,
+      postalCode: '',
+      maxCapacity: maxCapacity,
+      registrationStart: registrationStart,
+      registrationEnd: registrationEnd,
+      workshopStart: workshopStart,
+      workshopEnd: workshopEnd,
+      fee: '0.00',
+      currency: 'INR',
+      certificateAvailable: '0',
+      status: status,
+      assignmentId: '',
+      attendanceStatus: workshopStatus,
+      certificateGenerated: '0',
+      feedbackSubmitted: '0',
+      assignedOn: '',
+      speakersCount: int.tryParse(speakersCount) ?? 0,
+      delegatesCount: int.tryParse(delegatesCount) ?? 0,
     );
   }
 }

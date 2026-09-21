@@ -79,33 +79,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
       auth.fetchMyQr(forceRefresh: forceRefresh);
       notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
 
-      await homeProvider.fetchSummits(auth.accessToken);
-      if (!mounted) return;
-
-      final String summitId = homeProvider.summits.isNotEmpty
-          ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
-          : '1';
-
-      if (auth.isSpeaker) {
-        await Future.wait([
-          sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
-          sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
-          sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+      // Start fetching sessions and workshops immediately in parallel
+      final sessionsFutures = [
+        sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+        if (auth.isSpeaker) ...[
           sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
           abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
-          workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
-        ]);
-      } else {
-        // Delegate flow
-        await Future.wait([
-          exploreProvider.fetchSponsors(summitId, auth.accessToken),
-          exploreProvider.fetchSummitBooths(summitId, auth.accessToken),
-          sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
-          sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
-          sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-          workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
-        ]);
-      }
+        ],
+        workshopsProvider.fetchMyWorkshops(auth.accessToken, forceRefresh: forceRefresh),
+      ];
+
+      // Concurrently fetch summits and summit-dependent data
+      final summitFuture = () async {
+        try {
+          await homeProvider.fetchSummits(auth.accessToken);
+          if (!mounted) return;
+          final String summitId = homeProvider.summits.isNotEmpty
+              ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+              : '1';
+
+          if (auth.isSpeaker) {
+            await Future.wait([
+              sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+              sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+            ]);
+          } else {
+            await Future.wait([
+              exploreProvider.fetchSponsors(summitId, auth.accessToken),
+              exploreProvider.fetchSummitBooths(summitId, auth.accessToken),
+              sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+              sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+            ]);
+          }
+        } catch (_) {}
+      }();
+
+      await Future.wait([...sessionsFutures, summitFuture]);
     } catch (_) {
       // Gracefully catch any network or mapping exceptions so screens do not error
     }

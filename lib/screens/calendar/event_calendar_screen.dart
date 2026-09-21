@@ -46,7 +46,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
   final Set<String> _loadingBookmarks = {};
-  bool _isLoading = false;
+  bool _isLoading = true;
 
   List<CalendarEventItem> _allEvents = [];
   List<DateTime> _uniqueDates = [];
@@ -513,9 +513,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       if (!_matchesDate(event, activeDate)) continue;
 
       // Session Category filter dropdown (active on sessions day if user selected a category)
-      if (_selectedSessionCategory != 'All Categories' &&
-          (event.type == CalendarItemType.session || event.type == CalendarItemType.myPresentation)) {
-        if (event.category?.trim() != _selectedSessionCategory) {
+      if (_selectedSessionCategory != 'All Categories') {
+        if (event.category?.trim().toLowerCase() != _selectedSessionCategory.toLowerCase()) {
           continue;
         }
       }
