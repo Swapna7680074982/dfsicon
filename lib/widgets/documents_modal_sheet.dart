@@ -158,9 +158,9 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               action: SnackBarAction(
-                label: 'OPEN',
+                label: 'VIEW',
                 textColor: Colors.amberAccent,
-                onPressed: () => DocumentsService.openLocalDocument(context, doc),
+                onPressed: () => DocumentsService.openDocument(context, doc),
               ),
             ),
           );
@@ -270,7 +270,7 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Document Details Box
+                  // Document Details Box (No raw path)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -293,23 +293,6 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                               ),
                             ],
                           ),
-                        if (isDownloaded) ...[
-                          const SizedBox(height: 6),
-                          const Row(
-                            children: [
-                              Icon(Icons.folder_outlined, size: 13, color: Color(0xFF0F766E)),
-                              SizedBox(width: 6),
-                              Text(
-                                'Saved to: Downloads > DFSICON',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF0F766E),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -345,7 +328,7 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      // View Online Button
+                      // View Button
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
@@ -354,7 +337,7 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                           },
                           icon: const Icon(Icons.visibility_rounded, size: 18),
                           label: const Text(
-                            'View Online',
+                            'View Document',
                             style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -369,63 +352,39 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Download or Open Local Button
+                      // Download Button
                       Expanded(
-                        child: isDownloaded
-                            ? ElevatedButton.icon(
-                                onPressed: () {
+                        child: OutlinedButton.icon(
+                          onPressed: isDownloading
+                              ? null
+                              : () {
                                   Navigator.pop(ctx);
-                                  DocumentsService.openLocalDocument(context, doc);
+                                  _startDownload(doc);
                                 },
-                                icon: const Icon(Icons.folder_open_rounded, size: 18),
-                                label: const Text(
-                                  'Open',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0F766E),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              )
-                            : OutlinedButton.icon(
-                                onPressed: isDownloading
-                                    ? null
-                                    : () {
-                                        Navigator.pop(ctx);
-                                        _startDownload(doc);
-                                      },
-                                icon: const Icon(
-                                  Icons.download_rounded,
-                                  size: 18,
-                                  color: AppColors.primary,
-                                ),
-                                label: const Text(
-                                  'Download',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                    color: AppColors.primary,
-                                    width: 1.5,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              ),
+                          icon: Icon(
+                            isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                            size: 18,
+                            color: isDownloaded ? const Color(0xFF0F766E) : AppColors.primary,
+                          ),
+                          label: Text(
+                            isDownloaded ? 'Re-Download' : 'Download',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: isDownloaded ? const Color(0xFF0F766E) : AppColors.primary,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: isDownloaded ? const Color(0xFF0F766E) : AppColors.primary,
+                              width: 1.5,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),

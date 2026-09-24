@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../domain/api_service.dart';
@@ -68,46 +67,25 @@ class DocumentsService {
     return doc.localFileName;
   }
 
-  /// Get the local File instance if it exists on the device
-  static Future<File?> getLocalFile(SummitDocument doc) async {
+  /// Check if the document has already been downloaded to the local path
+  static Future<bool> isDocumentDownloaded(SummitDocument doc) async {
     try {
       final primaryDir = await getDocumentsDirectory();
       if (primaryDir != null) {
         final file = File('${primaryDir.path}/${doc.localFileName}');
         if (await file.exists() && (await file.length()) > 0) {
-          return file;
+          return true;
         }
       }
 
-      // Check Android main download directory
-      if (Platform.isAndroid) {
-        final androidDownloadFile = File('/storage/emulated/0/Download/${doc.localFileName}');
-        if (await androidDownloadFile.exists() && (await androidDownloadFile.length()) > 0) {
-          return androidDownloadFile;
+      // Also check fallback / previous internal folder
+      try {
+        final baseDir = await getApplicationDocumentsDirectory();
+        final prevFile = File('${baseDir.path}/DFS_ICON_Documents/${doc.localFileName}');
+        if (await prevFile.exists() && (await prevFile.length()) > 0) {
+          return true;
         }
-      }
-
-      // Check fallback / app doc directories
-      final baseDir = await getApplicationDocumentsDirectory();
-      final prevFile = File('${baseDir.path}/DFS_ICON_Documents/${doc.localFileName}');
-      if (await prevFile.exists() && (await prevFile.length()) > 0) {
-        return prevFile;
-      }
-      final directFile = File('${baseDir.path}/$_folderName/${doc.localFileName}');
-      if (await directFile.exists() && (await directFile.length()) > 0) {
-        return directFile;
-      }
-    } catch (e) {
-      debugPrint('⚠️ [DocumentsService] getLocalFile error: $e');
-    }
-    return null;
-  }
-
-  /// Check if the document has already been downloaded to the local path
-  static Future<bool> isDocumentDownloaded(SummitDocument doc) async {
-    try {
-      final file = await getLocalFile(doc);
-      return file != null && (await file.exists()) && (await file.length()) > 0;
+      } catch (_) {}
     } catch (_) {}
     return false;
   }
@@ -190,48 +168,6 @@ class DocumentsService {
       CustomLogger.logError('downloadDocument', 'Failed to download ${doc.documentName}: $e', stack);
     }
     return null;
-  }
-
-  /// Open the downloaded file locally from the DFSICON folder
-  static Future<bool> openLocalDocument(BuildContext context, SummitDocument doc) async {
-    try {
-      final localFile = await getLocalFile(doc);
-      if (localFile != null && await localFile.exists()) {
-        final result = await OpenFilex.open(localFile.path);
-        if (result.type == ResultType.done) {
-          return true;
-        } else if (result.type == ResultType.noAppToOpen) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No app found to open this file type. Opening online...'),
-              ),
-            );
-            return await openDocument(context, doc);
-          }
-        } else {
-          // Fallback if system failed to open local file directly
-          if (context.mounted) {
-            return await openDocument(context, doc);
-          }
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Local file not found. Opening online...'),
-            ),
-          );
-          return await openDocument(context, doc);
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ [DocumentsService] openLocalDocument error: $e');
-      if (context.mounted) {
-        return await openDocument(context, doc);
-      }
-    }
-    return false;
   }
 
   /// View / Open the document in system PDF viewer / browser
