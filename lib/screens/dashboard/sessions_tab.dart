@@ -40,9 +40,7 @@ class _SessionsTabState extends State<SessionsTab> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final auth = Provider.of<AuthProvider>(context);
-    final sessions = Provider.of<SessionsProvider>(context, listen: false);
-    if (auth.accessToken.isNotEmpty &&
-        (_lastToken != auth.accessToken || (sessions.sessions.isEmpty && !sessions.isLoadingConfirmedSessions))) {
+    if (auth.accessToken.isNotEmpty && _lastToken != auth.accessToken) {
       _lastToken = auth.accessToken;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _fetchSessions(forceRefresh: false);
