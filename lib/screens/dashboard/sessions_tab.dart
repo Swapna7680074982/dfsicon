@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../speaker_sessions/speaker_session_detail_screen.dart';
 import '../../widgets/water_droplets_background.dart';
+import '../../widgets/documents_modal_sheet.dart';
 import '../../utils/time_formatter.dart';
 
 class SessionsTab extends StatefulWidget {
@@ -972,6 +973,26 @@ class _SessionsTabState extends State<SessionsTab> {
           ),
           centerTitle: false,
           actions: [
+            IconButton(
+              onPressed: () {
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                final code = auth.isAdmin
+                    ? 'AD'
+                    : (auth.isSpeaker || auth.isSpeakerRole ? 'SK' : 'DG');
+                DocumentsModalSheet.show(context, roleCode: code);
+              },
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white24, width: 1),
+                ),
+                child: const Icon(Icons.folder_shared_rounded, color: Colors.white, size: 18),
+              ),
+              tooltip: 'Conference Documents & Guidelines',
+            ),
+            const SizedBox(width: 4),
             GestureDetector(
               onTap: () {
                 setState(() {

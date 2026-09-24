@@ -4,6 +4,8 @@ import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../services/calendar_data_service.dart';
+import '../../services/documents_service.dart';
+import '../../widgets/documents_modal_sheet.dart';
 import '../admin/admin_detail_sheets.dart';
 
 enum CalendarRole {
@@ -90,11 +92,24 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
     try {
       final role = _effectiveRole;
-      final events = await CalendarDataService.fetchCalendarEvents(
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final roleCode = role == CalendarRole.admin
+          ? 'AD'
+          : (role == CalendarRole.speaker ? 'SK' : 'DG');
+
+      // Fetch both calendar events and conference documents
+      final eventsFuture = CalendarDataService.fetchCalendarEvents(
         context: context,
         role: role,
         forceRefresh: forceRefresh,
       );
+      final docsFuture = DocumentsService.fetchDocuments(
+        accessToken: auth.accessToken,
+        roleCode: roleCode,
+      );
+
+      final events = await eventsFuture;
+      await docsFuture;
 
       if (mounted) {
         setState(() {
@@ -425,6 +440,25 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: () {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              final code = auth.isAdmin || currentRole == CalendarRole.admin
+                  ? 'AD'
+                  : (auth.isSpeaker || currentRole == CalendarRole.speaker ? 'SK' : 'DG');
+              DocumentsModalSheet.show(context, roleCode: code);
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white24, width: 1),
+              ),
+              child: const Icon(Icons.folder_shared_rounded, color: Colors.white, size: 19),
+            ),
+            tooltip: 'Conference Documents & Guidelines',
+          ),
           IconButton(
             onPressed: () => _loadEvents(forceRefresh: true),
             icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),

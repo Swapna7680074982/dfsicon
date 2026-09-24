@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../profile/profile_screen.dart';
 import '../calendar/event_calendar_screen.dart';
+import '../../services/documents_service.dart';
+import '../../widgets/documents_modal_sheet.dart';
 import 'admin_detail_sheets.dart';
 
 class AdminDashboardTab extends StatefulWidget {
@@ -123,7 +125,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     if (auth.accessToken.isNotEmpty) {
-      await adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh);
+      await Future.wait([
+        adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh),
+        DocumentsService.fetchDocuments(accessToken: auth.accessToken, roleCode: 'AD'),
+      ]);
     }
   }
 
@@ -259,6 +264,21 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: () {
+              DocumentsModalSheet.show(context, roleCode: 'AD');
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4F46E5).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFC7D2FE), width: 1),
+              ),
+              child: const Icon(Icons.folder_shared_rounded, color: Color(0xFF4F46E5), size: 19),
+            ),
+            tooltip: 'Conference Documents & Guidelines',
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -605,6 +625,106 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                               children: [
                                 Text(
                                   'Open',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Conference Documents Banner Card
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    onTap: () {
+                      DocumentsModalSheet.show(context, roleCode: 'AD');
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                            ),
+                            child: const Icon(
+                              Icons.folder_shared_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Conference Documents & Guidelines',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Test PDF, Venue Map, Guidelines & Schedule',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
