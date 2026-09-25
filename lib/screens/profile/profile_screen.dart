@@ -21,7 +21,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isSwitchingRole = false;
 
   Future<void> _switchRole(String targetRole, AuthProvider authProvider) async {
-    final currentRole = authProvider.isAdmin ? 'AD' : (authProvider.isSpeaker ? 'SK' : 'DL');
+    final currentRole = authProvider.isAdmin
+        ? 'AD'
+        : (authProvider.isSpeaker
+            ? 'SK'
+            : 'DL');
     if (targetRole == currentRole) return;
 
     setState(() {
@@ -33,7 +37,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!mounted) return;
 
-    final roleName = targetRole == 'AD' ? 'Admin' : (targetRole == 'SK' ? 'Speaker' : 'Delegate');
+    final roleName = targetRole == 'AD'
+        ? 'Admin'
+        : (targetRole == 'SK'
+            ? 'Speaker'
+            : 'Delegate');
 
     // Navigate to fresh dashboard so all tabs, data and state reload cleanly
     Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
@@ -643,15 +651,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // final homeProvider = Provider.of<HomeProvider>(context);
     final isAdmin = authProvider.isAdmin;
     final isSpeaker = authProvider.isSpeaker;
+    final isExhibitor = authProvider.isExhibitor;
 
     final String name = authProvider.userName;
     final String initials = _getInitials(name);
     final String designation = authProvider.designation;
-    final String roleLabel = isAdmin ? 'Admin' : (isSpeaker ? 'Speaker' : 'Delegate');
+    final String roleLabel = isAdmin
+        ? 'Admin'
+        : (isSpeaker ? 'Speaker' : (isExhibitor ? 'Exhibitor' : 'Delegate'));
     final String email = authProvider.email;
     final String phone = authProvider.mobile;
     final String orgName = authProvider.hospitalClinicName;
-    final String orgLabel = isSpeaker ? 'Organization' : 'Hospital Name';
+    final String orgLabel = (isSpeaker || isExhibitor) ? 'Organization' : 'Hospital Name';
 
 
 
@@ -795,7 +806,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 decoration: BoxDecoration(
                                   color: isAdmin
                                       ? const Color(0xFFEEF2FF)
-                                      : const Color(0xFFEEECF9),
+                                      : (isSpeaker
+                                          ? const Color(0xFFEEECF9)
+                                          : (isExhibitor
+                                              ? const Color(0xFFFEF3C7)
+                                              : const Color(0xFFECFDF5))),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -805,7 +820,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     fontWeight: FontWeight.bold,
                                     color: isAdmin
                                         ? const Color(0xFF6366F1)
-                                        : AppColors.primary,
+                                        : (isSpeaker
+                                            ? AppColors.primary
+                                            : (isExhibitor
+                                                ? const Color(0xFFD97706)
+                                                : const Color(0xFF0F766E))),
                                   ),
                                 ),
                               ),
@@ -1074,24 +1093,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                // WORKSPACE PORTAL SECTION
-                Row(
-                  children: const [
-                    Text(
-                      'WORKSPACE PORTAL',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textLight,
-                        letterSpacing: 0.5,
+                // WORKSPACE PORTAL SECTION (Only shown for accounts with multiple role access like Admin / Speaker)
+                if (authProvider.isAdminRole || authProvider.isSpeakerRole) ...[
+                  Row(
+                    children: const [
+                      Text(
+                        'WORKSPACE PORTAL',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textLight,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                _buildWorkspaceRoleCard(authProvider),
-                const SizedBox(height: 24),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _buildWorkspaceRoleCard(authProvider),
+                  const SizedBox(height: 24),
+                ],
                 // PRIVACY SETTINGS SECTION
                 Row(
                   children: const [
@@ -1439,79 +1459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bool isSpeakerRole = authProvider.isSpeakerRole;
     final bool isAdmin = authProvider.isAdmin;
     final bool isSpeaker = authProvider.isSpeaker;
-
-    if (!isAdminRole && !isSpeakerRole) {
-      // Delegate-only user
-      return Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.tileBorder, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.badge_outlined,
-                color: Color(0xFF0F766E),
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Delegate Portal',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.all(Radius.circular(6)),
-                        ),
-                        child: const Text(
-                          'Active',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F766E),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  const Text(
-                    'Standard Attendee Access for DFSICON 2026',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final bool isDelegate = !isAdmin && !isSpeaker;
 
     return Container(
       decoration: BoxDecoration(
@@ -1637,141 +1585,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const Divider(height: 1, color: AppColors.tileBorder),
           ],
 
-          // Option 2: Speaker Portal
-          InkWell(
-            onTap: (_isSwitchingRole || isSpeaker)
-                ? null
-                : () => _switchRole('SK', authProvider),
-            borderRadius: isAdminRole ? BorderRadius.zero : const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              color: isSpeaker ? const Color(0xFFF9FAFF) : Colors.transparent,
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: isSpeaker ? AppColors.primary : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
+          // Option 2: Speaker Portal (If Speaker role)
+          if (isSpeakerRole) ...[
+            InkWell(
+              onTap: (_isSwitchingRole || isSpeaker)
+                  ? null
+                  : () => _switchRole('SK', authProvider),
+              borderRadius: isAdminRole ? BorderRadius.zero : const BorderRadius.vertical(top: Radius.circular(20)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                color: isSpeaker ? const Color(0xFFF9FAFF) : Colors.transparent,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: isSpeaker ? AppColors.primary : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.record_voice_over_rounded,
+                        size: 19,
+                        color: isSpeaker ? Colors.white : AppColors.textSecondary,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.record_voice_over_rounded,
-                      size: 19,
-                      color: isSpeaker ? Colors.white : AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Speaker Portal',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: isSpeaker ? AppColors.primary : AppColors.textPrimary,
-                              ),
-                            ),
-                            if (isSpeaker) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDCFCE7),
-                                  borderRadius: BorderRadius.circular(4),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Speaker Portal',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSpeaker ? AppColors.primary : AppColors.textPrimary,
                                 ),
-                                child: const Text(
-                                  'Current',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF15803D),
+                              ),
+                              if (isSpeaker) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'Current',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF15803D),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          'Topics, my schedule, presentation & abstracts',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (isSpeaker)
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.primary,
-                      size: 20,
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(35),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.swap_horiz_rounded, size: 13, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text(
-                            'Switch',
+                          const SizedBox(height: 3),
+                          const Text(
+                            'Topics, my schedule, presentation & abstracts',
                             style: TextStyle(
                               fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                ],
+                    const SizedBox(width: 8),
+                    if (isSpeaker)
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(35),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.swap_horiz_rounded, size: 13, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'Switch',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const Divider(height: 1, color: AppColors.tileBorder),
+            const Divider(height: 1, color: AppColors.tileBorder),
+          ],
 
           // Option 3: Delegate Portal
           InkWell(
-            onTap: (_isSwitchingRole || (!isAdmin && !isSpeaker))
+            onTap: (_isSwitchingRole || isDelegate)
                 ? null
                 : () => _switchRole('DL', authProvider),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+            borderRadius: (isAdminRole || isSpeakerRole)
+                ? const BorderRadius.vertical(bottom: Radius.circular(20))
+                : BorderRadius.circular(20),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              color: (!isAdmin && !isSpeaker) ? const Color(0xFFF9FAFF) : Colors.transparent,
+              color: isDelegate ? const Color(0xFFF9FAFF) : Colors.transparent,
               child: Row(
                 children: [
                   Container(
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: (!isAdmin && !isSpeaker) ? const Color(0xFF0F766E) : const Color(0xFFF1F5F9),
+                      color: isDelegate ? const Color(0xFF0F766E) : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.badge_outlined,
                       size: 19,
-                      color: (!isAdmin && !isSpeaker) ? Colors.white : AppColors.textSecondary,
+                      color: isDelegate ? Colors.white : AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1786,10 +1738,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
-                                color: (!isAdmin && !isSpeaker) ? const Color(0xFF0F766E) : AppColors.textPrimary,
+                                color: isDelegate ? const Color(0xFF0F766E) : AppColors.textPrimary,
                               ),
                             ),
-                            if (!isAdmin && !isSpeaker) ...[
+                            if (isDelegate) ...[
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1821,7 +1773,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  if (!isAdmin && !isSpeaker)
+                  if (isDelegate)
                     const Icon(
                       Icons.check_circle_rounded,
                       color: Color(0xFF0F766E),

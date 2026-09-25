@@ -108,6 +108,7 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
     final r = widget.roleCode.toUpperCase();
     if (r == 'AD' || r == 'ADMIN') return 'Admin View (All Documents)';
     if (r == 'SK' || r == 'SPEAKER') return 'Speaker Resources';
+    if (r == 'EX' || r == 'EXHIBITOR') return 'Exhibitor Documents';
     return 'Delegate Documents';
   }
 
@@ -153,14 +154,6 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                     ),
                   ),
                 ],
-              ),
-              backgroundColor: const Color(0xFF0F766E),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              action: SnackBarAction(
-                label: 'VIEW',
-                textColor: Colors.amberAccent,
-                onPressed: () => DocumentsService.openDocument(context, doc),
               ),
             ),
           );
@@ -546,6 +539,51 @@ class _DocumentsModalSheetState extends State<DocumentsModalSheet> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.folder_outlined, size: 16, color: Color(0xFF15803D)),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Download Path:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF166534),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF86EFAC), width: 0.8),
+                          ),
+                          child: const Text(
+                            'Downloads > DFSICON',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF14532D),
+                              letterSpacing: 0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

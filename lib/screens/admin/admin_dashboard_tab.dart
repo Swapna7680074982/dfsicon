@@ -265,21 +265,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               ],
             ),
           ),
-          IconButton(
-            onPressed: () {
-              DocumentsModalSheet.show(context, roleCode: 'AD');
-            },
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4F46E5).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFC7D2FE), width: 1),
-              ),
-              child: const Icon(Icons.folder_shared_rounded, color: Color(0xFF4F46E5), size: 19),
-            ),
-            tooltip: 'Conference Documents & Guidelines',
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: GestureDetector(

@@ -20,6 +20,7 @@ import 'screens/photo/photo_upload_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/fcm_service.dart';
 import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/exhibitor/exhibitor_portal_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -111,6 +112,7 @@ class MyApp extends StatelessWidget {
           '/role_selection': (context) => const RoleSelectionScreen(),
           '/photo_upload': (context) => const PhotoUploadScreen(),
           '/dashboard': (context) => const DashboardScreen(),
+          '/exhibitor_portal': (context) => const ExhibitorPortalScreen(),
         },
       ),
     );

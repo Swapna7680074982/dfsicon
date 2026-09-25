@@ -199,11 +199,13 @@ class CalendarDataService {
 
     final resolvedRole = role ?? (auth.isAdmin || auth.roleCode == 'AD'
         ? CalendarRole.admin
-        : (auth.isSpeaker || auth.roleCode == 'SK'
-            ? CalendarRole.speaker
-            : CalendarRole.delegate));
+        : (auth.isExhibitor || auth.roleCode == 'EX'
+            ? CalendarRole.exhibitor
+            : (auth.isSpeaker || auth.roleCode == 'SK'
+                ? CalendarRole.speaker
+                : CalendarRole.delegate)));
 
-    final isUserAdmin = auth.isAdmin || auth.roleCode == 'AD' || resolvedRole == CalendarRole.admin;
+    final isUserAdmin = auth.isAdmin || auth.roleCode == 'AD' || resolvedRole == CalendarRole.admin || resolvedRole == CalendarRole.exhibitor;
     final isUserSpeaker = auth.isSpeaker || auth.roleCode == 'SK' || resolvedRole == CalendarRole.speaker;
 
     return _buildCalendarEvents(

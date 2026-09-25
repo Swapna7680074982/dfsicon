@@ -22,7 +22,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     super.initState();
     MyApp.resetRedirectFlag();
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (auth.selectedRole != null && auth.selectedRole!.isNotEmpty) {
+    if (auth.selectedRole != null && auth.selectedRole!.isNotEmpty && auth.selectedRole != 'EX') {
       _selectedMode = auth.selectedRole!;
     } else if (auth.isAdminRole) {
       _selectedMode = 'AD';
@@ -342,7 +342,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                           ? 'Continue as Admin'
                                           : (_selectedMode == 'SK'
                                               ? 'Continue as Speaker'
-                                              : 'Continue as Delegate'),
+                                              : (_selectedMode == 'EX'
+                                                  ? 'Continue as Exhibitor'
+                                                  : 'Continue as Delegate')),
                                       style: const TextStyle(
                                         fontSize: 14.5,
                                         fontWeight: FontWeight.w600,

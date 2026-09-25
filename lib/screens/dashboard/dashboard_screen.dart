@@ -20,6 +20,7 @@ import '../speaker_home/speaker_home_tab.dart';
 import '../speaker_abstract/speaker_abstract_tab.dart';
 import '../speaker_sessions/speaker_sessions_tab.dart';
 import '../admin/admin_dashboard_tab.dart';
+import '../exhibitor/exhibitor_portal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -39,7 +40,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     MyApp.resetRedirectFlag();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      _lastRoleCode = auth.isAdmin ? 'AD' : (auth.isSpeaker ? 'SK' : 'DL');
+      _lastRoleCode = auth.isAdmin
+          ? 'AD'
+          : (auth.isSpeaker ? 'SK' : (auth.isExhibitor ? 'EX' : 'DL'));
       _loadDashboardData(auth, forceRefresh: false);
     });
   }
@@ -48,7 +51,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final auth = Provider.of<AuthProvider>(context);
-    final currentRole = auth.isAdmin ? 'AD' : (auth.isSpeaker ? 'SK' : 'DL');
+    final currentRole = auth.isAdmin
+        ? 'AD'
+        : (auth.isSpeaker ? 'SK' : (auth.isExhibitor ? 'EX' : 'DL'));
     if (_lastRoleCode != null && _lastRoleCode != currentRole) {
       _lastRoleCode = currentRole;
       _currentIndex = 0;
@@ -73,6 +78,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (auth.isAdmin) {
         await adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh);
+        return;
+      }
+
+      if (auth.isExhibitor) {
+        auth.fetchMyQr(forceRefresh: forceRefresh);
+        notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
+        final String summitId = homeProvider.summits.isNotEmpty
+            ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
+            : '1';
+        await Future.wait([
+          sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
+          exploreProvider.fetchInvitedSpeakers(auth.accessToken),
+          adminProvider.fetchDelegates(auth.accessToken, forceRefresh: forceRefresh),
+          exploreProvider.fetchSponsors(summitId, auth.accessToken),
+          exploreProvider.fetchSummitBooths(summitId, auth.accessToken),
+          sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
+          sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
+        ]);
         return;
       }
 
@@ -125,9 +148,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final isAdmin = auth.isAdmin;
     final isSpeaker = auth.isSpeaker;
+    final isExhibitor = auth.isExhibitor;
 
     if (isAdmin) {
       return const AdminDashboardTab();
+    }
+
+    if (isExhibitor) {
+      return const ExhibitorPortalScreen();
     }
 
     final List<Widget> tabs = isSpeaker

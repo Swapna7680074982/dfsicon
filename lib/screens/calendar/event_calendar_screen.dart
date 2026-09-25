@@ -12,6 +12,7 @@ enum CalendarRole {
   admin,
   speaker,
   delegate,
+  exhibitor,
 }
 
 enum CalendarViewFilter {
@@ -29,11 +30,13 @@ enum AdminCalendarCategory {
 class EventCalendarScreen extends StatefulWidget {
   final CalendarRole role;
   final int initialDayIndex;
+  final bool hideAppBar;
 
   const EventCalendarScreen({
     super.key,
     required this.role,
     this.initialDayIndex = 0,
+    this.hideAppBar = false,
   });
 
   @override
@@ -55,10 +58,13 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
   CalendarRole get _effectiveRole {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (auth.isAdmin || auth.roleCode == 'AD' || widget.role == CalendarRole.admin) {
+    if (widget.role == CalendarRole.admin || auth.isAdmin || auth.roleCode == 'AD') {
       return CalendarRole.admin;
     }
-    if (auth.isSpeaker || auth.roleCode == 'SK' || widget.role == CalendarRole.speaker) {
+    if (widget.role == CalendarRole.exhibitor || auth.isExhibitor || auth.roleCode == 'EX') {
+      return CalendarRole.exhibitor;
+    }
+    if (widget.role == CalendarRole.speaker || auth.isSpeaker || auth.roleCode == 'SK') {
       return CalendarRole.speaker;
     }
     return CalendarRole.delegate;
@@ -70,8 +76,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     _selectedDayIndex = widget.initialDayIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final role = _effectiveRole;
-      // Admin always shows Full Agenda; Speaker/Delegate default to My Schedule
-      if (role == CalendarRole.admin) {
+      // Admin and Exhibitor always show Full Agenda; Speaker/Delegate default to My Schedule
+      if (role == CalendarRole.admin || role == CalendarRole.exhibitor) {
         _viewFilter = CalendarViewFilter.fullAgenda;
       } else {
         _viewFilter = CalendarViewFilter.mySchedule;
@@ -95,7 +101,9 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final roleCode = role == CalendarRole.admin
           ? 'AD'
-          : (role == CalendarRole.speaker ? 'SK' : 'DG');
+          : (role == CalendarRole.speaker
+              ? 'SK'
+              : (role == CalendarRole.exhibitor ? 'EX' : 'DG'));
 
       // Fetch both calendar events and conference documents
       final eventsFuture = CalendarDataService.fetchCalendarEvents(
@@ -402,7 +410,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     String titleText;
     String subtitleText;
 
-    if (currentRole == CalendarRole.admin) {
+    if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) {
       titleText = 'Master Schedule & Slots';
       subtitleText = 'All Conference Slots, Tracks & Workshops';
     } else if (currentRole == CalendarRole.speaker) {
@@ -415,57 +423,61 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFF0A1E3D),
-        foregroundColor: Colors.white,
-        centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              titleText,
-              style: const TextStyle(
-                fontSize: 16.5,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.3,
+      appBar: widget.hideAppBar
+          ? null
+          : AppBar(
+              elevation: 0,
+              backgroundColor: const Color(0xFF0A1E3D),
+              foregroundColor: Colors.white,
+              centerTitle: false,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titleText,
+                    style: const TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitleText,
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
               ),
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    final code = auth.isAdmin || currentRole == CalendarRole.admin
+                        ? 'AD'
+                        : (auth.isSpeaker || currentRole == CalendarRole.speaker
+                            ? 'SK'
+                            : (auth.isExhibitor || currentRole == CalendarRole.exhibitor ? 'EX' : 'DG'));
+                    DocumentsModalSheet.show(context, roleCode: code);
+                  },
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white24, width: 1),
+                    ),
+                    child: const Icon(Icons.download_rounded, color: Colors.white, size: 19),
+                  ),
+                  tooltip: 'Download Documents & Resources',
+                ),
+                IconButton(
+                  onPressed: () => _loadEvents(forceRefresh: true),
+                  icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
+                  tooltip: 'Refresh Schedule',
+                ),
+              ],
             ),
-            const SizedBox(height: 1),
-            Text(
-              subtitleText,
-              style: const TextStyle(fontSize: 11, color: Colors.white70),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              final auth = Provider.of<AuthProvider>(context, listen: false);
-              final code = auth.isAdmin || currentRole == CalendarRole.admin
-                  ? 'AD'
-                  : (auth.isSpeaker || currentRole == CalendarRole.speaker ? 'SK' : 'DG');
-              DocumentsModalSheet.show(context, roleCode: code);
-            },
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white24, width: 1),
-              ),
-              child: const Icon(Icons.folder_shared_rounded, color: Colors.white, size: 19),
-            ),
-            tooltip: 'Conference Documents & Guidelines',
-          ),
-          IconButton(
-            onPressed: () => _loadEvents(forceRefresh: true),
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
-            tooltip: 'Refresh Schedule',
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: () => _loadEvents(forceRefresh: true),
         color: AppColors.primary,
@@ -480,8 +492,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                   // Search Bar
                   _buildSearchBar(currentRole),
 
-                  // View Tabs — Admin: category pills only | Speaker/Delegate: My Schedule / Full Agenda
-                  if (currentRole == CalendarRole.admin) ...[
+                  // View Tabs — Admin & Exhibitor: category pills only | Speaker/Delegate: My Schedule / Full Agenda
+                  if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) ...[
                     const SizedBox(height: 10),
                     _buildCategoryPills(),
                   ] else ...[
@@ -563,8 +575,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         if (!matches) continue;
       }
 
-      // ── ADMIN: always show everything, filtered by category pill ──
-      if (currentRole == CalendarRole.admin) {
+      // ── ADMIN & EXHIBITOR: always show everything, filtered by category pill ──
+      if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) {
         if (_adminCategory == AdminCalendarCategory.all) {
           rawItems.add(event);
         } else if (_adminCategory == AdminCalendarCategory.sessions) {
@@ -691,7 +703,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
   Widget _buildSearchBar(CalendarRole currentRole) {
     String hint;
-    if (currentRole == CalendarRole.admin) {
+    if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) {
       hint = 'Search slots, sessions, workshops, halls...';
     } else if (currentRole == CalendarRole.speaker) {
       hint = 'Search my presentations, workshops, sessions...';
@@ -1020,7 +1032,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   }
 
   Widget _buildScheduleHeaderBar(DateTime activeDate, List<dynamic> items, CalendarRole currentRole) {
-    final viewLabel = currentRole == CalendarRole.admin
+    final viewLabel = (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor)
         ? 'MASTER AGENDA'
         : (_viewFilter == CalendarViewFilter.mySchedule ? 'MY SCHEDULE' : 'FULL AGENDA');
 
@@ -1247,7 +1259,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       badgeIcon = Icons.event_available_rounded;
       badgeText = 'ALLOCATED';
     } else {
-      borderColor = event.isBookmarked ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0);
+      borderColor = (!isAdminRole && event.isBookmarked) ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0);
       badgeColor = const Color(0xFF4338CA);
       badgeBg = const Color(0xFFEEF2FF);
       badgeIcon = Icons.menu_book_rounded;

@@ -14,6 +14,25 @@ class EventQrModal extends StatefulWidget {
     this.eventName,
   });
 
+  static Future<void> show(
+    BuildContext context, {
+    String? userName,
+    String? eventName,
+  }) {
+    return showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+        child: EventQrModal(
+          userName: userName,
+          eventName: eventName,
+        ),
+      ),
+    );
+  }
+
   @override
   State<EventQrModal> createState() => _EventQrModalState();
 }

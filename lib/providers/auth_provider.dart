@@ -152,6 +152,17 @@ class AuthProvider with ChangeNotifier {
     return sel == 'SK';
   }
 
+  bool get isExhibitorRole {
+    final code = (_profileData['role_code'] ?? _profileData['role'] ?? _profileData['user_role'] ?? _userRole).toString().toUpperCase();
+    return code == 'EX' || code == 'EXHIBITOR' || isAdminRole;
+  }
+
+  bool get isExhibitor {
+    if (isAdmin) return false;
+    final sel = (_selectedRole ?? _profileData['role_code'] ?? _profileData['role'] ?? _profileData['user_role'] ?? userRole).toString().toUpperCase();
+    return sel == 'EX' || sel == 'EXHIBITOR';
+  }
+
   String? get selectedRole => _selectedRole;
 
   void setSelectedRole(String? role) {

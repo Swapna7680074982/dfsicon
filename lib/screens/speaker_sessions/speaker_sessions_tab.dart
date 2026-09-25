@@ -873,6 +873,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final allSessions = sessionsProvider.sessions;
     final mySessions = sessionsProvider.mySessions;
@@ -906,7 +908,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           currentList = otherSessions;
           break;
         case SpeakerSessionFilter.bookmarked:
-          currentList = bookmarkedSessions;
+          currentList = isAdmin ? allSessions : bookmarkedSessions;
           break;
       }
     }
@@ -984,9 +986,9 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white24, width: 1),
                 ),
-                child: const Icon(Icons.folder_shared_rounded, color: Colors.white, size: 18),
+                child: const Icon(Icons.download_rounded, color: Colors.white, size: 19),
               ),
-              tooltip: 'Conference Documents & Guidelines',
+              tooltip: 'Download Documents & Resources',
             ),
             const SizedBox(width: 4),
             GestureDetector(
@@ -1200,18 +1202,20 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                               });
                             },
                           ),
-                          const SizedBox(width: 8),
-                          _buildFilterChip(
-                            label: 'BOOKMARKED',
-                            isSelected: _selectedFilter == SpeakerSessionFilter.bookmarked,
-                            count: bookmarkedSessions.length,
-                            icon: Icons.bookmark,
-                            onTap: () {
-                              setState(() {
-                                _selectedFilter = SpeakerSessionFilter.bookmarked;
-                              });
-                            },
-                          ),
+                          if (!isAdmin) ...[
+                            const SizedBox(width: 8),
+                            _buildFilterChip(
+                              label: 'BOOKMARKED',
+                              isSelected: _selectedFilter == SpeakerSessionFilter.bookmarked,
+                              count: bookmarkedSessions.length,
+                              icon: Icons.bookmark,
+                              onTap: () {
+                                setState(() {
+                                  _selectedFilter = SpeakerSessionFilter.bookmarked;
+                                });
+                              },
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1913,6 +1917,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   }
 
   Widget _buildCalendarSessionCard(SessionItem session) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1928,7 +1934,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: session.isBookmarked ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
+            color: (!isAdmin && session.isBookmarked) ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
             width: 1.2,
           ),
           boxShadow: [
@@ -1957,31 +1963,33 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _handleToggleBookmark(session),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: _loadingBookmarks.contains(session.id)
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
+                if (!isAdmin) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _handleToggleBookmark(session),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: _loadingBookmarks.contains(session.id)
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : Icon(
+                              session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                              color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
+                              size: 18,
                             ),
-                          )
-                        : Icon(
-                            session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                            color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
-                            size: 18,
-                          ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
 
@@ -2306,6 +2314,8 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   // Summit Session Card (with Date & Time in Last Row)
   // ==========================================
   Widget _buildSummitSessionCard(SessionItem session) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     final displayTime = _getSessionDisplayTime(session);
     final displayDate = _formatDateForDisplay(session);
 
@@ -2325,7 +2335,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: session.isBookmarked ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
+            color: (!isAdmin && session.isBookmarked) ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
             width: 1.5,
           ),
           boxShadow: [
@@ -2354,31 +2364,33 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: () => _handleToggleBookmark(session),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: _loadingBookmarks.contains(session.id)
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
+                if (!isAdmin) ...[
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () => _handleToggleBookmark(session),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: _loadingBookmarks.contains(session.id)
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : Icon(
+                              session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                              color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
+                              size: 20,
                             ),
-                          )
-                        : Icon(
-                            session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                            color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
-                            size: 20,
-                          ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
 

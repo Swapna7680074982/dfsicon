@@ -891,37 +891,51 @@ class _SessionsTabState extends State<SessionsTab> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
+    final isExhibitor = auth.isExhibitor || auth.roleCode == 'EX';
+    final hideBookmarks = isAdmin || isExhibitor;
+
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final allSessions = sessionsProvider.sessions;
     final mySessions = sessionsProvider.mySessions;
     final bookmarkedSessions = allSessions.where((s) => s.isBookmarked).toList();
 
-    // In My Calendar view, we display bookmarked sessions (and if user is speaker, their own confirmed sessions too)
+    // If exhibitor, always force list view
+    final isEffectiveCalendarView = !isExhibitor && _isCalendarView;
+
+    // In My Calendar view, we display all sessions for Admin, or bookmarked sessions (and speaker's confirmed sessions) for other roles
     final Map<dynamic, SessionItem> myCalendarMap = {};
-    if (auth.isSpeakerRole || auth.isSpeaker) {
-      for (final s in mySessions) {
+    if (isAdmin) {
+      for (final s in allSessions) {
         final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
         myCalendarMap[key] = s;
       }
-    }
-    for (final s in bookmarkedSessions) {
-      final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
-      if (!myCalendarMap.containsKey(key)) {
-        myCalendarMap[key] = s;
+    } else {
+      if (auth.isSpeakerRole || auth.isSpeaker) {
+        for (final s in mySessions) {
+          final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+          myCalendarMap[key] = s;
+        }
+      }
+      for (final s in bookmarkedSessions) {
+        final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+        if (!myCalendarMap.containsKey(key)) {
+          myCalendarMap[key] = s;
+        }
       }
     }
     final myCalendarSessions = myCalendarMap.values.toList();
 
     // Determine current base list according to selected filter
     List<SessionItem> currentList;
-    if (_isCalendarView) {
+    if (isEffectiveCalendarView) {
       currentList = myCalendarSessions;
     } else {
-      currentList = _showOnlyBookmarked ? bookmarkedSessions : allSessions;
+      currentList = (!hideBookmarks && _showOnlyBookmarked) ? bookmarkedSessions : allSessions;
     }
 
     // Extract calendar unique dates from myCalendarSessions in calendar mode
-    final uniqueDates = _isCalendarView
+    final uniqueDates = isEffectiveCalendarView
         ? _extractUniqueDates(myCalendarSessions)
         : _extractUniqueDates(allSessions);
 
@@ -936,12 +950,12 @@ class _SessionsTabState extends State<SessionsTab> {
           (s.keywords ?? '').toLowerCase().contains(query);
 
       bool matchesDateFilter = true;
-      if (!_isCalendarView && _selectedDate != null) {
+      if (!isEffectiveCalendarView && _selectedDate != null) {
         matchesDateFilter = _matchesDate(s, _selectedDate!);
       }
 
       bool matchesTimeFilter = true;
-      if (!_isCalendarView && (_customStartTime != null || _customEndTime != null)) {
+      if (!isEffectiveCalendarView && (_customStartTime != null || _customEndTime != null)) {
         matchesTimeFilter = _matchesCustomTime(s);
       }
 
@@ -978,7 +992,9 @@ class _SessionsTabState extends State<SessionsTab> {
                 final auth = Provider.of<AuthProvider>(context, listen: false);
                 final code = auth.isAdmin
                     ? 'AD'
-                    : (auth.isSpeaker || auth.isSpeakerRole ? 'SK' : 'DG');
+                    : (auth.isSpeaker || auth.isSpeakerRole
+                        ? 'SK'
+                        : (auth.isExhibitor ? 'EX' : 'DG'));
                 DocumentsModalSheet.show(context, roleCode: code);
               },
               icon: Container(
@@ -988,58 +1004,61 @@ class _SessionsTabState extends State<SessionsTab> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white24, width: 1),
                 ),
-                child: const Icon(Icons.folder_shared_rounded, color: Colors.white, size: 18),
+                child: const Icon(Icons.download_rounded, color: Colors.white, size: 19),
               ),
-              tooltip: 'Conference Documents & Guidelines',
+              tooltip: 'Download Documents & Resources',
             ),
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isCalendarView = !_isCalendarView;
-                });
-              },
-              child: Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: _isCalendarView ? Colors.white : Colors.white.withAlpha(30),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _isCalendarView ? Colors.white : Colors.white.withAlpha(60),
-                    width: 1,
+            if (!isExhibitor) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isCalendarView = !_isCalendarView;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: _isCalendarView ? Colors.white : Colors.white.withAlpha(30),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isCalendarView ? Colors.white : Colors.white.withAlpha(60),
+                      width: 1,
+                    ),
+                    boxShadow: _isCalendarView
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(20),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
-                  boxShadow: _isCalendarView
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(20),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isCalendarView ? Icons.calendar_month : Icons.calendar_month_outlined,
-                      color: _isCalendarView ? AppColors.primary : Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _isCalendarView ? 'List View' : 'My Calendar',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isCalendarView ? Icons.calendar_month : Icons.calendar_month_outlined,
                         color: _isCalendarView ? AppColors.primary : Colors.white,
+                        size: 18,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Text(
+                        _isCalendarView ? 'List View' : (isAdmin ? 'Timeline View' : 'My Calendar'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: _isCalendarView ? AppColors.primary : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ] else
+              const SizedBox(width: 16),
           ],
         ),
         body: Column(
@@ -1170,7 +1189,7 @@ class _SessionsTabState extends State<SessionsTab> {
                       ],
                     ],
                   ),
-                  if (!_isCalendarView) ...[
+                  if (!isEffectiveCalendarView && !hideBookmarks) ...[
                     const SizedBox(height: 10),
                     // Filter Chips: ALL SESSIONS, BOOKMARKED
                     SingleChildScrollView(
@@ -1461,6 +1480,7 @@ class _SessionsTabState extends State<SessionsTab> {
   // Calendar Flow View Mode (Neat Flow with Prominent Time)
   // ==========================================
   Widget _buildCalendarView(List<SessionItem> baseList, List<DateTime> uniqueDates, List<SessionItem> mySessions, AuthProvider auth) {
+    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     if (uniqueDates.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -1474,25 +1494,27 @@ class _SessionsTabState extends State<SessionsTab> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.bookmark_border_rounded,
+                      isAdmin ? Icons.event_busy_rounded : Icons.bookmark_border_rounded,
                       size: 52,
                       color: Colors.grey.shade300,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'No Bookmarked Sessions in Calendar',
+                    Text(
+                      isAdmin ? 'No Sessions in Timeline' : 'No Bookmarked Sessions in Calendar',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Bookmark sessions from the list view to add them to your calendar schedule.',
+                    Text(
+                      isAdmin
+                          ? 'Sessions will appear here once scheduled.'
+                          : 'Bookmark sessions from the list view to add them to your calendar schedule.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textLight,
                         height: 1.4,
@@ -1716,7 +1738,7 @@ class _SessionsTabState extends State<SessionsTab> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.bookmark_border_rounded,
+                                (auth.isAdmin || auth.roleCode == 'AD') ? Icons.event_busy_rounded : Icons.bookmark_border_rounded,
                                 size: 48,
                                 color: Colors.grey.shade300,
                               ),
@@ -1731,10 +1753,12 @@ class _SessionsTabState extends State<SessionsTab> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              const Text(
-                                'Bookmarked sessions for this day will appear here.',
+                              Text(
+                                (auth.isAdmin || auth.roleCode == 'AD')
+                                    ? 'There are no sessions scheduled on this day.'
+                                    : 'Bookmarked sessions for this day will appear here.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textLight,
                                   height: 1.4,
@@ -1915,6 +1939,9 @@ class _SessionsTabState extends State<SessionsTab> {
   }
 
   Widget _buildCalendarSessionCard(SessionItem session, {required bool isMySession}) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final hideBookmarks = auth.isAdmin || auth.roleCode == 'AD' || auth.isExhibitor || auth.roleCode == 'EX';
+
     return GestureDetector(
       onTap: () {
         if (isMySession) {
@@ -1953,7 +1980,7 @@ class _SessionsTabState extends State<SessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: session.isBookmarked ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
+            color: (!hideBookmarks && session.isBookmarked) ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
             width: 1.2,
           ),
           boxShadow: [
@@ -1982,7 +2009,7 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                   ),
                 ),
-                if (!isMySession) ...[
+                if (!isMySession && !hideBookmarks) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => _handleToggleBookmark(session),
@@ -2167,6 +2194,8 @@ class _SessionsTabState extends State<SessionsTab> {
   // Session Card (with Date & Time in Last Row)
   // ==========================================
   Widget _buildSessionCard(SessionItem session, {required bool isMySession}) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final hideBookmarks = auth.isAdmin || auth.roleCode == 'AD' || auth.isExhibitor || auth.roleCode == 'EX';
     final displayTime = _getSessionDisplayTime(session);
     final displayDate = _formatDateForDisplay(session);
 
@@ -2207,7 +2236,7 @@ class _SessionsTabState extends State<SessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: session.isBookmarked ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
+            color: (!hideBookmarks && session.isBookmarked) ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
             width: 1.5,
           ),
           boxShadow: [
@@ -2236,7 +2265,7 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                   ),
                 ),
-                if (!isMySession) ...[
+                if (!isMySession && !hideBookmarks) ...[
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => _handleToggleBookmark(session),

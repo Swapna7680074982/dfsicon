@@ -286,6 +286,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     final sessProvider = Provider.of<SessionsProvider>(context);
     final connProvider = Provider.of<ConnectionsProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
+    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
 
     final isBookmarked = sessProvider.sessions
         .firstWhere((s) => s.id == widget.session.id, orElse: () => widget.session)
@@ -598,7 +599,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                if (!isMySession) ...[
+                if (!isMySession && !isAdmin) ...[
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
@@ -848,7 +849,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                   widget.session.id,
             ),
             const SizedBox(height: 28),
-            if (isBookmarked || isMySession) ...[
+            if (isAdmin || isBookmarked || isMySession) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
