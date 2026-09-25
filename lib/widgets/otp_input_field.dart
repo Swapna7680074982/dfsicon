@@ -17,104 +17,129 @@ class OtpInputRow extends StatefulWidget {
 }
 
 class _OtpInputRowState extends State<OtpInputRow> {
-  late List<TextEditingController> _controllers;
-  late List<FocusNode> _focusNodes;
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+  String _currentOtp = '';
 
   @override
   void initState() {
     super.initState();
-    _controllers = List.generate(widget.length, (_) => TextEditingController());
-    _focusNodes = List.generate(widget.length, (_) => FocusNode());
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+    _focusNode.addListener(_handleFocusChange);
+  }
+
+  void _handleFocusChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
+    _focusNode.removeListener(_handleFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  void _onChanged(String value, int index) {
-    String otp = '';
-    for (var controller in _controllers) {
-      otp += controller.text;
+  void _onTextChanged(String value) {
+    if (value.length > widget.length) {
+      value = value.substring(0, widget.length);
+      _controller.text = value;
+      _controller.selection = TextSelection.collapsed(offset: value.length);
     }
-    widget.onOtpChanged(otp);
+    setState(() {
+      _currentOtp = value;
+    });
+    widget.onOtpChanged(value);
 
-    if (value.isNotEmpty) {
-      if (index < widget.length - 1) {
-        _focusNodes[index + 1].requestFocus();
-      } else {
-        _focusNodes[index].unfocus();
-      }
-    }
-  }
-
-  void _onKeyEvent(KeyEvent event, int index) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.backspace) {
-      if (_controllers[index].text.isEmpty && index > 0) {
-        _focusNodes[index - 1].requestFocus();
-        _controllers[index - 1].clear();
-        
-        String otp = '';
-        for (var controller in _controllers) {
-          otp += controller.text;
-        }
-        widget.onOtpChanged(otp);
-      }
+    // Auto unfocus when OTP is completely filled
+    if (value.length == widget.length) {
+      _focusNode.unfocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(widget.length, (index) {
-        return KeyboardListener(
-          focusNode: FocusNode(),
-          onKeyEvent: (event) => _onKeyEvent(event, index),
-          child: Container(
-            width: 48,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _focusNodes[index].hasFocus
-                    ? AppColors.primary
-                    : AppColors.inputBorder,
-                width: 1.5,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: TextField(
-              controller: _controllers[index],
-              focusNode: _focusNodes[index],
-              onChanged: (value) => _onChanged(value, index),
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(1),
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                counterText: '',
-              ),
-            ),
+    final bool isFocused = _focusNode.hasFocus;
+    final int currentLength = _currentOtp.length;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Hidden real TextField handling single iOS/Android keyboard session
+        Opacity(
+          opacity: 0.0,
+          child: TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            keyboardType: TextInputType.number,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(widget.length),
+            ],
+            onChanged: _onTextChanged,
+            enableSuggestions: false,
+            autocorrect: false,
+            showCursor: false,
           ),
-        );
-      }),
+        ),
+
+        // Visual 6-Box OTP Display Row
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (!_focusNode.hasFocus) {
+              _focusNode.requestFocus();
+            }
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(widget.length, (index) {
+              final bool hasValue = index < currentLength;
+              final String digit = hasValue ? _currentOtp[index] : '';
+              final bool isBoxActive = isFocused &&
+                  (index == currentLength || (index == widget.length - 1 && currentLength == widget.length));
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 48,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isBoxActive
+                        ? AppColors.primary
+                        : (hasValue ? AppColors.primary.withValues(alpha: 0.4) : AppColors.inputBorder),
+                    width: isBoxActive ? 2.0 : 1.5,
+                  ),
+                  boxShadow: isBoxActive
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  digit,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }
