@@ -8,6 +8,7 @@ import '../../providers/sessions_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/exhibitor_provider.dart';
 import '../../models/exhibitor_models.dart';
+import '../../utils/time_formatter.dart';
 import '../calendar/event_calendar_screen.dart';
 import '../profile/profile_screen.dart';
 import '../admin/admin_detail_sheets.dart';
@@ -683,7 +684,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                               ),
                               if (item.visitedDate.isNotEmpty)
                                 Text(
-                                  item.visitedDate,
+                                  TimeFormatter.formatDate(item.visitedDate),
                                   style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
                                 ),
                             ],
@@ -787,7 +788,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: ChoiceChip(
-                              label: Text(dateOpt),
+                              label: Text(dateOpt == 'All Dates' ? dateOpt : TimeFormatter.formatDate(dateOpt)),
                               selected: isSelected,
                               onSelected: (selected) {
                                 exhibitor.setSelectedDate(dateOpt == 'All Dates' ? null : dateOpt);
@@ -1072,7 +1073,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                           const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF64748B)),
                           const SizedBox(width: 4),
                           Text(
-                            '${p.visitedDate} ${p.visitedTime}'.trim(),
+                            TimeFormatter.formatDateTimeReadable(p.visitedDate, p.visitedTime),
                             style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                           ),
                         ],

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../models/exhibitor_models.dart';
+import '../../utils/time_formatter.dart';
 
 void showExhibitorParticipantDetailModal(
   BuildContext context, {
@@ -241,7 +242,7 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${participant.visitedDate} ${participant.visitedTime}'.trim(),
+                                TimeFormatter.formatDateTimeReadable(participant.visitedDate, participant.visitedTime),
                                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

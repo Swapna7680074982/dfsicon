@@ -29,6 +29,71 @@ class TimeFormatter {
     return '$day $monthName $year $hourStr:$minuteStr $period';
   }
 
+  /// Formats date string into readable "26 Sep 2026" or "26 September 2026" format.
+  static String formatDate(String dateStr, {bool shortMonth = true}) {
+    if (dateStr.isEmpty) return '';
+    try {
+      final trimmed = dateStr.trim();
+      final parsed = DateTime.tryParse(trimmed);
+      if (parsed != null) {
+        final monthName = shortMonth ? _shortMonths[parsed.month - 1] : _months[parsed.month - 1];
+        return '${parsed.day} $monthName ${parsed.year}';
+      }
+      final parts = trimmed.split(RegExp(r'[-/ ]'));
+      if (parts.length >= 3) {
+        if (parts[0].length == 4) {
+          // YYYY-MM-DD
+          final y = int.tryParse(parts[0]);
+          final m = int.tryParse(parts[1]);
+          final d = int.tryParse(parts[2]);
+          if (y != null && m != null && d != null && m >= 1 && m <= 12) {
+            final monthName = shortMonth ? _shortMonths[m - 1] : _months[m - 1];
+            return '$d $monthName $y';
+          }
+        } else if (parts[2].length == 4) {
+          // DD-MM-YYYY
+          final d = int.tryParse(parts[0]);
+          final m = int.tryParse(parts[1]);
+          final y = int.tryParse(parts[2]);
+          if (y != null && m != null && d != null && m >= 1 && m <= 12) {
+            final monthName = shortMonth ? _shortMonths[m - 1] : _months[m - 1];
+            return '$d $monthName $y';
+          }
+        }
+      }
+    } catch (_) {}
+    return dateStr;
+  }
+
+  /// Formats date and time into a clean human-readable format like "26 Sep 2026, 10:15 AM".
+  static String formatDateTimeReadable(String dateStr, [String? timeStr]) {
+    String d = dateStr.trim();
+    String t = (timeStr ?? '').trim();
+
+    // If dateStr contains space-separated time (e.g. "2026-09-26 10:15:28")
+    if (d.contains(' ') && t.isEmpty) {
+      final split = d.split(' ');
+      d = split[0];
+      t = split.sublist(1).join(' ');
+    } else if (d.contains('T') && t.isEmpty) {
+      final split = d.split('T');
+      d = split[0];
+      t = split[1];
+    }
+
+    final formattedDate = formatDate(d);
+    final formattedTime = formatTime(t);
+
+    if (formattedDate.isNotEmpty && formattedTime.isNotEmpty) {
+      return '$formattedDate, $formattedTime';
+    } else if (formattedDate.isNotEmpty) {
+      return formattedDate;
+    } else if (formattedTime.isNotEmpty) {
+      return formattedTime;
+    }
+    return '${dateStr} ${timeStr ?? ''}'.trim();
+  }
+
   /// Parses any date string and formats it neat. If a time range is provided, it handles it gracefully.
   /// Standard neat format: "22 January 2002 12:24 PM"
   static String formatString(String dateStr, {String? timeStr}) {
