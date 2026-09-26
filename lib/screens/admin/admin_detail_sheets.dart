@@ -527,7 +527,7 @@ class AdminDelegateDetailsSheet extends StatefulWidget {
   const AdminDelegateDetailsSheet({
     super.key,
     required this.userId,
-    this.initialDelegate,
+    this.initialDelegate, 
   });
 
   @override
