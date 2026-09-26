@@ -2233,7 +2233,91 @@ class ApiService {
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }
+
+  // ==========================================
+  // Exhibitor Module API Calls
+  // ==========================================
+  static Future<http.Response> getExhibitorCounts({
+    required String accessToken,
+    dynamic summitId = 1,
+    String? date,
+  }) async {
+    final url = Uri.parse(ApiUrls.exhibitorCounts);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final bodyMap = <String, dynamic>{
+      "summit_id": summitId is int ? summitId : int.tryParse(summitId.toString()) ?? 1,
+    };
+    if (date != null && date.trim().isNotEmpty) {
+      bodyMap["date"] = date.trim();
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> getExhibitorParticipants({
+    required String accessToken,
+    dynamic summitId = 1,
+    String? date,
+    dynamic boothId,
+  }) async {
+    final url = Uri.parse(ApiUrls.exhibitorParticipants);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final bodyMap = <String, dynamic>{
+      "summit_id": summitId is int ? summitId : int.tryParse(summitId.toString()) ?? 1,
+    };
+    if (date != null && date.trim().isNotEmpty) {
+      bodyMap["date"] = date.trim();
+    }
+    if (boothId != null && boothId.toString().trim().isNotEmpty) {
+      bodyMap["booth_id"] = boothId is int ? boothId : int.tryParse(boothId.toString()) ?? boothId;
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  static Future<http.Response> recordExhibitorScan({
+    required String accessToken,
+    required String qrData,
+    dynamic boothId,
+    String? remarks,
+  }) async {
+    final url = Uri.parse(ApiUrls.exhibitorScan);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final bodyMap = <String, dynamic>{
+      "qr_data": qrData.trim(),
+    };
+    if (boothId != null && boothId.toString().trim().isNotEmpty && boothId.toString().trim() != '0') {
+      bodyMap["booth_id"] = int.tryParse(boothId.toString()) ?? boothId;
+    }
+    if (remarks != null && remarks.trim().isNotEmpty) {
+      bodyMap["remarks"] = remarks.trim();
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }
+
 
 
 

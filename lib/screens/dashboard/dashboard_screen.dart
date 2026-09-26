@@ -10,6 +10,7 @@ import '../../providers/workshops_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/abstract_provider.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/exhibitor_provider.dart';
 import '../../main.dart';
 import 'home_tab.dart';
 import 'sessions_tab.dart';
@@ -72,6 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final notificationsProvider = Provider.of<NotificationsProvider>(context, listen: false);
     final abstractProvider = Provider.of<AbstractProvider>(context, listen: false);
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    final exhibitorProvider = Provider.of<ExhibitorProvider>(context, listen: false);
 
     try {
       auth.registerDeviceToken();
@@ -88,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? homeProvider.summits.first['summit_id']?.toString() ?? '1'
             : '1';
         await Future.wait([
+          exhibitorProvider.fetchAllExhibitorData(auth.accessToken, summitId: summitId, forceRefresh: forceRefresh),
           sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
           exploreProvider.fetchInvitedSpeakers(auth.accessToken),
           adminProvider.fetchDelegates(auth.accessToken, forceRefresh: forceRefresh),

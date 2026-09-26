@@ -71,7 +71,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires access to your camera to take a profile photo for identification and event gallery tagging.</string>
+	<string>This app requires access to your camera to scan delegate and attendee QR codes at exhibition booths and capture profile photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to your photo library to select a profile photo and save event photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

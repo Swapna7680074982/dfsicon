@@ -14,6 +14,7 @@ import 'providers/workshops_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/qa_provider.dart';
 import 'providers/admin_provider.dart';
+import 'providers/exhibitor_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/role_selection_screen.dart';
 import 'screens/photo/photo_upload_screen.dart';
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),
         ChangeNotifierProvider(create: (_) => QaProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => ExhibitorProvider()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,

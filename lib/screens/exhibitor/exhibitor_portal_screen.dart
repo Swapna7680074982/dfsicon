@@ -6,9 +6,13 @@ import '../../providers/auth_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/sessions_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/exhibitor_provider.dart';
+import '../../models/exhibitor_models.dart';
 import '../calendar/event_calendar_screen.dart';
 import '../profile/profile_screen.dart';
 import '../admin/admin_detail_sheets.dart';
+import 'exhibitor_live_scanner_screen.dart';
+import 'exhibitor_participant_detail_modal.dart';
 
 class ExhibitorPortalScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -27,6 +31,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   late TabController _tabController;
 
   // Search Controllers
+  final TextEditingController _visitorSearchCtrl = TextEditingController();
   final TextEditingController _speakerSearchCtrl = TextEditingController();
   final TextEditingController _delegateSearchCtrl = TextEditingController();
   final TextEditingController _sponsorSearchCtrl = TextEditingController();
@@ -43,9 +48,9 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4,
+      length: 5,
       vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, 3),
+      initialIndex: widget.initialTabIndex.clamp(0, 4),
     );
     _lastTabIndex = _tabController.index;
     _tabController.addListener(_handleTabChange);
@@ -65,6 +70,12 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   void _clearAllSearches() {
     _debounceTimer?.cancel();
     bool needsSetState = false;
+    if (_visitorSearchCtrl.text.isNotEmpty) {
+      _visitorSearchCtrl.clear();
+      final exhibitor = Provider.of<ExhibitorProvider>(context, listen: false);
+      exhibitor.setSearchQuery('');
+      needsSetState = true;
+    }
     if (_speakerSearchCtrl.text.isNotEmpty || _speakerFilterText.isNotEmpty) {
       _speakerSearchCtrl.clear();
       _speakerFilterText = '';
@@ -90,6 +101,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
     _tabController.removeListener(_handleTabChange);
     _debounceTimer?.cancel();
     _tabController.dispose();
+    _visitorSearchCtrl.dispose();
     _speakerSearchCtrl.dispose();
     _delegateSearchCtrl.dispose();
     _sponsorSearchCtrl.dispose();
@@ -103,6 +115,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
     final admin = Provider.of<AdminProvider>(context, listen: false);
     final sessions = Provider.of<SessionsProvider>(context, listen: false);
     final home = Provider.of<HomeProvider>(context, listen: false);
+    final exhibitor = Provider.of<ExhibitorProvider>(context, listen: false);
 
     final token = auth.accessToken;
     if (token.isEmpty) return;
@@ -114,6 +127,13 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
       if (home.summits.isEmpty || forceRefresh) {
         futures.add(home.fetchSummits(token));
       }
+
+      final String summitId = home.summits.isNotEmpty
+          ? home.summits.first['summit_id']?.toString() ?? '1'
+          : '1';
+
+      // Fetch Exhibitor Footfall Counts & Visited Participants
+      futures.add(exhibitor.fetchAllExhibitorData(token, summitId: summitId, forceRefresh: forceRefresh));
 
       // Fetch Sessions Agenda
       futures.add(sessions.fetchConfirmedSessions(token, forceRefresh: forceRefresh));
@@ -127,10 +147,6 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
       // Fetch Sponsors & Categories (Admin API)
       futures.add(admin.fetchSponsors(token, forceRefresh: forceRefresh));
       futures.add(admin.fetchSponsorCategories(token, forceRefresh: forceRefresh));
-
-      final String summitId = home.summits.isNotEmpty
-          ? home.summits.first['summit_id']?.toString() ?? '1'
-          : '1';
 
       futures.add(sessions.fetchVenueAndHalls(summitId, token));
       futures.add(sessions.fetchVenueLayouts(token, summitId: summitId));
@@ -154,6 +170,8 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final admin = Provider.of<AdminProvider>(context);
+    final exhibitor = Provider.of<ExhibitorProvider>(context);
+    final home = Provider.of<HomeProvider>(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -272,18 +290,18 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
               isScrollable: true,
               tabAlignment: TabAlignment.start,
               padding: EdgeInsets.zero,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
               indicatorColor: const Color(0xFF4F46E5),
               indicatorWeight: 2.8,
               indicatorSize: TabBarIndicatorSize.label,
               labelColor: const Color(0xFF4F46E5),
               unselectedLabelColor: AppColors.textSecondary,
               labelStyle: const TextStyle(
-                fontSize: 13.5,
+                fontSize: 13.0,
                 fontWeight: FontWeight.bold,
               ),
               unselectedLabelStyle: const TextStyle(
-                fontSize: 13.5,
+                fontSize: 13.0,
                 fontWeight: FontWeight.w500,
               ),
               tabs: const [
@@ -292,8 +310,19 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Icon(Icons.qr_code_scanner_rounded, size: 16),
+                      SizedBox(width: 5),
+                      Text('Scan & Visitors'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  iconMargin: EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Icon(Icons.calendar_month_rounded, size: 16),
-                      SizedBox(width: 6),
+                      SizedBox(width: 5),
                       Text('Full Agenda'),
                     ],
                   ),
@@ -304,7 +333,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.record_voice_over_rounded, size: 16),
-                      SizedBox(width: 6),
+                      SizedBox(width: 5),
                       Text('Speakers'),
                     ],
                   ),
@@ -315,7 +344,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.people_alt_rounded, size: 16),
-                      SizedBox(width: 6),
+                      SizedBox(width: 5),
                       Text('Delegates'),
                     ],
                   ),
@@ -326,7 +355,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.storefront_rounded, size: 16),
-                      SizedBox(width: 6),
+                      SizedBox(width: 5),
                       Text('Exhibitors'),
                     ],
                   ),
@@ -339,21 +368,762 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // 1. Full Agenda (Master Schedule Calendar View)
+          // 1. Scanner & Visited Participants Tab
+          _buildScannerAndVisitorsTab(auth, exhibitor, home),
+
+          // 2. Full Agenda (Master Schedule Calendar View)
           const EventCalendarScreen(
             role: CalendarRole.exhibitor,
             hideAppBar: true,
           ),
 
-          // 2. Speakers Tab (Admin UI)
+          // 3. Speakers Tab (Admin UI)
           _buildSpeakersTab(auth, admin),
 
-          // 3. Delegates Tab (Admin UI)
+          // 4. Delegates Tab (Admin UI)
           _buildDelegatesTab(auth, admin),
 
-          // 4. Exhibitors Tab (Admin UI)
+          // 5. Exhibitors Tab (Admin UI)
           _buildSponsorsTab(auth, admin),
         ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // TAB 1: SCANNER & VISITED PARTICIPANTS
+  // ==========================================
+  Widget _buildScannerAndVisitorsTab(
+    AuthProvider auth,
+    ExhibitorProvider exhibitor,
+    HomeProvider home,
+  ) {
+    final String summitId = home.summits.isNotEmpty
+        ? home.summits.first['summit_id']?.toString() ?? '1'
+        : '1';
+
+    final summary = exhibitor.summary;
+    final byBoothDay = exhibitor.byBoothDay;
+    final filteredParticipants = exhibitor.filteredParticipants;
+
+    // Distinct Dates for filter
+    final Set<String> distinctDates = {};
+    for (final b in byBoothDay) {
+      if (b.visitedDate.isNotEmpty) distinctDates.add(b.visitedDate);
+    }
+    for (final p in exhibitor.participants) {
+      if (p.visitedDate.isNotEmpty) distinctDates.add(p.visitedDate);
+    }
+    final List<String> dateOptions = ['All Dates', ...distinctDates.toList()];
+
+    // Distinct Booths for filter
+    final Map<dynamic, String> boothOptions = {'All': 'All Booths'};
+    for (final b in byBoothDay) {
+      if (b.boothId != null) {
+        final label = b.boothLabel.isNotEmpty
+            ? '${b.boothLabel} (${b.boothNumber})'
+            : (b.boothNumber.isNotEmpty ? b.boothNumber : 'Booth #${b.boothId}');
+        boothOptions[b.boothId] = label;
+      }
+    }
+    for (final p in exhibitor.participants) {
+      if (p.boothId != null && !boothOptions.containsKey(p.boothId)) {
+        boothOptions[p.boothId] = p.boothNumber.isNotEmpty ? p.boothNumber : 'Booth #${p.boothId}';
+      }
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => exhibitor.fetchAllExhibitorData(
+        auth.accessToken,
+        summitId: summitId,
+        forceRefresh: true,
+      ),
+      color: const Color(0xFF4F46E5),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero Scanning Action Banner
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E1B4B), Color(0xFF312E81), Color(0xFF4338CA)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF312E81).withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.storefront_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'BOOTH FOOTFALL PORTAL',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: Color(0xFFC7D2FE),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (byBoothDay.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF34D399),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                byBoothDay.first.boothLabel.isNotEmpty
+                                    ? byBoothDay.first.boothLabel
+                                    : byBoothDay.first.boothNumber,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFECFDF5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Scan QR Code',
+                    style: TextStyle(
+                      fontSize: 18.5,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ExhibitorLiveScannerScreen(
+                              defaultBoothId: byBoothDay.isNotEmpty ? byBoothDay.first.boothId : null,
+                              defaultBoothLabel: byBoothDay.isNotEmpty
+                                  ? (byBoothDay.first.boothLabel.isNotEmpty
+                                      ? byBoothDay.first.boothLabel
+                                      : byBoothDay.first.boothNumber)
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: Color(0xFF312E81)),
+                      label: const Text(
+                        'Open Live Scanner',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF312E81),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Footfall Counts Summary Grid
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryMetricCard(
+                      label: 'Total Visits',
+                      value: summary.totalVisits.toString(),
+                      icon: Icons.trending_up_rounded,
+                      accentColor: const Color(0xFF4F46E5),
+                      bgColor: const Color(0xFFEEF2FF),
+                      borderColor: const Color(0xFFC7D2FE),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSummaryMetricCard(
+                      label: 'Unique Visitors',
+                      value: summary.uniqueVisitors.toString(),
+                      icon: Icons.people_alt_rounded,
+                      accentColor: const Color(0xFF059669),
+                      bgColor: const Color(0xFFECFDF5),
+                      borderColor: const Color(0xFFA7F3D0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Booth Breakdown Cards (if available)
+            if (byBoothDay.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: const [
+                    Icon(Icons.dashboard_outlined, size: 16, color: Color(0xFF64748B)),
+                    SizedBox(width: 6),
+                    Text(
+                      'BOOTH BREAKDOWN',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 96,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: byBoothDay.length,
+                  itemBuilder: (context, index) {
+                    final item = byBoothDay[index];
+                    return Container(
+                      width: 200,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDF2F8),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  item.boothLabel.isNotEmpty ? item.boothLabel : item.boothNumber,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFDB2777),
+                                  ),
+                                ),
+                              ),
+                              if (item.visitedDate.isNotEmpty)
+                                Text(
+                                  item.visitedDate,
+                                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
+                                ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Visits',
+                                    style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    '${item.totalVisits}',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    'Unique',
+                                    style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    '${item.uniqueVisitors}',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 18),
+
+            // Filter & Search Controls Header
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Search Bar
+                  TextField(
+                    controller: _visitorSearchCtrl,
+                    onChanged: (val) {
+                      exhibitor.setSearchQuery(val);
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search visitors by doctor name, hospital, city...',
+                      hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
+                      suffixIcon: _visitorSearchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF64748B)),
+                              onPressed: () {
+                                _visitorSearchCtrl.clear();
+                                exhibitor.setSearchQuery('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.2),
+                      ),
+                    ),
+                  ),
+
+                  // Date Filter Chips (if more than 1 date option)
+                  if (dateOptions.length > 2) ...[
+                    const SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: dateOptions.map((dateOpt) {
+                          final isSelected = (dateOpt == 'All Dates' && exhibitor.selectedDate == null) ||
+                              exhibitor.selectedDate == dateOpt;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Text(dateOpt),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                exhibitor.setSelectedDate(dateOpt == 'All Dates' ? null : dateOpt);
+                              },
+                              selectedColor: const Color(0xFFEEF2FF),
+                              backgroundColor: const Color(0xFFF8FAFC),
+                              labelStyle: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF64748B),
+                              ),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Visited History Section Header & Count
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.history_rounded, size: 18, color: Color(0xFF4F46E5)),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'VISITOR HISTORY',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${filteredParticipants.length} Recorded',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4F46E5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Participants List
+            if (exhibitor.isLoadingParticipants && exhibitor.participants.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Center(child: CircularProgressIndicator(color: Color(0xFF4F46E5))),
+              )
+            else if (filteredParticipants.isEmpty)
+              _buildEmptyVisitorState()
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                itemCount: filteredParticipants.length,
+                itemBuilder: (context, index) {
+                  final participant = filteredParticipants[index];
+                  return _buildParticipantCard(participant);
+                },
+              ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryMetricCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color accentColor,
+    required Color bgColor,
+    required Color borderColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 1),
+            ),
+            child: Icon(icon, size: 22, color: accentColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: accentColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParticipantCard(ExhibitorParticipant p) {
+    final initials = _getInitials(p.name);
+    final location = [p.city].where((s) => s.isNotEmpty).join(', ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {
+            showExhibitorParticipantDetailModal(context, participant: p);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header: Avatar, Name & Role Badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4F46E5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.name.isNotEmpty ? p.name : 'Doctor',
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              _buildBadge(
+                                p.roleLabel.isNotEmpty
+                                    ? p.roleLabel
+                                    : (p.role == 'DL' ? 'Delegate' : p.role),
+                                const Color(0xFF4F46E5),
+                                const Color(0xFFEEF2FF),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildBadge(
+                                '${p.visitCount} Visit${p.visitCount > 1 ? 's' : ''}',
+                                const Color(0xFF059669),
+                                const Color(0xFFECFDF5),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 13,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 10),
+
+                // Details
+                _buildStackedField(label: 'Designation', value: p.designation, icon: Icons.work_outline_rounded),
+                _buildStackedField(label: 'Hospital / Organisation', value: p.organisation, icon: Icons.business_rounded),
+                _buildStackedField(label: 'City', value: location, icon: Icons.location_on_outlined),
+
+                // Timestamp & Booth Footer Row
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.storefront_outlined, size: 14, color: Color(0xFF64748B)),
+                          const SizedBox(width: 5),
+                          Text(
+                            p.boothNumber.isNotEmpty ? p.boothNumber : 'Booth #${p.boothId}',
+                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF64748B)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${p.visitedDate} ${p.visitedTime}'.trim(),
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyVisitorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEEF2FF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.qr_code_scanner_rounded, size: 28, color: Color(0xFF4F46E5)),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'No Visited Participants Yet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Tap "Open QR Scanner" to scan delegate badges and record your first visitor.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -362,6 +1132,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   // TAB 2: SPEAKERS LIST (ADMIN UI)
   // ==========================================
   Widget _buildSpeakersTab(AuthProvider auth, AdminProvider admin) {
+
     final filteredSpeakers = admin.speakers.where((speaker) {
       if (_speakerFilterText.trim().isEmpty) return true;
       final q = _speakerFilterText.trim().toLowerCase();
