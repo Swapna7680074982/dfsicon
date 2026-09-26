@@ -964,14 +964,14 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
             // Visited History Section Header & Count
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.history_rounded, size: 18, color: Color(0xFF4F46E5)),
-                      const SizedBox(width: 6),
-                      const Text(
+                      Icon(Icons.history_rounded, size: 18, color: Color(0xFF4F46E5)),
+                      SizedBox(width: 6),
+                      Text(
                         'VISITOR HISTORY',
                         style: TextStyle(
                           fontSize: 12.5,
@@ -982,6 +982,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       // Download / Export Report Button
@@ -1037,7 +1038,7 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                         const SizedBox(width: 8),
                       ],
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEF2FF),
                           borderRadius: BorderRadius.circular(10),
@@ -1249,37 +1250,51 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                 _buildStackedField(label: 'Hospital / Organisation', value: p.organisation, icon: Icons.business_rounded),
                 _buildStackedField(label: 'City', value: location, icon: Icons.location_on_outlined),
 
-                // Timestamp & Booth Footer Row
-                const SizedBox(height: 4),
+                // Timestamp & Booth Footer Box
+                const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.storefront_outlined, size: 14, color: Color(0xFF64748B)),
-                          const SizedBox(width: 5),
-                          Text(
-                            p.boothLabel.isNotEmpty
-                                ? '${p.boothLabel}${p.boothNumber.isNotEmpty ? " (${p.boothNumber})" : ""}'
-                                : (p.boothNumber.isNotEmpty ? p.boothNumber : 'Booth #${p.boothId}'),
-                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                          const Icon(Icons.storefront_outlined, size: 14, color: Color(0xFF4F46E5)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              p.boothLabel.isNotEmpty
+                                  ? '${p.boothLabel}${p.boothNumber.isNotEmpty ? " (${p.boothNumber})" : ""}'
+                                  : (p.boothNumber.isNotEmpty ? p.boothNumber : 'Booth #${p.boothId}'),
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF64748B)),
-                          const SizedBox(width: 4),
-                          Text(
-                            TimeFormatter.formatDateTimeReadable(p.visitedDate, p.visitedTime),
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              TimeFormatter.formatDateTimeReadable(p.visitedDate, p.visitedTime),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ],
                       ),

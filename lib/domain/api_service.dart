@@ -2357,7 +2357,8 @@ class ApiService {
 
   static Future<http.Response> recordExhibitorScan({
     required String accessToken,
-    required String qrData,
+    String? qrData,
+    String? mobile,
     dynamic boothId,
     String? remarks,
   }) async {
@@ -2366,12 +2367,33 @@ class ApiService {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
     };
-    final bodyMap = <String, dynamic>{
-      "qr_data": qrData.trim(),
-    };
-    if (boothId != null && boothId.toString().trim().isNotEmpty && boothId.toString().trim() != '0') {
-      bodyMap["booth_id"] = int.tryParse(boothId.toString()) ?? boothId;
+    final bodyMap = <String, dynamic>{};
+
+    final cleanQr = (qrData ?? '').trim();
+    final cleanMobile = (mobile ?? '').trim();
+
+    if (cleanMobile.isNotEmpty) {
+      bodyMap["mobile"] = cleanMobile;
+    } else if (cleanQr.isNotEmpty) {
+      // If 10-digit mobile number is entered in the scan field, map to 'mobile'
+      if (RegExp(r'^[0-9]{10}$').hasMatch(cleanQr)) {
+        bodyMap["mobile"] = cleanQr;
+      } else {
+        bodyMap["qr_data"] = cleanQr;
+      }
     }
+
+    if (boothId != null &&
+        boothId.toString().trim().isNotEmpty &&
+        boothId.toString().trim() != '0') {
+      final parsed = int.tryParse(boothId.toString().trim());
+      if (parsed != null) {
+        bodyMap["booth_id"] = parsed;
+      } else {
+        bodyMap["booth_id"] = boothId;
+      }
+    }
+
     if (remarks != null && remarks.trim().isNotEmpty) {
       bodyMap["remarks"] = remarks.trim();
     }

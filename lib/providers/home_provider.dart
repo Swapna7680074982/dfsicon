@@ -98,9 +98,9 @@ class HomeProvider with ChangeNotifier {
   bool _isLoading = false;
 
   HomeEventInfo _eventInfo = HomeEventInfo(
-    name: 'TechSummit 2026',
-    location: 'Convention Center, Hall 4',
-    date: 'Oct 12 - 14, 2026',
+    name: '',
+    location: '',
+    date: '',
   );
 
   bool get isLoading => _isLoading;
@@ -111,9 +111,9 @@ class HomeProvider with ChangeNotifier {
     _summits = [];
     _isLoading = false;
     _eventInfo = HomeEventInfo(
-      name: 'TechSummit 2026',
-      location: 'Convention Center, Hall 4',
-      date: 'Oct 12 - 14, 2026',
+      name: '',
+      location: '',
+      date: '',
     );
     _stats = [
       HomeStat(
@@ -157,7 +157,7 @@ class HomeProvider with ChangeNotifier {
   }
 
   String _formatSummitDates(String start, String end) {
-    if (start.isEmpty && end.isEmpty) return 'Oct 12 - 14, 2026';
+    if (start.isEmpty && end.isEmpty) return '';
     if (start.isEmpty) return end;
     if (end.isEmpty) return start;
     
@@ -200,20 +200,64 @@ class HomeProvider with ChangeNotifier {
         if (data['status'] == true && data['data'] != null && (data['data'] as List).isNotEmpty) {
           _summits = List<Map<String, dynamic>>.from(data['data']);
           final first = _summits.first;
+          final String summitId = first['summit_id']?.toString() ?? '';
+
+          String venue = '';
+          if (first['venue_name'] != null && first['venue_name'].toString().trim().isNotEmpty) {
+            venue = first['venue_name'].toString().trim();
+          } else if (first['venue_details'] is Map) {
+            final vd = first['venue_details'] as Map;
+            venue = vd['venue_name']?.toString().trim() ?? vd['name']?.toString().trim() ?? '';
+          } else if (first['venue'] is Map) {
+            final vd = first['venue'] as Map;
+            venue = vd['venue_name']?.toString().trim() ?? vd['name']?.toString().trim() ?? '';
+          } else if (first['location'] != null && first['location'].toString().trim().isNotEmpty) {
+            venue = first['location'].toString().trim();
+          }
+
           _eventInfo = HomeEventInfo(
-            name: first['summit_title'] ?? 'TechSummit 2026',
-            location: first['venue_name'] ?? 'Convention Center, Hall 4',
+            name: first['summit_title']?.toString() ?? '',
+            location: venue,
             date: _formatSummitDates(
               first['summit_start_date']?.toString() ?? '',
               first['summit_end_date']?.toString() ?? '',
             ),
           );
 
+          // If venue name is not found in summit data, fetch from venue API
+          if (venue.isEmpty && summitId.isNotEmpty) {
+            try {
+              final venueResp = await ApiService.fetchVenueAndHalls(
+                summitId: summitId,
+                accessToken: accessToken,
+              );
+              if (venueResp.statusCode == 200) {
+                final venueData = json.decode(venueResp.body);
+                if (venueData['status'] == true && venueData['data'] != null) {
+                  final v = venueData['data']['venue'];
+                  if (v is Map) {
+                    final fetchedVenueName = v['venue_name']?.toString().trim() ??
+                        v['name']?.toString().trim() ??
+                        '';
+                    if (fetchedVenueName.isNotEmpty) {
+                      _eventInfo = HomeEventInfo(
+                        name: _eventInfo.name,
+                        location: fetchedVenueName,
+                        date: _eventInfo.date,
+                      );
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              debugPrint('Error fetching venue details in HomeProvider: $e');
+            }
+          }
+
           // Fetch summit stats
           await fetchSummitStats(accessToken);
 
           // Fetch the dynamic sponsors for the current active summit
-          final String summitId = first['summit_id']?.toString() ?? '';
           if (summitId.isNotEmpty) {
             await fetchSponsors(summitId, accessToken);
           }

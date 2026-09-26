@@ -223,10 +223,11 @@ class ExhibitorProvider extends ChangeNotifier {
     ]);
   }
 
-  // Record a QR scan
+  // Record a QR scan or mobile entry
   Future<Map<String, dynamic>> recordScan(
     String accessToken, {
-    required String qrData,
+    String? qrData,
+    String? mobile,
     dynamic boothId,
     String? remarks,
     dynamic summitId = 1,
@@ -242,6 +243,7 @@ class ExhibitorProvider extends ChangeNotifier {
       final response = await ApiService.recordExhibitorScan(
         accessToken: accessToken,
         qrData: qrData,
+        mobile: mobile,
         boothId: boothId ?? _selectedBoothId,
         remarks: remarks,
       );
