@@ -11,6 +11,7 @@ import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../exhibitor/exhibitors_list_screen.dart';
+import '../../providers/exhibitor_provider.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../widgets/venue_layouts_widget.dart';
@@ -1722,7 +1723,212 @@ class HomeTab extends StatelessWidget {
                                   }
                                 ),
                               ],
-                              const SizedBox(height: 28),
+                              // Footfall & Visits Card from Exhibitor Provider
+                              Consumer<ExhibitorProvider>(
+                                builder: (context, exhibitor, _) {
+                                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                                  if (exhibitor.countsData == null && !exhibitor.isLoadingCounts && auth.accessToken.isNotEmpty) {
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      exhibitor.fetchAllExhibitorData(auth.accessToken, summitId: '1');
+                                    });
+                                  }
+
+                                  final totalVisits = exhibitor.summary.totalVisits;
+                                  final uniqueVisitors = exhibitor.summary.uniqueVisitors;
+                                  final recentVisits = exhibitor.participants;
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(top: 24, bottom: 8),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF312E81), Color(0xFF4338CA), Color(0xFF6366F1)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF4338CA).withValues(alpha: 0.28),
+                                          blurRadius: 14,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(alpha: 0.18),
+                                                borderRadius: BorderRadius.circular(14),
+                                              ),
+                                              child: const Icon(
+                                                Icons.analytics_rounded,
+                                                color: Colors.white,
+                                                size: 22,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Footfall & Visits Overview',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                      letterSpacing: 0.2,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 2),
+                                                  Text(
+                                                    'Live recorded footfall & visit statistics',
+                                                    style: TextStyle(
+                                                      color: Color(0xFFE0E7FF),
+                                                      fontSize: 11.5,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 14),
+                                        // 2 Metrics Chips
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.visibility_rounded, color: Color(0xFF34D399), size: 18),
+                                                    const SizedBox(width: 8),
+                                                    Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        const Text(
+                                                          'Total Visits',
+                                                          style: TextStyle(fontSize: 10.5, color: Color(0xFFC7D2FE), fontWeight: FontWeight.w600),
+                                                        ),
+                                                        Text(
+                                                          '$totalVisits',
+                                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.people_alt_rounded, color: Color(0xFF38BDF8), size: 18),
+                                                    const SizedBox(width: 8),
+                                                    Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        const Text(
+                                                          'Unique Visitors',
+                                                          style: TextStyle(fontSize: 10.5, color: Color(0xFFC7D2FE), fontWeight: FontWeight.w600),
+                                                        ),
+                                                        Text(
+                                                          '$uniqueVisitors',
+                                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (recentVisits.isNotEmpty) ...[
+                                          const SizedBox(height: 12),
+                                          const Text(
+                                            'Recent Recorded Visits',
+                                            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFFC7D2FE)),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          ...recentVisits.take(3).map((v) => Container(
+                                            margin: const EdgeInsets.only(bottom: 6),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(10),
+                                              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: (v.role == 'SK' || v.roleLabel.toLowerCase().contains('speaker'))
+                                                        ? const Color(0xFF8B5CF6).withValues(alpha: 0.3)
+                                                        : const Color(0xFF10B981).withValues(alpha: 0.3),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    v.roleLabel.isNotEmpty ? v.roleLabel : (v.role.isNotEmpty ? v.role : 'Visitor'),
+                                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        v.name,
+                                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      if (v.organisation.isNotEmpty || v.boothLabel.isNotEmpty || v.boothNumber.isNotEmpty)
+                                                        Text(
+                                                          '${v.organisation.isNotEmpty ? v.organisation : ''}${v.boothLabel.isNotEmpty ? ' · Booth ${v.boothLabel}' : (v.boothNumber.isNotEmpty ? ' · Booth ${v.boothNumber}' : '')}',
+                                                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Text(
+                                                  v.visitedTime,
+                                                  style: const TextStyle(fontSize: 10.5, color: Color(0xFFC7D2FE)),
+                                                ),
+                                              ],
+                                            ),
+                                          )),
+                                        ],
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 20),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,

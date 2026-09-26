@@ -9,7 +9,6 @@ import '../profile/profile_screen.dart';
 import '../calendar/event_calendar_screen.dart';
 import '../../services/documents_service.dart';
 import '../../services/footfall_report_service.dart';
-import '../../widgets/documents_modal_sheet.dart';
 import '../../utils/time_formatter.dart';
 import 'admin_detail_sheets.dart';
 
@@ -45,6 +44,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
   String _selectedFootfallBoothId = 'All';
   String? _selectedFootfallDate;
   AdminSponsorBoothStatsData? _footfallStatsData;
+  AdminFootfallOverviewData? _footfallOverviewData;
   List<AdminFootfallParticipant> _footfallParticipants = [];
   AdminPagination _footfallPagination = const AdminPagination();
   bool _isLoadingFootfall = false;
@@ -180,6 +180,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
       final futures = <Future>[];
       if (reset) {
         futures.add(
+          admin.fetchFootfallOverview(
+            auth.accessToken,
+            summitId: 1,
+          ),
+        );
+        futures.add(
           admin.fetchSponsorBoothStats(
             auth.accessToken,
             sponsorId: _selectedFootfallSponsorId,
@@ -203,11 +209,16 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
 
       if (mounted) {
         setState(() {
-          if (reset && results.isNotEmpty && results[0] is AdminSponsorBoothStatsData) {
-            _footfallStatsData = results[0] as AdminSponsorBoothStatsData;
+          if (reset) {
+            if (results.isNotEmpty && results[0] is AdminFootfallOverviewData) {
+              _footfallOverviewData = results[0] as AdminFootfallOverviewData;
+            }
+            if (results.length > 1 && results[1] is AdminSponsorBoothStatsData) {
+              _footfallStatsData = results[1] as AdminSponsorBoothStatsData;
+            }
           }
 
-          final participantResult = reset ? results[1] as Map<String, dynamic> : results[0] as Map<String, dynamic>;
+          final participantResult = reset ? results[2] as Map<String, dynamic> : results[0] as Map<String, dynamic>;
           final newParticipants = participantResult['participants'] as List<AdminFootfallParticipant>;
           final newPagination = participantResult['pagination'] as AdminPagination;
 
@@ -253,10 +264,19 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     if (auth.accessToken.isNotEmpty) {
-      await Future.wait([
-        adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh),
-        DocumentsService.fetchDocuments(accessToken: auth.accessToken, roleCode: 'AD'),
-      ]);
+      try {
+        final footfallFuture = adminProvider.fetchFootfallOverview(auth.accessToken, summitId: 1);
+        await Future.wait([
+          adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh),
+          DocumentsService.fetchDocuments(accessToken: auth.accessToken, roleCode: 'AD'),
+        ]);
+        final footfallData = await footfallFuture;
+        if (mounted && footfallData != null) {
+          setState(() {
+            _footfallOverviewData = footfallData;
+          });
+        }
+      } catch (_) {}
     }
   }
 
@@ -758,207 +778,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               ),
               const SizedBox(height: 10),
 
-              // Exhibitor Footfall Analytics Card
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF065F46), Color(0xFF059669), Color(0xFF10B981)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF059669).withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    onTap: () {
-                      _tabController.animateTo(7);
-                      if (_footfallStatsData == null) {
-                        _loadFootfallData();
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                            ),
-                            child: const Icon(
-                              Icons.query_stats_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Exhibitor Footfall & Analytics',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Live attendee visits, unique visitor logs & booth stats',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFFD1FAE5),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'View',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Conference Documents Banner Card
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    onTap: () {
-                      DocumentsModalSheet.show(context, roleCode: 'AD');
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                            ),
-                            child: const Icon(
-                              Icons.folder_shared_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Conference Documents & Guidelines',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Test PDF, Venue Map, Guidelines & Schedule',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'View',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              // Summit Footfall Overview Card
+              _buildSummitFootfallOverviewCard(admin, auth),
               const SizedBox(height: 10),
 
               // Slots Banner Card
@@ -2841,7 +2662,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                     physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     children: [
-                      // 3 Summary Stats Cards
+                      // Selected Exhibitor Footfall Summary Cards
                       _buildFootfallStatsGrid(summary),
                       const SizedBox(height: 14),
 
@@ -3141,6 +2962,65 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+
+              // Export / Download Report Button (Inside only for Admin, auto-disabled when no data)
+              InkWell(
+                onTap: _footfallParticipants.isNotEmpty
+                    ? () {
+                        final total = _footfallParticipants.length;
+                        final speakers = _footfallParticipants
+                            .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
+                            .length;
+                        final delegates = total - speakers;
+
+                        FootfallReportService.showDownloadReportModal(
+                          context: context,
+                          totalCount: total,
+                          speakersCount: speakers,
+                          delegatesCount: delegates,
+                          onDownload: (filter) async {
+                            await FootfallReportService.downloadAdminFootfallReport(
+                              context: context,
+                              participants: _footfallParticipants,
+                              filter: filter,
+                              sponsorName: currentSponsor?.companyName,
+                            );
+                          },
+                        );
+                      }
+                    : null,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _footfallParticipants.isNotEmpty ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _footfallParticipants.isNotEmpty ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.file_download_outlined,
+                        size: 14,
+                        color: _footfallParticipants.isNotEmpty ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Report',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: _footfallParticipants.isNotEmpty ? const Color(0xFF047857) : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -3316,6 +3196,376 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                         );
                       },
                     ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSummitFootfallOverviewCard(AdminProvider admin, AuthProvider auth) {
+    final overview = _footfallOverviewData?.summary ?? const AdminFootfallOverviewSummary();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.analytics_rounded, size: 16, color: Color(0xFF34D399)),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'SUMMIT FOOTFALL OVERVIEW',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.6,
+                    color: Color(0xFFF1F5F9),
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () => _showVisitedAllBoothsSheet(context, admin, auth),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.military_tech_rounded, size: 13, color: Color(0xFF34D399)),
+                      const SizedBox(width: 4),
+                      Text(
+                        'All-Booths (${overview.visitedAllBoothsCount})',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF34D399),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 4 Stats Grid
+          Row(
+            children: [
+              Expanded(
+                child: _buildOverviewMetricItem(
+                  icon: Icons.business_rounded,
+                  iconColor: const Color(0xFF818CF8),
+                  label: 'Sponsors',
+                  value: '${overview.totalSponsors}',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOverviewMetricItem(
+                  icon: Icons.storefront_rounded,
+                  iconColor: const Color(0xFF38BDF8),
+                  label: 'Booths (${overview.assignedBooths}/${overview.totalBooths})',
+                  value: '${overview.totalBooths}',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOverviewMetricItem(
+                  icon: Icons.visibility_rounded,
+                  iconColor: const Color(0xFF34D399),
+                  label: 'Visits',
+                  value: '${overview.totalVisits}',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOverviewMetricItem(
+                  icon: Icons.people_rounded,
+                  iconColor: const Color(0xFFFBBF24),
+                  label: 'Unique',
+                  value: '${overview.uniqueVisitors}',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewMetricItem({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: iconColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF94A3B8),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVisitedAllBoothsSheet(BuildContext context, AdminProvider admin, AuthProvider auth) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        bool isLoading = true;
+        List<AdminFootfallParticipant> participants = [];
+        AdminPagination pagination = const AdminPagination();
+        String searchQuery = '';
+        String? error;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            void loadData() async {
+              try {
+                final result = await admin.fetchVisitedAllBoothsParticipantsList(
+                  auth.accessToken,
+                  summitId: 1,
+                  page: 1,
+                  limit: 50,
+                );
+                setModalState(() {
+                  participants = result['participants'] as List<AdminFootfallParticipant>;
+                  pagination = result['pagination'] as AdminPagination;
+                  isLoading = false;
+                });
+              } catch (e) {
+                setModalState(() {
+                  error = e.toString();
+                  isLoading = false;
+                });
+              }
+            }
+
+            if (isLoading && error == null && participants.isEmpty) {
+              loadData();
+            }
+
+            final filtered = participants.where((p) {
+              if (searchQuery.trim().isEmpty) return true;
+              final q = searchQuery.trim().toLowerCase();
+              return p.name.toLowerCase().contains(q) ||
+                  p.mobile.toLowerCase().contains(q) ||
+                  p.organisation.toLowerCase().contains(q) ||
+                  p.city.toLowerCase().contains(q) ||
+                  p.roleLabel.toLowerCase().contains(q);
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.military_tech_rounded, size: 20, color: Color(0xFF059669)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Visited All Booths Attendees',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                pagination.totalRecords > 0
+                                    ? '${pagination.totalRecords} attendees completed all booths'
+                                    : 'Attendees who completed all booth visits',
+                                style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+                  // Search Bar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                    child: TextField(
+                      onChanged: (val) {
+                        setModalState(() => searchQuery = val);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search attendee name, phone, city...',
+                        hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                        prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Content List
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator(color: Color(0xFF059669)))
+                        : error != null
+                            ? Center(
+                                child: Text(
+                                  error!,
+                                  style: const TextStyle(fontSize: 13, color: Color(0xFFEF4444)),
+                                ),
+                              )
+                            : filtered.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFF8FAFC),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.storefront_outlined, size: 36, color: Color(0xFF94A3B8)),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          const Text(
+                                            'No participants yet',
+                                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          const Text(
+                                            'Attendees who visit all sponsor booths will appear here automatically.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    itemCount: filtered.length,
+                                    itemBuilder: (context, index) {
+                                      final p = filtered[index];
+                                      return _buildFootfallParticipantCard(p);
+                                    },
+                                  ),
                   ),
                 ],
               ),

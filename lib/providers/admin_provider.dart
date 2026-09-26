@@ -1175,6 +1175,64 @@ class AdminSponsorBoothStatsData {
   }
 }
 
+class AdminFootfallOverviewSummary {
+  final int totalSponsors;
+  final int totalBooths;
+  final int assignedBooths;
+  final int freeBooths;
+  final int totalVisits;
+  final int uniqueVisitors;
+  final int visitedAllBoothsCount;
+
+  const AdminFootfallOverviewSummary({
+    this.totalSponsors = 0,
+    this.totalBooths = 0,
+    this.assignedBooths = 0,
+    this.freeBooths = 0,
+    this.totalVisits = 0,
+    this.uniqueVisitors = 0,
+    this.visitedAllBoothsCount = 0,
+  });
+
+  factory AdminFootfallOverviewSummary.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const AdminFootfallOverviewSummary();
+    int parseInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is int) return val;
+      return int.tryParse(val.toString()) ?? 0;
+    }
+    return AdminFootfallOverviewSummary(
+      totalSponsors: parseInt(json['total_sponsors']),
+      totalBooths: parseInt(json['total_booths']),
+      assignedBooths: parseInt(json['assigned_booths']),
+      freeBooths: parseInt(json['free_booths']),
+      totalVisits: parseInt(json['total_visits']),
+      uniqueVisitors: parseInt(json['unique_visitors']),
+      visitedAllBoothsCount: parseInt(json['visited_all_booths_count']),
+    );
+  }
+}
+
+class AdminFootfallOverviewData {
+  final String summitId;
+  final AdminFootfallOverviewSummary summary;
+
+  const AdminFootfallOverviewData({
+    this.summitId = '1',
+    this.summary = const AdminFootfallOverviewSummary(),
+  });
+
+  factory AdminFootfallOverviewData.fromJson(Map<String, dynamic> json) {
+    final filter = json['filter'] is Map ? json['filter'] as Map<String, dynamic> : null;
+    final summaryMap = json['summary'] is Map ? json['summary'] as Map<String, dynamic> : null;
+
+    return AdminFootfallOverviewData(
+      summitId: (filter?['summit_id'] ?? '1').toString(),
+      summary: AdminFootfallOverviewSummary.fromJson(summaryMap),
+    );
+  }
+}
+
 class AdminFootfallParticipant {
   final String footfallId;
   final String userId;
@@ -2717,6 +2775,64 @@ class AdminProvider with ChangeNotifier {
       }
     } catch (e, stack) {
       CustomLogger.logError('Fetch admin sponsor footfall participants failed', e, stack);
+    }
+    return {'participants': <AdminFootfallParticipant>[], 'pagination': const AdminPagination()};
+  }
+
+  // Fetch Footfall Overview Summary
+  Future<AdminFootfallOverviewData?> fetchFootfallOverview(
+    String accessToken, {
+    dynamic summitId = 1,
+  }) async {
+    if (accessToken.isEmpty) return null;
+    try {
+      final response = await ApiService.fetchAdminFootfallOverview(
+        accessToken: accessToken,
+        summitId: summitId,
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['status'] == true && body['data'] != null) {
+          return AdminFootfallOverviewData.fromJson(body['data']);
+        }
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch admin footfall overview failed', e, stack);
+    }
+    return null;
+  }
+
+  // Fetch Visited All Booths Participants List
+  Future<Map<String, dynamic>> fetchVisitedAllBoothsParticipantsList(
+    String accessToken, {
+    dynamic summitId = 1,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    if (accessToken.isEmpty) {
+      return {'participants': <AdminFootfallParticipant>[], 'pagination': const AdminPagination()};
+    }
+    try {
+      final response = await ApiService.fetchAdminVisitedAllBoothsParticipantsList(
+        accessToken: accessToken,
+        summitId: summitId,
+        page: page,
+        limit: limit,
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['status'] == true) {
+          final data = body['data'] is Map ? body['data'] as Map<String, dynamic> : null;
+          final List rawList = data?['participants'] is List
+              ? data!['participants'] as List
+              : (body['data'] is List ? body['data'] : []);
+          final participants = rawList.map((e) => AdminFootfallParticipant.fromJson(e)).toList();
+          final pagination = AdminPagination.fromJson(body['pagination']);
+          return {'participants': participants, 'pagination': pagination};
+        }
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch visited all booths participants failed', e, stack);
     }
     return {'participants': <AdminFootfallParticipant>[], 'pagination': const AdminPagination()};
   }

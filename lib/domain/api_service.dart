@@ -2282,6 +2282,52 @@ class ApiService {
     return response;
   }
 
+  // Admin – Footfall Overview
+  static Future<http.Response> fetchAdminFootfallOverview({
+    required String accessToken,
+    dynamic summitId = 1,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminFootfallOverview);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "summit_id": summitId is int ? summitId : (int.tryParse(summitId.toString()) ?? 1),
+    };
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Visited All Booths Participants List
+  static Future<http.Response> fetchAdminVisitedAllBoothsParticipantsList({
+    required String accessToken,
+    dynamic summitId = 1,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminVisitedAllBoothsParticipantsList);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "summit_id": summitId is int ? summitId : (int.tryParse(summitId.toString()) ?? 1),
+      "page": page,
+      "limit": limit,
+    };
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // ==========================================
   // Utility – Documents API Call
   // ==========================================

@@ -74,266 +74,739 @@ class _ExhibitorLiveScannerScreenState extends State<ExhibitorLiveScannerScreen>
 
     HapticFeedback.heavyImpact();
 
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    // Show popup with scan details and Submit option (don't submit directly)
+    await _showScanConfirmationModal(cleanCode);
+  }
+
+  Widget _buildFormattedScannedText(String code) {
+    final lines = code.split('\n');
+    final bool hasKeyValues = lines.any((l) => l.contains(':'));
+
+    if (!hasKeyValues) {
+      return Text(
+        code,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF1E293B),
+          letterSpacing: 0.2,
+          height: 1.35,
+        ),
+      );
+    }
+
+    final List<Widget> items = [];
+    bool inSummitSection = false;
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) {
+        if (!inSummitSection) {
+          items.add(const SizedBox(height: 8));
+          items.add(const Divider(height: 1, color: Color(0xFFE2E8F0)));
+          items.add(const SizedBox(height: 8));
+          inSummitSection = true;
+        }
+        continue;
+      }
+
+      final colonIdx = line.indexOf(':');
+      if (colonIdx > 0) {
+        final key = line.substring(0, colonIdx).trim();
+        final value = line.substring(colonIdx + 1).trim();
+        final lowerKey = key.toLowerCase();
+
+        Color keyColor = const Color(0xFF475569);
+        Color valColor = const Color(0xFF0F172A);
+        IconData? icon;
+
+        if (lowerKey.contains('name')) {
+          keyColor = const Color(0xFF1E293B);
+          valColor = const Color(0xFF0F172A);
+          icon = Icons.person_rounded;
+        } else if (lowerKey.contains('mobile') || lowerKey.contains('phone')) {
+          keyColor = const Color(0xFF475569);
+          valColor = const Color(0xFF2563EB);
+          icon = Icons.phone_android_rounded;
+        } else if (lowerKey.contains('country')) {
+          keyColor = const Color(0xFF475569);
+          valColor = const Color(0xFF0F172A);
+          icon = Icons.public_rounded;
+        } else if (lowerKey.contains('role')) {
+          keyColor = const Color(0xFF475569);
+          icon = Icons.badge_outlined;
+        } else if (lowerKey.contains('user id') || lowerKey == 'id') {
+          keyColor = const Color(0xFF64748B);
+          valColor = const Color(0xFF334155);
+          icon = Icons.tag_rounded;
+        } else if (lowerKey.contains('qr data') || lowerKey.contains('badge')) {
+          keyColor = const Color(0xFF4F46E5);
+          valColor = const Color(0xFF4338CA);
+          icon = Icons.qr_code_2_rounded;
+        } else if (lowerKey.contains('summit')) {
+          keyColor = const Color(0xFF1E293B);
+          valColor = const Color(0xFF0F172A);
+          icon = Icons.apartment_rounded;
+        } else if (lowerKey.contains('date')) {
+          keyColor = const Color(0xFF64748B);
+          valColor = const Color(0xFF059669);
+          icon = Icons.event_note_rounded;
+        }
+
+        Widget valueWidget;
+        if (lowerKey.contains('role')) {
+          final r = value.toLowerCase();
+          Color rBg = const Color(0xFFEEF2FF);
+          Color rColor = const Color(0xFF4F46E5);
+          Color rBorder = const Color(0xFFC7D2FE);
+          if (r.contains('speaker')) {
+            rBg = const Color(0xFFF5F3FF);
+            rColor = const Color(0xFF7C3AED);
+            rBorder = const Color(0xFFDDD6FE);
+          } else if (r.contains('delegate') || r.contains('attendee')) {
+            rBg = const Color(0xFFECFDF5);
+            rColor = const Color(0xFF059669);
+            rBorder = const Color(0xFFA7F3D0);
+          } else if (r.contains('exhibitor') || r.contains('sponsor')) {
+            rBg = const Color(0xFFFFFBEB);
+            rColor = const Color(0xFFD97706);
+            rBorder = const Color(0xFFFDE68A);
+          } else if (r.contains('faculty') || r.contains('vip')) {
+            rBg = const Color(0xFFFEF2F2);
+            rColor = const Color(0xFFDC2626);
+            rBorder = const Color(0xFFFECDD3);
+          }
+          valueWidget = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: rBg,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: rBorder),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.bold,
+                color: rColor,
+              ),
+            ),
+          );
+        } else if (lowerKey.contains('qr data')) {
+          valueWidget = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF4F46E5),
+                letterSpacing: 0.3,
+              ),
+            ),
+          );
+        } else {
+          valueWidget = Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: valColor,
+              height: 1.25,
+            ),
+          );
+        }
+
+        items.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (icon != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, right: 6),
+                    child: Icon(icon, size: 14, color: keyColor.withValues(alpha: 0.8)),
+                  ),
+                ],
+                SizedBox(
+                  width: 76,
+                  child: Text(
+                    key,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: keyColor,
+                    ),
+                  ),
+                ),
+                const Text(
+                  ' :  ',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+                Expanded(child: valueWidget),
+              ],
+            ),
+          ),
+        );
+      } else {
+        items.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2.0),
+            child: Text(
+              line,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: items,
+    );
+  }
+
+  Future<void> _showScanConfirmationModal(String scannedCode) async {
     final exhibitor = Provider.of<ExhibitorProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
     final home = Provider.of<HomeProvider>(context, listen: false);
 
-    final summitId = home.summits.isNotEmpty
-        ? home.summits.first['summit_id'] ?? 1
-        : 1;
+    final String boothDisplay = widget.defaultBoothLabel ??
+        (widget.defaultBoothId != null ? 'Booth #${widget.defaultBoothId}' : 'Default Booth');
+    final remarksCtrl = TextEditingController();
+    bool isSubmitting = false;
 
-    final result = await exhibitor.recordScan(
-      auth.accessToken,
-      qrData: cleanCode,
-      boothId: widget.defaultBoothId ?? exhibitor.selectedBoothId,
-      summitId: summitId,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 24,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(22),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFC7D2FE)),
+                              ),
+                              child: const Icon(
+                                Icons.qr_code_scanner_rounded,
+                                size: 24,
+                                color: Color(0xFF4F46E5),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Badge Scanned',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Verify details before recording visit',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: isSubmitting ? null : () => Navigator.pop(ctx, false),
+                              icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF94A3B8)),
+                              splashRadius: 18,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Scanned Code Detail Box
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'SCANNED DATA / BADGE ID',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildFormattedScannedText(scannedCode),
+                              if (boothDisplay.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFFBEB),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFFDE68A)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.storefront_outlined, size: 16, color: Color(0xFFD97706)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Booth: $boothDisplay',
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Optional Remarks
+                        TextField(
+                          controller: remarksCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Notes / Remarks (Optional)',
+                            hintText: 'e.g. Requested catalog, Product interest...',
+                            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                            prefixIcon: const Icon(Icons.note_alt_outlined, size: 18, color: Color(0xFF64748B)),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Action Buttons (Submit & Cancel)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: isSubmitting ? null : () => Navigator.pop(ctx, false),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(vertical: 13),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Color(0xFF64748B),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () async {
+                                        setModalState(() => isSubmitting = true);
+                                        final summitId = home.summits.isNotEmpty
+                                            ? home.summits.first['summit_id'] ?? 1
+                                            : 1;
+
+                                        final result = await exhibitor.recordScan(
+                                          auth.accessToken,
+                                          qrData: scannedCode,
+                                          boothId: widget.defaultBoothId ?? exhibitor.selectedBoothId,
+                                          remarks: remarksCtrl.text.trim(),
+                                          summitId: summitId,
+                                        );
+
+                                        if (mounted) {
+                                          Navigator.pop(ctx, true);
+                                          _showAutoSuccessModal(result, scannedCode);
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4F46E5),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(vertical: 13),
+                                  elevation: 2,
+                                ),
+                                child: isSubmitting
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Submit & Record',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
 
-    if (!mounted) return;
-
-    _showAutoSuccessModal(result, cleanCode);
+    if (confirmed != true && mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
 
   void _showAutoSuccessModal(Map<String, dynamic> result, String scannedText) {
     final bool isOffline = result['isOffline'] == true;
     final bool isSuccess = result['status'] == true;
-    final String message = result['message']?.toString() ??
-        (isOffline
-            ? 'Visit saved offline. Will sync automatically when network connects.'
-            : (isSuccess ? 'Scan recorded successfully!' : 'Could not record visitor'));
-
     final data = result['data'] is Map<String, dynamic> ? result['data'] as Map<String, dynamic> : null;
+    final String rawMsg = result['message']?.toString() ?? '';
+    final bool isDuplicate = data?['duplicate'] == true ||
+        rawMsg.toLowerCase().contains('already') ||
+        rawMsg.toLowerCase().contains('duplicate');
+
+    final String message = rawMsg.isNotEmpty
+        ? rawMsg
+        : (isOffline
+            ? 'Visit saved offline. Will sync automatically when network connects.'
+            : (isDuplicate
+                ? 'Already scanned moments ago'
+                : (isSuccess ? 'Scan recorded successfully!' : 'Could not record visitor')));
+
     final String? visitorName = data?['visitor_name']?.toString();
     final String? visitorRole = data?['visitor_role']?.toString();
 
     final iconColor = isOffline
         ? const Color(0xFFD97706)
-        : (isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444));
+        : (isDuplicate
+            ? const Color(0xFFD97706)
+            : (isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444)));
     final bgColor = isOffline
         ? const Color(0xFFFFFBEB)
-        : (isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2));
+        : (isDuplicate
+            ? const Color(0xFFFFFBEB)
+            : (isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2)));
     final borderColor = isOffline
         ? const Color(0xFFFDE68A)
-        : (isSuccess ? const Color(0xFFA7F3D0) : const Color(0xFFFECDD3));
+        : (isDuplicate
+            ? const Color(0xFFFDE68A)
+            : (isSuccess ? const Color(0xFFA7F3D0) : const Color(0xFFFECDD3)));
     final icon = isOffline
         ? Icons.cloud_done_rounded
-        : (isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded);
+        : (isDuplicate
+            ? Icons.info_outline_rounded
+            : (isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded));
     final title = isOffline
         ? 'Saved Offline'
-        : (isSuccess ? 'Scan Recorded!' : 'Notice');
+        : (isDuplicate
+            ? 'Already Scanned'
+            : (isSuccess ? 'Scan Recorded!' : 'Notice'));
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierDismissible: false,
       builder: (ctx) {
-        final bottomInset = MediaQuery.of(ctx).padding.bottom;
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 20,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.fromLTRB(24, 24, 24, 28 + bottomInset),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top drag indicator bar
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              // Success/Notice Indicator Icon
-              Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: bgColor,
-                  border: Border.all(
-                    color: borderColor,
-                    width: 2.5,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: iconColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isOffline ? const Color(0xFFB45309) : (isSuccess ? const Color(0xFF047857) : AppColors.textSecondary),
-                  height: 1.35,
-                ),
-              ),
-
-              // If visitor details returned from API
-              if (visitorName != null && visitorName.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDCFCE7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.person_rounded, size: 20, color: Color(0xFF16A34A)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              visitorName,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B),
-                              ),
-                            ),
-                            if (visitorRole != null && visitorRole.isNotEmpty)
-                              Text(
-                                'Role: $visitorRole',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF15803D),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                const SizedBox(height: 16),
-                // Scanned payload pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.qr_code_2_rounded, size: 18, color: Color(0xFF64748B)),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          scannedText.replaceAll('\n', ' ').trim(),
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF334155),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-
-              // Action Buttons (Scan Next / Done)
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.pop(context); // Exit scanner
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                      ),
-                      child: const Text(
-                        'View History',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        setState(() {
-                          _isProcessing = false; // Resume scanning immediately
-                        });
-                      },
-                      icon: const Icon(Icons.qr_code_scanner_rounded, size: 18, color: Colors.white),
-                      label: const Text(
-                        'Scan Next',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4F46E5),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 24,
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
-            ],
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Success/Notice Indicator Icon
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: bgColor,
+                      border: Border.all(
+                        color: borderColor,
+                        width: 2.5,
+                      ),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 40,
+                      color: iconColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isOffline || isDuplicate
+                            ? const Color(0xFFB45309)
+                            : (isSuccess ? const Color(0xFF047857) : const Color(0xFFB91C1C)),
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+
+                  // If visitor details returned from API
+                  if (visitorName != null && visitorName.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFDCFCE7),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.person_rounded, size: 20, color: Color(0xFF16A34A)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  visitorName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                if (visitorRole != null && visitorRole.isNotEmpty)
+                                  Text(
+                                    'Role: $visitorRole',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF15803D),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 16),
+                    // Scanned payload pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.qr_code_2_rounded, size: 18, color: Color(0xFF64748B)),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              scannedText.replaceAll('\n', ' ').trim(),
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+
+                  // Action Buttons (Scan Next / Done)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            Navigator.pop(context); // Exit scanner
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                          ),
+                          child: const Text(
+                            'View History',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            setState(() {
+                              _isProcessing = false; // Resume scanning immediately
+                            });
+                          },
+                          icon: const Icon(Icons.qr_code_scanner_rounded, size: 18, color: Colors.white),
+                          label: const Text(
+                            'Scan Next',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -345,147 +818,149 @@ class _ExhibitorLiveScannerScreenState extends State<ExhibitorLiveScannerScreen>
     bool isSubmitting = false;
     String? errorText;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierDismissible: true,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-            final navInset = MediaQuery.of(context).padding.bottom;
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomInset + navInset),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEEF2FF),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.phone_android_rounded, color: Color(0xFF4F46E5), size: 22),
-                          ),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'Manual Mobile Entry',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 22),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 24,
+                        offset: Offset(0, 8),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Enter attendee 10-digit mobile number to log their visit manually.',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: textCtrl,
-                    autofocus: true,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. 9876543210',
-                      hintStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF94A3B8)),
-                      prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF4F46E5), size: 20),
-                      errorText: errorText,
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
-                      ),
+                  padding: const EdgeInsets.all(24),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.phone_android_rounded, color: Color(0xFF4F46E5), size: 22),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'Manual Mobile Entry',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 22),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Enter attendee 10-digit mobile number to log their visit manually.',
+                          style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 18),
+                        TextField(
+                          controller: textCtrl,
+                          autofocus: true,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. 9876543210',
+                            hintStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF94A3B8)),
+                            prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF4F46E5), size: 20),
+                            errorText: errorText,
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+                            ),
+                          ),
+                          onChanged: (val) {
+                            if (errorText != null) {
+                              setModalState(() => errorText = null);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    final query = textCtrl.text.trim();
+                                    if (query.isEmpty) {
+                                      setModalState(() {
+                                        errorText = 'Please enter mobile number';
+                                      });
+                                      return;
+                                    }
+                                    setModalState(() {
+                                      isSubmitting = true;
+                                    });
+                                    Navigator.pop(ctx);
+                                    await _handleBarcodeDetected(query);
+                                  },
+                            icon: isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.check_circle_rounded, size: 18),
+                            label: Text(
+                              isSubmitting ? 'Recording...' : 'Record Visit',
+                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4F46E5),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    onChanged: (val) {
-                      if (errorText != null) {
-                        setModalState(() => errorText = null);
-                      }
-                    },
                   ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                              final query = textCtrl.text.trim();
-                              if (query.isEmpty) {
-                                setModalState(() {
-                                  errorText = 'Please enter mobile number';
-                                });
-                                return;
-                              }
-                              setModalState(() {
-                                isSubmitting = true;
-                              });
-                              Navigator.pop(ctx);
-                              await _handleBarcodeDetected(query);
-                            },
-                      icon: isSubmitting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.check_circle_rounded, size: 18),
-                      label: Text(
-                        isSubmitting ? 'Recording...' : 'Record Visit',
-                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4F46E5),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           },
