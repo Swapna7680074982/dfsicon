@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // Start fetching sessions and workshops immediately in parallel
       final sessionsFutures = [
         sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-        exhibitorProvider.fetchAllExhibitorData(auth.accessToken, summitId: '1', forceRefresh: forceRefresh),
+        // exhibitorProvider.fetchAllExhibitorData(auth.accessToken, summitId: '1', forceRefresh: forceRefresh),
         if (auth.isSpeaker) ...[
           sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
           abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),

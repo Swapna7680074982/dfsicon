@@ -1918,11 +1918,18 @@ class AdminProvider with ChangeNotifier {
           final List rawList = body['data'] is List ? body['data'] : [];
           final newSpeakers = rawList.map((e) => AdminSpeaker.fromJson(e)).toList();
 
+          final existingMap = <String, AdminSpeaker>{};
           if (loadMore) {
-            _speakers.addAll(newSpeakers);
-          } else {
-            _speakers = newSpeakers;
+            for (final sp in _speakers) {
+              final key = sp.userId.isNotEmpty ? sp.userId : '${sp.fullName}_${sp.mobile}';
+              if (key.isNotEmpty) existingMap[key] = sp;
+            }
           }
+          for (final sp in newSpeakers) {
+            final key = sp.userId.isNotEmpty ? sp.userId : '${sp.fullName}_${sp.mobile}';
+            if (key.isNotEmpty) existingMap[key] = sp;
+          }
+          _speakers = existingMap.values.toList();
 
           if (body['pagination'] != null) {
             _speakersPagination = AdminPagination.fromJson(body['pagination']);
@@ -1989,11 +1996,18 @@ class AdminProvider with ChangeNotifier {
           final List rawList = body['data'] is List ? body['data'] : [];
           final newDelegates = rawList.map((e) => AdminDelegate.fromJson(e)).toList();
 
+          final existingMap = <String, AdminDelegate>{};
           if (loadMore) {
-            _delegates.addAll(newDelegates);
-          } else {
-            _delegates = newDelegates;
+            for (final d in _delegates) {
+              final key = d.userId.isNotEmpty ? d.userId : '${d.fullName}_${d.mobile}';
+              if (key.isNotEmpty) existingMap[key] = d;
+            }
           }
+          for (final d in newDelegates) {
+            final key = d.userId.isNotEmpty ? d.userId : '${d.fullName}_${d.mobile}';
+            if (key.isNotEmpty) existingMap[key] = d;
+          }
+          _delegates = existingMap.values.toList();
 
           if (body['pagination'] != null) {
             _delegatesPagination = AdminPagination.fromJson(body['pagination']);
@@ -2169,6 +2183,7 @@ class AdminProvider with ChangeNotifier {
     String? sponsorCategory,
     int summitId = 1,
     bool forceRefresh = false,
+    int limit = 200,
   }) async {
     if (accessToken.isEmpty) return;
 
@@ -2193,7 +2208,7 @@ class AdminProvider with ChangeNotifier {
       final response = await ApiService.fetchAdminAllSponsors(
         accessToken: accessToken,
         page: targetPage,
-        limit: 50,
+        limit: limit,
         summitId: summitId,
         search: _sponsorSearch.isNotEmpty ? _sponsorSearch : null,
         sponsorType: sponsorType,
@@ -2206,11 +2221,18 @@ class AdminProvider with ChangeNotifier {
           final List rawList = body['data'] is List ? body['data'] : [];
           final newSponsors = rawList.map((e) => AdminSponsor.fromJson(e)).toList();
 
+          final existingMap = <String, AdminSponsor>{};
           if (loadMore) {
-            _sponsors.addAll(newSponsors);
-          } else {
-            _sponsors = newSponsors;
+            for (final s in _sponsors) {
+              final key = s.sponsorId.isNotEmpty ? s.sponsorId : s.companyName;
+              if (key.isNotEmpty) existingMap[key] = s;
+            }
           }
+          for (final s in newSponsors) {
+            final key = s.sponsorId.isNotEmpty ? s.sponsorId : s.companyName;
+            if (key.isNotEmpty) existingMap[key] = s;
+          }
+          _sponsors = existingMap.values.toList();
 
           if (body['pagination'] != null) {
             _sponsorsPagination = AdminPagination.fromJson(body['pagination']);
@@ -2257,7 +2279,13 @@ class AdminProvider with ChangeNotifier {
         final body = json.decode(response.body);
         if (body['status'] == true && body['data'] is List) {
           final List rawList = body['data'];
-          _sponsorCategories = rawList.map((e) => AdminSponsorCategory.fromJson(e)).toList();
+          final newCats = rawList.map((e) => AdminSponsorCategory.fromJson(e)).toList();
+          final uniqueMap = <String, AdminSponsorCategory>{};
+          for (final c in newCats) {
+            final key = c.categoryId.isNotEmpty ? c.categoryId : c.categoryName;
+            if (key.isNotEmpty) uniqueMap[key] = c;
+          }
+          _sponsorCategories = uniqueMap.values.toList();
         } else {
           _sponsorCategoriesError = body['message']?.toString() ?? 'Failed to load sponsor categories';
         }

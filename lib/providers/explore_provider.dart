@@ -322,7 +322,12 @@ class ExploreProvider with ChangeNotifier {
             );
           }
           
-          _exhibitors = fetchedList;
+          final uniqueMap = <String, Exhibitor>{};
+          for (final e in fetchedList) {
+            final key = e.id.isNotEmpty ? e.id : e.name;
+            if (key.isNotEmpty) uniqueMap.putIfAbsent(key, () => e);
+          }
+          _exhibitors = uniqueMap.values.toList();
           notifyListeners();
           return true;
         } else {

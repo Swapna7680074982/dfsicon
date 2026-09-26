@@ -11,7 +11,7 @@ import '../../providers/workshops_provider.dart';
 import '../session_details/session_details_screen.dart';
 import '../exhibitor/exhibitor_details_screen.dart';
 import '../exhibitor/exhibitors_list_screen.dart';
-import '../../providers/exhibitor_provider.dart';
+// import '../../providers/exhibitor_provider.dart';
 import '../../widgets/event_qr_modal.dart';
 import '../../widgets/venue_media_widget.dart';
 import '../../widgets/venue_layouts_widget.dart';
@@ -1723,6 +1723,7 @@ class HomeTab extends StatelessWidget {
                                   }
                                 ),
                               ],
+                              /*
                               // Footfall & Visits Card from Exhibitor Provider
                               Consumer<ExhibitorProvider>(
                                 builder: (context, exhibitor, _) {
@@ -1928,6 +1929,7 @@ class HomeTab extends StatelessWidget {
                                   );
                                 },
                               ),
+                              */
                               const SizedBox(height: 20),
                               Row(
                                 mainAxisAlignment:

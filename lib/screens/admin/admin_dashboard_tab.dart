@@ -78,8 +78,33 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     if (_tabController.index != _lastTabIndex) {
       _lastTabIndex = _tabController.index;
       _clearAllSearches();
-      if (_tabController.index == 7 && _footfallStatsData == null && !_isLoadingFootfall) {
-        _loadFootfallData();
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final admin = Provider.of<AdminProvider>(context, listen: false);
+
+      if (_tabController.index == 5) {
+        // Exhibitors Tab
+        if (admin.sponsors.isEmpty && !admin.isLoadingSponsors && auth.accessToken.isNotEmpty) {
+          admin.fetchSponsors(auth.accessToken);
+        }
+        if (admin.sponsorCategories.isEmpty && !admin.isLoadingSponsorCategories && auth.accessToken.isNotEmpty) {
+          admin.fetchSponsorCategories(auth.accessToken);
+        }
+      } else if (_tabController.index == 7) {
+        // Booth Footfall Tab
+        if ((admin.sponsors.isEmpty || admin.sponsors.length < 20) && !admin.isLoadingSponsors && auth.accessToken.isNotEmpty) {
+          admin.fetchSponsors(auth.accessToken, forceRefresh: true, limit: 200).then((_) {
+            if (mounted && admin.sponsors.isNotEmpty) {
+              if (_selectedFootfallSponsorId == null || _selectedFootfallSponsorId!.isEmpty) {
+                setState(() {
+                  _selectedFootfallSponsorId = admin.sponsors.first.sponsorId;
+                });
+              }
+              _loadFootfallData();
+            }
+          });
+        } else if (_footfallStatsData == null && !_isLoadingFootfall) {
+          _loadFootfallData();
+        }
       }
     }
   }
@@ -244,18 +269,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
         });
       }
     }
-  }
-
-  void _navigateToFootfallTab(String sponsorId) {
-    setState(() {
-      _selectedFootfallSponsorId = sponsorId;
-      _selectedFootfallBoothId = 'All';
-      _selectedFootfallDate = null;
-      _footfallStatsData = null;
-      _footfallParticipants = [];
-    });
-    _loadFootfallData();
-    _tabController.animateTo(7);
   }
 
 
@@ -942,6 +955,15 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               iconColor: const Color(0xFF0284C7),
               iconBg: const Color(0xFFF0F9FF),
               onTap: () => _tabController.animateTo(6),
+            ),
+            const SizedBox(height: 8),
+            _buildDirectoryTile(
+              title: 'Exhibitor Booth Footfall & Leads',
+              subtitle: 'Detailed booth scans, delegate visits & footfall analytics',
+              icon: Icons.query_stats_rounded,
+              iconColor: const Color(0xFF059669),
+              iconBg: const Color(0xFFECFDF5),
+              onTap: () => _tabController.animateTo(7),
             ),
             const SizedBox(height: 8),
             _buildDirectoryTile(
@@ -1920,6 +1942,17 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
   // TAB 6: EXHIBITORS LIST
   // ==========================================
   Widget _buildExhibitorCategoryFilter(AuthProvider auth, AdminProvider admin) {
+    if (admin.sponsorCategories.isEmpty && !admin.isLoadingSponsorCategories && auth.accessToken.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        admin.fetchSponsorCategories(auth.accessToken);
+      });
+    }
+    if (admin.sponsors.isEmpty && !admin.isLoadingSponsors && auth.accessToken.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        admin.fetchSponsors(auth.accessToken);
+      });
+    }
+
     final categories = <String>['All'];
     for (final cat in admin.sponsorCategories) {
       if (cat.categoryName.isNotEmpty && !categories.contains(cat.categoryName)) {
@@ -1978,12 +2011,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               setState(() {
                 _selectedExhibitorCategory = newVal;
               });
-              admin.fetchSponsors(
-                auth.accessToken,
-                search: _sponsorSearchCtrl.text.isNotEmpty ? _sponsorSearchCtrl.text : null,
-                sponsorCategory: newVal == 'All' ? null : newVal,
-                forceRefresh: true,
-              );
             },
           ),
         ),
@@ -2033,7 +2060,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
           child: RefreshIndicator(
             onRefresh: () => admin.fetchSponsors(
               auth.accessToken,
-              sponsorCategory: _selectedExhibitorCategory == 'All' ? null : _selectedExhibitorCategory,
               forceRefresh: true,
             ),
             color: const Color(0xFFDB2777),
@@ -2052,7 +2078,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                               onPressed: () {
                                 admin.fetchSponsors(
                                   auth.accessToken,
-                                  sponsorCategory: _selectedExhibitorCategory == 'All' ? null : _selectedExhibitorCategory,
                                   loadMore: true,
                                 );
                               },
@@ -2165,39 +2190,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 _buildStackedField(label: 'Email', value: sp.email, icon: Icons.mail_outline_rounded),
                 if (sp.boothCount.isNotEmpty && sp.boothCount != '0')
                   _buildStackedField(label: 'Booths Allocated', value: '${sp.boothCount} Booth(s)', icon: Icons.meeting_room_outlined),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    InkWell(
-                      onTap: () => _navigateToFootfallTab(sp.sponsorId),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.query_stats_rounded, size: 13, color: Color(0xFF059669)),
-                            SizedBox(width: 4),
-                            Text(
-                              'View Footfall',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF059669),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -2545,17 +2537,23 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
   // TAB 8: EXHIBITOR BOOTH FOOTFALL & PARTICIPANTS
   // ==========================================
   Widget _buildFootfallTab(AuthProvider auth, AdminProvider admin) {
-    if (admin.sponsors.isEmpty && !admin.isLoadingSponsors) {
-      return RefreshIndicator(
-        onRefresh: () => admin.fetchSponsors(auth.accessToken, forceRefresh: true),
-        color: const Color(0xFF059669),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          child: Container(
-            height: 400,
-            alignment: Alignment.center,
-            child: _buildEmptyState('No exhibitors found for footfall tracking.'),
-          ),
+    if (admin.sponsors.isEmpty) {
+      if (!admin.isLoadingSponsors && auth.accessToken.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          admin.fetchSponsors(auth.accessToken).then((_) {
+            if (mounted && admin.sponsors.isNotEmpty) {
+              setState(() {
+                _selectedFootfallSponsorId ??= admin.sponsors.first.sponsorId;
+              });
+              _loadFootfallData();
+            }
+          });
+        });
+      }
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40.0),
+          child: CircularProgressIndicator(color: Color(0xFF059669)),
         ),
       );
     }
@@ -3062,6 +3060,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
   }
 
   void _showSponsorPickerSheet(BuildContext context, AdminProvider admin) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if ((admin.sponsors.isEmpty || admin.sponsors.length < 20) && !admin.isLoadingSponsors && auth.accessToken.isNotEmpty) {
+      admin.fetchSponsors(auth.accessToken, forceRefresh: true, limit: 200);
+    }
+
+    final searchCtrl = TextEditingController();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3070,135 +3075,182 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
         String searchQuery = '';
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final filtered = admin.sponsors.where((s) {
-              if (searchQuery.trim().isEmpty) return true;
-              final q = searchQuery.trim().toLowerCase();
-              return s.companyName.toLowerCase().contains(q) ||
-                  s.contactPerson.toLowerCase().contains(q) ||
-                  s.sponsorCategory.toLowerCase().contains(q);
-            }).toList();
+            return Consumer<AdminProvider>(
+              builder: (context, liveAdmin, _) {
+                final uniqueSponsors = <String, AdminSponsor>{};
+                for (final s in liveAdmin.sponsors) {
+                  final key = s.sponsorId.isNotEmpty ? s.sponsorId : s.companyName;
+                  if (key.isNotEmpty) uniqueSponsors.putIfAbsent(key, () => s);
+                }
+                final allList = uniqueSponsors.values.toList();
+                final filtered = allList.where((s) {
+                  if (searchQuery.trim().isEmpty) return true;
+                  final q = searchQuery.trim().toLowerCase();
+                  return s.companyName.toLowerCase().contains(q) ||
+                      s.contactPerson.toLowerCase().contains(q) ||
+                      s.sponsorCategory.toLowerCase().contains(q) ||
+                      s.email.toLowerCase().contains(q) ||
+                      s.mobile.toLowerCase().contains(q);
+                }).toList();
 
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Container(
-                      width: 38,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Select Exhibitor',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Container(
+                          width: 38,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: TextField(
-                      onChanged: (val) {
-                        setModalState(() => searchQuery = val);
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search by company or category...',
-                        hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                         ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      itemCount: filtered.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      itemBuilder: (context, index) {
-                        final sp = filtered[index];
-                        final isSelected = sp.sponsorId == _selectedFootfallSponsorId;
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          leading: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFF059669) : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              liveAdmin.isLoadingSponsors && allList.isEmpty
+                                  ? 'Select Exhibitor'
+                                  : 'Select Exhibitor (${filtered.length})',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
-                            child: Icon(
-                              Icons.business_rounded,
-                              size: 18,
-                              color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                          ),
-                          title: Text(
-                            sp.companyName,
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? const Color(0xFF047857) : AppColors.textPrimary,
-                            ),
-                          ),
-                          subtitle: sp.sponsorCategory.isNotEmpty
-                              ? Text(
-                                  sp.sponsorCategory,
-                                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
-                                )
-                              : null,
-                          trailing: isSelected
-                              ? const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 20)
-                              : null,
-                          onTap: () {
-                            Navigator.pop(context);
-                            setState(() {
-                              _selectedFootfallSponsorId = sp.sponsorId;
-                              _selectedFootfallBoothId = 'All';
-                            });
-                            _loadFootfallData(reset: true);
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        child: TextField(
+                          controller: searchCtrl,
+                          onChanged: (val) {
+                            setModalState(() => searchQuery = val);
                           },
-                        );
-                      },
-                    ),
+                          decoration: InputDecoration(
+                            hintText: 'Search by company or category...',
+                            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                            prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                            suffixIcon: searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded, size: 16, color: Color(0xFF94A3B8)),
+                                    onPressed: () {
+                                      searchCtrl.clear();
+                                      setModalState(() => searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: liveAdmin.isLoadingSponsors && filtered.isEmpty
+                            ? const Center(
+                                child: CircularProgressIndicator(color: Color(0xFF059669)),
+                              )
+                            : filtered.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Text(
+                                        searchQuery.isNotEmpty
+                                            ? 'No exhibitors found for "$searchQuery"'
+                                            : 'No exhibitors available.',
+                                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                    itemBuilder: (context, index) {
+                                      final sp = filtered[index];
+                                      final isSelected = sp.sponsorId == _selectedFootfallSponsorId;
+                                      return ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        leading: Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: isSelected ? const Color(0xFF059669) : const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Icons.business_rounded,
+                                            size: 18,
+                                            color: isSelected ? Colors.white : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                        title: Text(
+                                          sp.companyName,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                            color: isSelected ? const Color(0xFF047857) : AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        subtitle: sp.sponsorCategory.isNotEmpty
+                                            ? Text(
+                                                sp.sponsorCategory,
+                                                style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                              )
+                                            : null,
+                                        trailing: isSelected
+                                            ? const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 20)
+                                            : null,
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          setState(() {
+                                            _selectedFootfallSponsorId = sp.sponsorId;
+                                            _selectedFootfallBoothId = 'All';
+                                            _footfallStatsData = null;
+                                            _footfallParticipants = [];
+                                          });
+                                          _loadFootfallData(reset: true);
+                                        },
+                                      );
+                                    },
+                                  ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -3321,6 +3373,37 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => _tabController.animateTo(7),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.25)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.query_stats_rounded, size: 14, color: Color(0xFF34D399)),
+                  SizedBox(width: 6),
+                  Text(
+                    'View Detailed Booth Footfall & Leads',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF34D399),
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_rounded, size: 13, color: Color(0xFF34D399)),
+                ],
+              ),
+            ),
           ),
         ],
       ),

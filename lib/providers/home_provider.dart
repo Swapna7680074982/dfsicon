@@ -431,7 +431,12 @@ class HomeProvider with ChangeNotifier {
               ),
             );
           }
-          _exhibitors = fetchedList;
+          final uniqueMap = <String, HomeExhibitor>{};
+          for (final e in fetchedList) {
+            final key = e.title.isNotEmpty ? e.title : e.initials;
+            if (key.isNotEmpty) uniqueMap.putIfAbsent(key, () => e);
+          }
+          _exhibitors = uniqueMap.values.toList();
         }
       }
     } catch (e) {
