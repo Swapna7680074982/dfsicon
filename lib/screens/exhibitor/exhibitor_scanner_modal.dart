@@ -172,14 +172,30 @@ class _ExhibitorScannerModalState extends State<ExhibitorScannerModal>
   }
 
   void _showScanResultDialog(Map<String, dynamic> result, String scannedText) {
+    final bool isOffline = result['isOffline'] == true;
     final bool isSuccess = result['status'] == true;
     final String message = result['message']?.toString() ??
-        (isSuccess ? 'Visitor check-in recorded successfully!' : 'Could not record visitor');
+        (isOffline
+            ? 'Visit saved offline. Will sync when network connects.'
+            : (isSuccess ? 'Visitor check-in recorded successfully!' : 'Could not record visitor'));
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
+        final iconColor = isOffline
+            ? const Color(0xFFD97706)
+            : (isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444));
+        final bgColor = isOffline
+            ? const Color(0xFFFFFBEB)
+            : (isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2));
+        final icon = isOffline
+            ? Icons.cloud_done_rounded
+            : (isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded);
+        final title = isOffline
+            ? 'Saved Offline'
+            : (isSuccess ? 'Check-in Recorded!' : 'Check-in Notice');
+
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
           child: Padding(
@@ -192,17 +208,17 @@ class _ExhibitorScannerModalState extends State<ExhibitorScannerModal>
                   height: 60,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                    color: bgColor,
                   ),
                   child: Icon(
-                    isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                    icon,
                     size: 36,
-                    color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                    color: iconColor,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isSuccess ? 'Check-in Recorded!' : 'Check-in Notice',
+                  title,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

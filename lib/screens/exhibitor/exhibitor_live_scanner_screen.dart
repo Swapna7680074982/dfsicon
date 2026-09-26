@@ -95,13 +95,32 @@ class _ExhibitorLiveScannerScreenState extends State<ExhibitorLiveScannerScreen>
   }
 
   void _showAutoSuccessModal(Map<String, dynamic> result, String scannedText) {
+    final bool isOffline = result['isOffline'] == true;
     final bool isSuccess = result['status'] == true;
     final String message = result['message']?.toString() ??
-        (isSuccess ? 'Scan recorded successfully!' : 'Could not record visitor');
+        (isOffline
+            ? 'Visit saved offline. Will sync automatically when network connects.'
+            : (isSuccess ? 'Scan recorded successfully!' : 'Could not record visitor'));
 
     final data = result['data'] is Map<String, dynamic> ? result['data'] as Map<String, dynamic> : null;
     final String? visitorName = data?['visitor_name']?.toString();
     final String? visitorRole = data?['visitor_role']?.toString();
+
+    final iconColor = isOffline
+        ? const Color(0xFFD97706)
+        : (isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444));
+    final bgColor = isOffline
+        ? const Color(0xFFFFFBEB)
+        : (isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2));
+    final borderColor = isOffline
+        ? const Color(0xFFFDE68A)
+        : (isSuccess ? const Color(0xFFA7F3D0) : const Color(0xFFFECDD3));
+    final icon = isOffline
+        ? Icons.cloud_done_rounded
+        : (isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded);
+    final title = isOffline
+        ? 'Saved Offline'
+        : (isSuccess ? 'Scan Recorded!' : 'Notice');
 
     showModalBottomSheet(
       context: context,
@@ -145,22 +164,22 @@ class _ExhibitorLiveScannerScreenState extends State<ExhibitorLiveScannerScreen>
                 height: 68,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                  color: bgColor,
                   border: Border.all(
-                    color: isSuccess ? const Color(0xFFA7F3D0) : const Color(0xFFFECDD3),
+                    color: borderColor,
                     width: 2.5,
                   ),
                 ),
                 child: Icon(
-                  isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                  icon,
                   size: 40,
-                  color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  color: iconColor,
                 ),
               ),
               const SizedBox(height: 16),
 
               Text(
-                isSuccess ? 'Scan Recorded!' : 'Notice',
+                title,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -175,7 +194,7 @@ class _ExhibitorLiveScannerScreenState extends State<ExhibitorLiveScannerScreen>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isSuccess ? const Color(0xFF047857) : AppColors.textSecondary,
+                  color: isOffline ? const Color(0xFFB45309) : (isSuccess ? const Color(0xFF047857) : AppColors.textSecondary),
                   height: 1.35,
                 ),
               ),

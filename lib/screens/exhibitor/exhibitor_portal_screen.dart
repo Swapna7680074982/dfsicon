@@ -137,6 +137,11 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
       // Fetch Exhibitor Footfall Counts & Visited Participants
       futures.add(exhibitor.fetchAllExhibitorData(token, summitId: summitId, forceRefresh: forceRefresh));
 
+      // Auto-sync any offline pending scans
+      if (exhibitor.pendingScansCount > 0) {
+        futures.add(exhibitor.syncPendingScans(token, summitId: summitId));
+      }
+
       // Fetch Sessions Agenda
       futures.add(sessions.fetchConfirmedSessions(token, forceRefresh: forceRefresh));
 
@@ -816,7 +821,8 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
               ),
             ],
 
-            const SizedBox(height: 18),
+            // Offline Pending Sync Banner
+            _buildOfflineSyncBanner(context, exhibitor, auth),
 
             // Filter & Search Controls Header
             Container(
@@ -1081,6 +1087,129 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildOfflineSyncBanner(
+    BuildContext context,
+    ExhibitorProvider exhibitor,
+    AuthProvider auth,
+  ) {
+    if (exhibitor.pendingScansCount == 0) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.cloud_off_rounded,
+              size: 20,
+              color: Color(0xFFD97706),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${exhibitor.pendingScansCount} Offline Visit${exhibitor.pendingScansCount > 1 ? "s" : ""} Pending',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Recorded offline. Sync when online.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFB45309),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: exhibitor.isSyncing
+                ? null
+                : () async {
+                    final result = await exhibitor.syncPendingScans(auth.accessToken);
+                    if (context.mounted) {
+                      final synced = result['synced'] ?? 0;
+                      final failed = result['failed'] ?? 0;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            synced > 0
+                                ? 'Successfully synced $synced visit${synced > 1 ? "s" : ""}!'
+                                : (failed > 0
+                                    ? 'Sync failed. Please check internet connection.'
+                                    : 'All visits are up to date.'),
+                          ),
+                          backgroundColor: synced > 0
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: exhibitor.isSyncing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.sync_rounded, size: 15, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'Sync Now',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }
