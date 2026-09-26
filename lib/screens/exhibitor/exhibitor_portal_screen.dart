@@ -12,6 +12,7 @@ import '../../utils/time_formatter.dart';
 import '../calendar/event_calendar_screen.dart';
 import '../profile/profile_screen.dart';
 import '../admin/admin_detail_sheets.dart';
+import '../../services/footfall_report_service.dart';
 import 'exhibitor_live_scanner_screen.dart';
 import 'exhibitor_participant_detail_modal.dart';
 
@@ -583,34 +584,121 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
               ),
             ),
 
-            // Footfall Counts Summary Grid
+            // Footfall Counts Summary Header & Role Filter Dropdown
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: _buildSummaryMetricCard(
-                      label: 'Total Visits',
-                      value: summary.totalVisits.toString(),
-                      icon: Icons.trending_up_rounded,
-                      accentColor: const Color(0xFF4F46E5),
-                      bgColor: const Color(0xFFEEF2FF),
-                      borderColor: const Color(0xFFC7D2FE),
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: const Icon(Icons.analytics_outlined, size: 15, color: Color(0xFF4F46E5)),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'FOOTFALL SUMMARY',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildSummaryMetricCard(
-                      label: 'Unique Visitors',
-                      value: summary.uniqueVisitors.toString(),
-                      icon: Icons.people_alt_rounded,
-                      accentColor: const Color(0xFF059669),
-                      bgColor: const Color(0xFFECFDF5),
-                      borderColor: const Color(0xFFA7F3D0),
+                  // Role Filter Dropdown near count cards
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: exhibitor.selectedRoleFilter,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF4F46E5)),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'All', child: Text('All Visitors')),
+                          DropdownMenuItem(value: 'Delegates', child: Text('Delegates Only')),
+                          DropdownMenuItem(value: 'Exhibitors', child: Text('Exhibitors Only')),
+                          DropdownMenuItem(value: 'Speakers', child: Text('Speakers Only')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            exhibitor.setSelectedRoleFilter(val);
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ],
               ),
+            ),
+
+            // Footfall Counts Summary Grid
+            Builder(
+              builder: (context) {
+                final isRoleFiltered = exhibitor.selectedRoleFilter != 'All';
+                final displayTotalVisits = !isRoleFiltered
+                    ? summary.totalVisits
+                    : filteredParticipants.fold<int>(0, (sum, p) => sum + (p.visitCount > 0 ? p.visitCount : 1));
+                final displayUniqueVisitors = !isRoleFiltered
+                    ? summary.uniqueVisitors
+                    : filteredParticipants.length;
+
+                final uniqueLabel = isRoleFiltered
+                    ? 'Unique ${exhibitor.selectedRoleFilter}'
+                    : 'Unique Visitors';
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryMetricCard(
+                          label: 'Total Visits',
+                          value: displayTotalVisits.toString(),
+                          icon: Icons.trending_up_rounded,
+                          accentColor: const Color(0xFF4F46E5),
+                          bgColor: const Color(0xFFEEF2FF),
+                          borderColor: const Color(0xFFC7D2FE),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSummaryMetricCard(
+                          label: uniqueLabel,
+                          value: displayUniqueVisitors.toString(),
+                          icon: Icons.people_alt_rounded,
+                          accentColor: const Color(0xFF059669),
+                          bgColor: const Color(0xFFECFDF5),
+                          borderColor: const Color(0xFFA7F3D0),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
             // Booth Breakdown Cards (if available)
@@ -810,6 +898,65 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                       ),
                     ),
                   ],
+
+                  // Role Filter Dropdown (All, Delegates, Exhibitors, Speakers)
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.filter_list_rounded, size: 14, color: Color(0xFF4F46E5)),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Role:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 38,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: exhibitor.selectedRoleFilter,
+                              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Color(0xFF4F46E5)),
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E293B),
+                              ),
+                              isExpanded: true,
+                              items: const [
+                                DropdownMenuItem(value: 'All', child: Text('All Visitors')),
+                                DropdownMenuItem(value: 'Delegates', child: Text('Delegates Only')),
+                                DropdownMenuItem(value: 'Exhibitors', child: Text('Exhibitors Only')),
+                                DropdownMenuItem(value: 'Speakers', child: Text('Speakers Only')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  exhibitor.setSelectedRoleFilter(val);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -835,20 +982,76 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${filteredParticipants.length} Recorded',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4F46E5),
+                  Row(
+                    children: [
+                      // Download / Export Report Button
+                      if (filteredParticipants.isNotEmpty) ...[
+                        InkWell(
+                          onTap: () {
+                            final total = filteredParticipants.length;
+                            final speakers = filteredParticipants
+                                .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
+                                .length;
+                            final delegates = total - speakers;
+
+                            FootfallReportService.showDownloadReportModal(
+                              context: context,
+                              totalCount: total,
+                              speakersCount: speakers,
+                              delegatesCount: delegates,
+                              onDownload: (filter) async {
+                                await FootfallReportService.downloadExhibitorReport(
+                                  context: context,
+                                  participants: filteredParticipants,
+                                  filter: filter,
+                                  boothLabel: byBoothDay.isNotEmpty ? byBoothDay.first.boothLabel : null,
+                                );
+                              },
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFA7F3D0)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.file_download_outlined, size: 14, color: Color(0xFF059669)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Report',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF047857),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${filteredParticipants.length} Recorded',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4F46E5),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -1063,7 +1266,9 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                           const Icon(Icons.storefront_outlined, size: 14, color: Color(0xFF64748B)),
                           const SizedBox(width: 5),
                           Text(
-                            p.boothNumber.isNotEmpty ? p.boothNumber : 'Booth #${p.boothId}',
+                            p.boothLabel.isNotEmpty
+                                ? '${p.boothLabel}${p.boothNumber.isNotEmpty ? " (${p.boothNumber})" : ""}'
+                                : (p.boothNumber.isNotEmpty ? p.boothNumber : 'Booth #${p.boothId}'),
                             style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
                           ),
                         ],

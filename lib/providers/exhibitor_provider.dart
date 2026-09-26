@@ -14,6 +14,7 @@ class ExhibitorProvider extends ChangeNotifier {
 
   String? _selectedDate;
   dynamic _selectedBoothId;
+  String _selectedRoleFilter = 'All'; // 'All', 'Delegates', 'Exhibitors', 'Speakers'
   String _searchQuery = '';
 
   // Getters
@@ -30,9 +31,10 @@ class ExhibitorProvider extends ChangeNotifier {
 
   String? get selectedDate => _selectedDate;
   dynamic get selectedBoothId => _selectedBoothId;
+  String get selectedRoleFilter => _selectedRoleFilter;
   String get searchQuery => _searchQuery;
 
-  // Filtered Participants based on search query, date, and booth
+  // Filtered Participants based on search query, date, booth, and attendee role
   List<ExhibitorParticipant> get filteredParticipants {
     return _participants.where((p) {
       if (_selectedDate != null && _selectedDate!.isNotEmpty) {
@@ -43,6 +45,17 @@ class ExhibitorProvider extends ChangeNotifier {
       if (_selectedBoothId != null && _selectedBoothId.toString().isNotEmpty && _selectedBoothId.toString() != 'All') {
         if (p.boothId != null && p.boothId.toString() != _selectedBoothId.toString()) {
           return false;
+        }
+      }
+      if (_selectedRoleFilter != 'All') {
+        final r = p.role.toUpperCase();
+        final rl = p.roleLabel.toLowerCase();
+        if (_selectedRoleFilter == 'Delegates') {
+          if (r != 'DG' && !rl.contains('delegate')) return false;
+        } else if (_selectedRoleFilter == 'Exhibitors') {
+          if (r != 'EX' && !rl.contains('exhibitor')) return false;
+        } else if (_selectedRoleFilter == 'Speakers') {
+          if (r != 'SK' && !rl.contains('speaker')) return false;
         }
       }
       if (_searchQuery.trim().isEmpty) return true;
@@ -74,9 +87,15 @@ class ExhibitorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSelectedRoleFilter(String role) {
+    _selectedRoleFilter = role;
+    notifyListeners();
+  }
+
   void clearFilters() {
     _selectedDate = null;
     _selectedBoothId = null;
+    _selectedRoleFilter = 'All';
     _searchQuery = '';
     notifyListeners();
   }
@@ -146,9 +165,37 @@ class ExhibitorProvider extends ChangeNotifier {
         final body = json.decode(response.body);
         if (body['status'] == true && body['data'] != null) {
           final List<dynamic> list = body['data'] is List ? body['data'] : [];
-          _participants = list
-              .map((item) => ExhibitorParticipant.fromJson(Map<String, dynamic>.from(item)))
-              .toList();
+          _participants = list.map((item) {
+            final p = ExhibitorParticipant.fromJson(Map<String, dynamic>.from(item));
+            if (p.boothLabel.isEmpty && _countsData != null) {
+              for (final b in _countsData!.byBoothDay) {
+                if ((p.boothId != null && b.boothId?.toString() == p.boothId?.toString()) ||
+                    (p.boothNumber.isNotEmpty && b.boothNumber.toLowerCase() == p.boothNumber.toLowerCase())) {
+                  if (b.boothLabel.isNotEmpty) {
+                    return ExhibitorParticipant(
+                      footfallId: p.footfallId,
+                      userId: p.userId,
+                      name: p.name,
+                      role: p.role,
+                      roleLabel: p.roleLabel,
+                      designation: p.designation,
+                      organisation: p.organisation,
+                      city: p.city,
+                      mobile: p.mobile,
+                      email: p.email,
+                      boothId: p.boothId,
+                      boothNumber: p.boothNumber.isNotEmpty ? p.boothNumber : b.boothNumber,
+                      boothLabel: b.boothLabel,
+                      visitedDate: p.visitedDate,
+                      visitedTime: p.visitedTime,
+                      visitCount: p.visitCount,
+                    );
+                  }
+                }
+              }
+            }
+            return p;
+          }).toList();
         }
       } else {
         debugPrint('⚠️ [ExhibitorProvider] fetchParticipants failed: ${response.statusCode}');

@@ -1044,6 +1044,201 @@ class AdminBoothDetail {
   }
 }
 
+// ==========================================
+// Admin Exhibitor Booth Stats & Footfall Models
+// ==========================================
+
+class AdminSponsorInfo {
+  final String sponsorId;
+  final String sponsorType;
+  final String companyName;
+  final String contactPerson;
+  final String designation;
+  final String email;
+  final String mobile;
+  final String? logo;
+
+  const AdminSponsorInfo({
+    this.sponsorId = '',
+    this.sponsorType = '',
+    this.companyName = '',
+    this.contactPerson = '',
+    this.designation = '',
+    this.email = '',
+    this.mobile = '',
+    this.logo,
+  });
+
+  factory AdminSponsorInfo.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const AdminSponsorInfo();
+    return AdminSponsorInfo(
+      sponsorId: (json['sponsor_id'] ?? '').toString(),
+      sponsorType: (json['sponsor_type'] ?? '').toString().trim(),
+      companyName: (json['company_name'] ?? '').toString().trim(),
+      contactPerson: (json['contact_person'] ?? '').toString().trim(),
+      designation: (json['designation'] ?? '').toString().trim(),
+      email: (json['email'] ?? '').toString().trim(),
+      mobile: (json['mobile'] ?? '').toString().trim(),
+      logo: json['logo']?.toString(),
+    );
+  }
+}
+
+class AdminSponsorBoothSummary {
+  final int totalBooths;
+  final int totalVisits;
+  final int uniqueVisitors;
+
+  const AdminSponsorBoothSummary({
+    this.totalBooths = 0,
+    this.totalVisits = 0,
+    this.uniqueVisitors = 0,
+  });
+
+  factory AdminSponsorBoothSummary.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const AdminSponsorBoothSummary();
+    int parseInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is int) return val;
+      return int.tryParse(val.toString()) ?? 0;
+    }
+    return AdminSponsorBoothSummary(
+      totalBooths: parseInt(json['total_booths']),
+      totalVisits: parseInt(json['total_visits']),
+      uniqueVisitors: parseInt(json['unique_visitors']),
+    );
+  }
+}
+
+class AdminSponsorBoothStatItem {
+  final String boothId;
+  final String boothNumber;
+  final String boothLabel;
+  final String? boothType;
+  final int totalVisits;
+  final int uniqueVisitors;
+
+  const AdminSponsorBoothStatItem({
+    this.boothId = '',
+    this.boothNumber = '',
+    this.boothLabel = '',
+    this.boothType,
+    this.totalVisits = 0,
+    this.uniqueVisitors = 0,
+  });
+
+  factory AdminSponsorBoothStatItem.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is int) return val;
+      return int.tryParse(val.toString()) ?? 0;
+    }
+    return AdminSponsorBoothStatItem(
+      boothId: (json['booth_id'] ?? '').toString(),
+      boothNumber: (json['booth_number'] ?? '').toString().trim(),
+      boothLabel: (json['booth_label'] ?? '').toString().trim(),
+      boothType: json['booth_type']?.toString(),
+      totalVisits: parseInt(json['total_visits']),
+      uniqueVisitors: parseInt(json['unique_visitors']),
+    );
+  }
+}
+
+class AdminSponsorBoothStatsData {
+  final AdminSponsorInfo sponsor;
+  final AdminSponsorBoothSummary summary;
+  final List<AdminSponsorBoothStatItem> booths;
+  final String summitId;
+  final String date;
+
+  const AdminSponsorBoothStatsData({
+    this.sponsor = const AdminSponsorInfo(),
+    this.summary = const AdminSponsorBoothSummary(),
+    this.booths = const [],
+    this.summitId = '1',
+    this.date = '',
+  });
+
+  factory AdminSponsorBoothStatsData.fromJson(Map<String, dynamic> json) {
+    final sponsorMap = json['sponsor'] is Map ? json['sponsor'] as Map<String, dynamic> : null;
+    final summaryMap = json['summary'] is Map ? json['summary'] as Map<String, dynamic> : null;
+    final filterMap = json['filter'] is Map ? json['filter'] as Map<String, dynamic> : null;
+    final rawBooths = json['booths'] is List ? json['booths'] as List : [];
+
+    return AdminSponsorBoothStatsData(
+      sponsor: AdminSponsorInfo.fromJson(sponsorMap),
+      summary: AdminSponsorBoothSummary.fromJson(summaryMap),
+      booths: rawBooths.map((e) => AdminSponsorBoothStatItem.fromJson(e)).toList(),
+      summitId: (filterMap?['summit_id'] ?? json['summit_id'] ?? '1').toString(),
+      date: (filterMap?['date'] ?? json['date'] ?? '').toString().trim(),
+    );
+  }
+}
+
+class AdminFootfallParticipant {
+  final String footfallId;
+  final String userId;
+  final String name;
+  final String role;
+  final String roleLabel;
+  final String designation;
+  final String organisation;
+  final String city;
+  final String mobile;
+  final String email;
+  final String boothId;
+  final String boothNumber;
+  final String boothLabel;
+  final String visitedDate;
+  final String visitedTime;
+  final int visitCount;
+
+  const AdminFootfallParticipant({
+    this.footfallId = '',
+    this.userId = '',
+    this.name = '',
+    this.role = '',
+    this.roleLabel = '',
+    this.designation = '',
+    this.organisation = '',
+    this.city = '',
+    this.mobile = '',
+    this.email = '',
+    this.boothId = '',
+    this.boothNumber = '',
+    this.boothLabel = '',
+    this.visitedDate = '',
+    this.visitedTime = '',
+    this.visitCount = 1,
+  });
+
+  factory AdminFootfallParticipant.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic val) {
+      if (val == null) return 1;
+      if (val is int) return val;
+      return int.tryParse(val.toString()) ?? 1;
+    }
+    return AdminFootfallParticipant(
+      footfallId: (json['footfall_id'] ?? '').toString(),
+      userId: (json['user_id'] ?? '').toString(),
+      name: (json['name'] ?? json['full_name'] ?? '').toString().trim(),
+      role: (json['role'] ?? '').toString().trim(),
+      roleLabel: (json['role_label'] ?? '').toString().trim(),
+      designation: (json['designation'] ?? '').toString().trim(),
+      organisation: (json['organisation'] ?? json['organisation_name'] ?? '').toString().trim(),
+      city: (json['city'] ?? '').toString().trim(),
+      mobile: (json['mobile'] ?? '').toString().trim(),
+      email: (json['email'] ?? '').toString().trim(),
+      boothId: (json['booth_id'] ?? '').toString(),
+      boothNumber: (json['booth_number'] ?? json['booth_no'] ?? '').toString().trim(),
+      boothLabel: (json['booth_label'] ?? json['label'] ?? json['booth_name'] ?? '').toString().trim(),
+      visitedDate: (json['visited_date'] ?? json['date'] ?? '').toString().trim(),
+      visitedTime: (json['visited_time'] ?? json['time'] ?? '').toString().trim(),
+      visitCount: parseInt(json['visit_count']),
+    );
+  }
+}
+
 class AdminSlotItem {
   final String slotId;
   final String slotName;
@@ -2455,5 +2650,74 @@ class AdminProvider with ChangeNotifier {
         );
       }
     }
+  }
+
+  // ==========================================
+  // Sponsor Booth Stats & Footfall Participants
+  // ==========================================
+
+  // Fetch Sponsor Booth Footfall Stats
+  Future<AdminSponsorBoothStatsData?> fetchSponsorBoothStats(
+    String accessToken, {
+    required dynamic sponsorId,
+    dynamic summitId = 1,
+    String? date,
+  }) async {
+    if (accessToken.isEmpty || sponsorId == null) return null;
+    try {
+      final response = await ApiService.fetchAdminSponsorBoothStats(
+        accessToken: accessToken,
+        sponsorId: sponsorId,
+        summitId: summitId,
+        date: date,
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['status'] == true && body['data'] != null) {
+          return AdminSponsorBoothStatsData.fromJson(body['data']);
+        }
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch admin sponsor booth stats failed', e, stack);
+    }
+    return null;
+  }
+
+  // Fetch Sponsor Footfall Participants
+  Future<Map<String, dynamic>> fetchSponsorFootfallParticipants(
+    String accessToken, {
+    required dynamic sponsorId,
+    dynamic summitId = 1,
+    dynamic boothId,
+    String? date,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    if (accessToken.isEmpty || sponsorId == null) {
+      return {'participants': <AdminFootfallParticipant>[], 'pagination': const AdminPagination()};
+    }
+    try {
+      final response = await ApiService.fetchAdminSponsorFootfallParticipants(
+        accessToken: accessToken,
+        sponsorId: sponsorId,
+        summitId: summitId,
+        boothId: boothId,
+        date: date,
+        page: page,
+        limit: limit,
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['status'] == true) {
+          final List rawList = body['data'] is List ? body['data'] : [];
+          final participants = rawList.map((e) => AdminFootfallParticipant.fromJson(e)).toList();
+          final pagination = AdminPagination.fromJson(body['pagination']);
+          return {'participants': participants, 'pagination': pagination};
+        }
+      }
+    } catch (e, stack) {
+      CustomLogger.logError('Fetch admin sponsor footfall participants failed', e, stack);
+    }
+    return {'participants': <AdminFootfallParticipant>[], 'pagination': const AdminPagination()};
   }
 }

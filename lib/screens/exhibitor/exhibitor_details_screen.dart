@@ -567,7 +567,7 @@ class ExhibitorDetailsScreen extends StatelessWidget {
         final displayBooth = boothText.isNotEmpty
             ? boothText
             : (assignedBooths.isNotEmpty
-                ? assignedBooths.map((b) => b.boothNumber.isNotEmpty ? b.boothNumber : b.boothLabel).join(', ')
+                ? assignedBooths.map((b) => b.boothLabel.isNotEmpty ? '${b.boothLabel}${b.boothNumber.isNotEmpty ? " (${b.boothNumber})" : ""}' : b.boothNumber).join(', ')
                 : 'ASSIGNED');
         final displayZone = zoneText.isNotEmpty
             ? zoneText

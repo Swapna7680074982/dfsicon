@@ -96,6 +96,8 @@ class ApiUrls {
   static const String adminBoothDetails = '$baseUrl/admin/booth_details';
   static const String adminAllSlots = '$baseUrl/admin/all_slots';
   static const String adminSlotDetails = '$baseUrl/admin/slot_details';
+  static const String adminSponsorBoothStats = '$baseUrl/admin/sponsor_booth_stats';
+  static const String adminSponsorFootfallParticipants = '$baseUrl/admin/sponsor_footfall_participants';
 
   // Exhibitor Module APIs
   static const String exhibitorCounts = '$baseUrl/exhibitor/counts';

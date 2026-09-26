@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../constants/colors.dart';
 import '../../models/exhibitor_models.dart';
 import '../../utils/time_formatter.dart';
@@ -53,36 +52,17 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
     );
   }
 
-  Future<void> _makePhoneCall(BuildContext context, String phoneNumber) async {
-    if (phoneNumber.trim().isEmpty) return;
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber.trim());
-    try {
-      if (await canLaunchUrl(launchUri)) {
-        await launchUrl(launchUri);
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _sendEmail(BuildContext context, String email) async {
-    if (email.trim().isEmpty) return;
-    final Uri launchUri = Uri(scheme: 'mailto', path: email.trim());
-    try {
-      if (await canLaunchUrl(launchUri)) {
-        await launchUrl(launchUri);
-      }
-    } catch (_) {}
-  }
-
   @override
   Widget build(BuildContext context) {
     final initials = _getInitials(participant.name);
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + bottomInset),
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -216,7 +196,9 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                participant.boothNumber.isNotEmpty ? participant.boothNumber : 'Assigned Booth',
+                                participant.boothLabel.isNotEmpty
+                                    ? '${participant.boothLabel}${participant.boothNumber.isNotEmpty ? " (${participant.boothNumber})" : ""}'
+                                    : (participant.boothNumber.isNotEmpty ? participant.boothNumber : 'Assigned Booth'),
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                               ),
                             ],
@@ -286,10 +268,7 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
                 icon: Icons.phone_outlined,
                 label: 'Mobile Number',
                 value: participant.mobile,
-                onTap: () => _makePhoneCall(context, participant.mobile),
                 onCopy: () => _copyToClipboard(context, participant.mobile, 'Mobile number'),
-                actionIcon: Icons.call_rounded,
-                actionColor: const Color(0xFF059669),
               ),
             if (participant.email.isNotEmpty)
               _buildContactActionTile(
@@ -297,10 +276,7 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
                 icon: Icons.mail_outline_rounded,
                 label: 'Email Address',
                 value: participant.email,
-                onTap: () => _sendEmail(context, participant.email),
                 onCopy: () => _copyToClipboard(context, participant.email, 'Email address'),
-                actionIcon: Icons.mail_rounded,
-                actionColor: const Color(0xFF4F46E5),
               ),
 
             const SizedBox(height: 16),
@@ -383,10 +359,7 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
-    required VoidCallback onTap,
     required VoidCallback onCopy,
-    required IconData actionIcon,
-    required Color actionColor,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -420,11 +393,6 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
             icon: const Icon(Icons.copy_rounded, size: 17, color: Color(0xFF64748B)),
             onPressed: onCopy,
             tooltip: 'Copy',
-          ),
-          IconButton(
-            icon: Icon(actionIcon, size: 18, color: actionColor),
-            onPressed: onTap,
-            tooltip: 'Action',
           ),
         ],
       ),

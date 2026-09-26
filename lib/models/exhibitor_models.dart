@@ -98,6 +98,7 @@ class ExhibitorParticipant {
   final String email;
   final dynamic boothId;
   final String boothNumber;
+  final String boothLabel;
   final String visitedDate;
   final String visitedTime;
   final int visitCount;
@@ -115,6 +116,7 @@ class ExhibitorParticipant {
     required this.email,
     required this.boothId,
     required this.boothNumber,
+    this.boothLabel = '',
     required this.visitedDate,
     required this.visitedTime,
     required this.visitCount,
@@ -133,7 +135,8 @@ class ExhibitorParticipant {
       mobile: json['mobile']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       boothId: json['booth_id'],
-      boothNumber: json['booth_number']?.toString() ?? '',
+      boothNumber: (json['booth_number'] ?? json['booth_no'] ?? '').toString(),
+      boothLabel: (json['booth_label'] ?? json['label'] ?? json['booth_name'] ?? '').toString().trim(),
       visitedDate: json['visited_date']?.toString() ?? '',
       visitedTime: json['visited_time']?.toString() ?? '',
       visitCount: int.tryParse(json['visit_count']?.toString() ?? '1') ?? 1,
@@ -153,6 +156,7 @@ class ExhibitorParticipant {
     'email': email,
     'booth_id': boothId,
     'booth_number': boothNumber,
+    'booth_label': boothLabel,
     'visited_date': visitedDate,
     'visited_time': visitedTime,
     'visit_count': visitCount,

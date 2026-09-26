@@ -170,12 +170,14 @@ class DocumentsService {
     return null;
   }
 
-  /// View / Open the document in system PDF viewer / browser
+  /// View / Open the document in system browser / viewer
   static Future<bool> openDocument(BuildContext context, SummitDocument doc) async {
     if (doc.documentUrl.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid document URL')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid document URL')),
+        );
+      }
       return false;
     }
 
@@ -188,9 +190,11 @@ class DocumentsService {
         return await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open document: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open document: $e')),
+        );
+      }
       return false;
     }
   }

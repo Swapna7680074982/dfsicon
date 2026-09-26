@@ -120,6 +120,20 @@ void showAdminBoothDetailsModal(
   );
 }
 
+void showAdminFootfallParticipantDetailModal(
+  BuildContext context, {
+  required AdminFootfallParticipant participant,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => AdminFootfallParticipantDetailSheet(
+      participant: participant,
+    ),
+  );
+}
+
 void showAdminSlotDetailsModal(
   BuildContext context, {
   required String slotId,
@@ -4061,4 +4075,375 @@ Widget _buildBadge(String text, Color textColor, Color bgColor) {
       ),
     ),
   );
+}
+
+// ==========================================
+// 8. FOOTFALL PARTICIPANT DETAILS BOTTOM SHEET
+// ==========================================
+class AdminFootfallParticipantDetailSheet extends StatelessWidget {
+  final AdminFootfallParticipant participant;
+
+  const AdminFootfallParticipantDetailSheet({
+    super.key,
+    required this.participant,
+  });
+
+  String _getInitials(String name) {
+    if (name.trim().isEmpty) return 'DR';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'DR';
+  }
+
+  void _copyToClipboard(BuildContext context, String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text('$label copied to clipboard'),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF10B981),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _getInitials(participant.name);
+    final isSpeaker = participant.role.toUpperCase() == 'SK' ||
+        participant.roleLabel.toLowerCase().contains('speaker');
+
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + bottomInset),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Header with Avatar & Details
+            Row(
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isSpeaker
+                          ? [const Color(0xFF7C3AED), const Color(0xFF9333EA)]
+                          : [const Color(0xFF0D9488), const Color(0xFF059669)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isSpeaker ? const Color(0xFF9333EA) : const Color(0xFF059669))
+                            .withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        participant.name.isNotEmpty ? participant.name : 'Attendee',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: isSpeaker ? const Color(0xFFF3E8FF) : const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isSpeaker ? const Color(0xFFD8B4FE) : const Color(0xFFA7F3D0),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              participant.roleLabel.isNotEmpty
+                                  ? participant.roleLabel
+                                  : (isSpeaker ? 'Speaker' : 'Delegate'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isSpeaker ? const Color(0xFF7E22CE) : const Color(0xFF047857),
+                              ),
+                            ),
+                          ),
+                          if (participant.visitCount > 1) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
+                              ),
+                              child: Text(
+                                '${participant.visitCount} Visits',
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 22),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 16),
+
+            // Visit Information Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          participant.boothLabel.isNotEmpty
+                              ? 'Visited ${participant.boothLabel}${participant.boothNumber.isNotEmpty ? " (${participant.boothNumber})" : ""}'
+                              : (participant.boothNumber.isNotEmpty
+                                  ? 'Visited ${participant.boothNumber}'
+                                  : 'Booth Footfall Recorded'),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF15803D),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${TimeFormatter.formatDate(participant.visitedDate)} at ${TimeFormatter.formatTime(participant.visitedTime)}',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF166534),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Professional Details Section
+            const Text(
+              'PROFESSIONAL DETAILS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.6,
+                color: Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  _buildDetailRow('Designation', participant.designation, Icons.badge_outlined),
+                  const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                  _buildDetailRow('Organisation', participant.organisation, Icons.business_outlined),
+                  if (participant.city.isNotEmpty) ...[
+                    const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                    _buildDetailRow('City', participant.city, Icons.location_on_outlined),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Contact Details Section
+            const Text(
+              'CONTACT INFORMATION',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.6,
+                color: Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  if (participant.mobile.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_outlined, size: 16, color: Color(0xFF64748B)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Mobile Number', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                              Text(participant.mobile, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF64748B)),
+                          onPressed: () => _copyToClipboard(context, participant.mobile, 'Mobile number'),
+                        ),
+                      ],
+                    ),
+                  if (participant.mobile.isNotEmpty && participant.email.isNotEmpty)
+                    const Divider(height: 16, color: Color(0xFFE2E8F0)),
+                  if (participant.email.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.mail_outline_rounded, size: 16, color: Color(0xFF64748B)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Email Address', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                              Text(participant.email, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF64748B)),
+                          onPressed: () => _copyToClipboard(context, participant.email, 'Email address'),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF64748B)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value.isNotEmpty ? value : 'Not Provided',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

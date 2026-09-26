@@ -2216,6 +2216,72 @@ class ApiService {
     return response;
   }
 
+  // Admin – Sponsor Booth Footfall Stats
+  static Future<http.Response> fetchAdminSponsorBoothStats({
+    required String accessToken,
+    required dynamic sponsorId,
+    dynamic summitId = 1,
+    String? date,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminSponsorBoothStats);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "sponsor_id": sponsorId is int ? sponsorId : (int.tryParse(sponsorId.toString()) ?? sponsorId),
+    };
+    if (summitId != null) {
+      bodyMap["summit_id"] = summitId is int ? summitId : (int.tryParse(summitId.toString()) ?? 1);
+    }
+    if (date != null && date.trim().isNotEmpty) {
+      bodyMap["date"] = date.trim();
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Admin – Sponsor Footfall Participants
+  static Future<http.Response> fetchAdminSponsorFootfallParticipants({
+    required String accessToken,
+    required dynamic sponsorId,
+    dynamic summitId = 1,
+    dynamic boothId,
+    String? date,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    final url = Uri.parse(ApiUrls.adminSponsorFootfallParticipants);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final Map<String, dynamic> bodyMap = {
+      "sponsor_id": sponsorId is int ? sponsorId : (int.tryParse(sponsorId.toString()) ?? sponsorId),
+      "page": page,
+      "limit": limit,
+    };
+    if (summitId != null) {
+      bodyMap["summit_id"] = summitId is int ? summitId : (int.tryParse(summitId.toString()) ?? 1);
+    }
+    if (boothId != null && boothId.toString().trim().isNotEmpty && boothId.toString().trim() != '0') {
+      bodyMap["booth_id"] = boothId is int ? boothId : (int.tryParse(boothId.toString()) ?? boothId);
+    }
+    if (date != null && date.trim().isNotEmpty) {
+      bodyMap["date"] = date.trim();
+    }
+
+    final requestBody = json.encode(bodyMap);
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+    final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
   // ==========================================
   // Utility – Documents API Call
   // ==========================================
