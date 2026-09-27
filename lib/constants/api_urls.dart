@@ -22,6 +22,7 @@ class ApiUrls {
   static const String getSummitBooths = '$baseUrl/utility/get_summit_booths';
   static const String myQr = '$baseUrl/utility/my_qr';
   static const String venueLayouts = '$baseUrl/utility/venue_layouts';
+  static const String myStallVisits = '$baseUrl/utility/my_stall_visits';
   static const String getDocuments = '$baseUrl/utility/documents';
 
   // Gallery Module APIs

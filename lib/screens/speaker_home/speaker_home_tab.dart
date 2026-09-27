@@ -175,16 +175,21 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Consumer<NotificationsProvider>(
+                               Consumer<NotificationsProvider>(
                                 builder: (context, notifProvider, child) {
                                   return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
+                                    onTap: () async {
+                                      await Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => const NotificationsScreen(),
                                         ),
                                       );
+                                      if (context.mounted) {
+                                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                                        Provider.of<NotificationsProvider>(context, listen: false)
+                                            .fetchNotifications(auth.accessToken, clearPrevious: false);
+                                      }
                                     },
                                     child: Container(
                                       width: 44,
@@ -192,9 +197,15 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                       decoration: BoxDecoration(
                                         color: Colors.white.withAlpha(25),
                                         shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withAlpha(40),
+                                          width: 1.5,
+                                        ),
                                       ),
                                       alignment: Alignment.center,
                                       child: Stack(
+                                        alignment: Alignment.center,
+                                        clipBehavior: Clip.none,
                                         children: [
                                           const Icon(
                                             Icons.notifications_none_outlined,
@@ -203,14 +214,22 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                           ),
                                           if (notifProvider.unreadCount > 0)
                                             Positioned(
-                                              top: 2,
-                                              right: 2,
+                                              top: 8,
+                                              right: 9,
                                               child: Container(
-                                                width: 8,
-                                                height: 8,
-                                                decoration: const BoxDecoration(
-                                                  color: Color(0xFF10B981),
+                                                width: 9,
+                                                height: 9,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFEF4444),
                                                   shape: BoxShape.circle,
+                                                  border: Border.all(color: Colors.white, width: 1.5),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: const Color(0xFFEF4444).withAlpha(160),
+                                                      blurRadius: 4,
+                                                      spreadRadius: 1,
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),

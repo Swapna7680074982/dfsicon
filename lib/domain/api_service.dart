@@ -1583,8 +1583,8 @@ class ApiService {
       'Content-Type': 'application/json',
     };
     final Map<String, dynamic> bodyMap = {};
-    if (summitId != null) {
-      bodyMap['summit_id'] = summitId is int ? summitId : int.tryParse(summitId.toString()) ?? summitId;
+    if (summitId != null && summitId.toString().isNotEmpty) {
+      bodyMap['summit_id'] = summitId is int ? summitId : int.tryParse(summitId.toString()) ?? summitId.toString();
     }
     if (layoutType != null && layoutType.isNotEmpty) {
       bodyMap['layout_type'] = layoutType;
@@ -1593,6 +1593,22 @@ class ApiService {
     final requestBody = json.encode(bodyMap);
     CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
     final response = await http.post(url, headers: headers, body: requestBody);
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
+
+  // Utility: My Stall Visits API (Speaker & Delegate)
+  static Future<http.Response> fetchMyStallVisits({
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.myStallVisits);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    const body = '{}';
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: body);
+    final response = await http.post(url, headers: headers, body: body);
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }

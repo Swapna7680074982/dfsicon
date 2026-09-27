@@ -104,11 +104,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       auth.fetchMyQr(forceRefresh: forceRefresh);
       notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
+      homeProvider.fetchMyStallVisits(auth.accessToken, forceRefresh: forceRefresh);
 
       // Start fetching sessions and workshops immediately in parallel
       final sessionsFutures = [
         sessionsProvider.fetchConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
-        // exhibitorProvider.fetchAllExhibitorData(auth.accessToken, summitId: '1', forceRefresh: forceRefresh),
         if (auth.isSpeaker) ...[
           sessionsProvider.fetchMyConfirmedSessions(auth.accessToken, forceRefresh: forceRefresh),
           abstractProvider.fetchMyTopics(auth.accessToken, forceRefresh: forceRefresh),
@@ -127,11 +127,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (auth.isSpeaker) {
             await Future.wait([
+              homeProvider.fetchSponsors(summitId, auth.accessToken),
               sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),
               sessionsProvider.fetchVenueLayouts(auth.accessToken, summitId: summitId),
             ]);
           } else {
             await Future.wait([
+              homeProvider.fetchSponsors(summitId, auth.accessToken),
               exploreProvider.fetchSponsors(summitId, auth.accessToken),
               exploreProvider.fetchSummitBooths(summitId, auth.accessToken),
               sessionsProvider.fetchVenueAndHalls(summitId, auth.accessToken),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../domain/api_service.dart';
+import '../domain/utility_models.dart';
 import '../main.dart';
 
 class HomeEventInfo {
@@ -56,19 +57,25 @@ class HomeSession {
 }
 
 class HomeExhibitor {
+  final String sponsorId;
   final String initials;
   final Color color;
   final String title;
   final String subtitle;
   final String booth;
+  final String boothLabel;
+  final String boothNumber;
   final String? imageUrl;
 
   HomeExhibitor({
+    this.sponsorId = '',
     required this.initials,
     required this.color,
     required this.title,
     required this.subtitle,
     required this.booth,
+    this.boothLabel = '',
+    this.boothNumber = '',
     this.imageUrl,
   });
 }
@@ -386,6 +393,7 @@ class HomeProvider with ChangeNotifier {
           // Only replace if there are active sponsors returned from the API
           final List<HomeExhibitor> fetchedList = [];
           for (var item in list) {
+            final String sponsorId = item['sponsor_id']?.toString() ?? '';
             final String companyName = item['company_name']?.toString() ?? '';
             final String category = item['sponsor_category']?.toString() ?? 'Standard';
             
@@ -399,48 +407,130 @@ class HomeProvider with ChangeNotifier {
             }
 
             String boothCode = '';
+            String boothLabel = '';
+            String boothNumber = '';
             final boothsList = item['booths'] as List<dynamic>?;
             if (boothsList != null && boothsList.isNotEmpty) {
               final boothNumbers = <String>[];
+              final boothLabels = <String>[];
               for (var b in boothsList) {
                 if (b is Map) {
                   final num = b['booth_number']?.toString().trim();
+                  final label = b['booth_label']?.toString().trim();
+                  if (label != null && label.isNotEmpty && !boothLabels.contains(label)) {
+                    boothLabels.add(label);
+                  }
                   if (num != null && num.isNotEmpty && !boothNumbers.contains(num)) {
                     boothNumbers.add(num);
                   }
                 }
               }
+              if (boothLabels.isNotEmpty) {
+                boothLabel = boothLabels.join(', ');
+              }
               if (boothNumbers.isNotEmpty) {
-                boothCode = boothNumbers.join(', ');
+                boothNumber = boothNumbers.join(', ');
+              }
+              // Prioritize boothLabel (e.g. GS9 or SP8), fallback to boothNumber (e.g. DFSICON-52)
+              if (boothLabel.isNotEmpty) {
+                boothCode = boothLabel;
+              } else if (boothNumber.isNotEmpty) {
+                boothCode = boothNumber;
               }
             }
-
-
 
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);
 
             fetchedList.add(
               HomeExhibitor(
+                sponsorId: sponsorId,
                 initials: initials,
                 color: bg,
                 title: companyName,
                 subtitle: category,
                 booth: boothCode,
+                boothLabel: boothLabel,
+                boothNumber: boothNumber,
                 imageUrl: logoUrl,
               ),
             );
           }
           final uniqueMap = <String, HomeExhibitor>{};
           for (final e in fetchedList) {
-            final key = e.title.isNotEmpty ? e.title : e.initials;
+            final key = e.sponsorId.isNotEmpty ? e.sponsorId : (e.title.isNotEmpty ? e.title : e.initials);
             if (key.isNotEmpty) uniqueMap.putIfAbsent(key, () => e);
           }
           _exhibitors = uniqueMap.values.toList();
+          notifyListeners();
         }
       }
     } catch (e) {
       debugPrint('Error fetching sponsors in HomeProvider: $e');
+    }
+  }
+
+  // ==========================================
+  // My Stall Visits (Footfall) for Delegate/Speaker
+  // ==========================================
+  List<DelegateStallVisit> _myStallVisits = [];
+  bool _isFetchingStallVisits = false;
+  String? _stallVisitsErrorMessage;
+
+  List<DelegateStallVisit> get myStallVisits => _myStallVisits;
+  bool get isFetchingStallVisits => _isFetchingStallVisits;
+  String? get stallVisitsErrorMessage => _stallVisitsErrorMessage;
+
+  int get totalStallVisitsCount =>
+      _myStallVisits.fold<int>(0, (sum, v) => sum + (v.visitCount > 0 ? v.visitCount : 1));
+  int get uniqueStallsVisitedCount => _myStallVisits.length;
+
+  Future<void> fetchMyStallVisits(String accessToken, {bool forceRefresh = false}) async {
+    if (accessToken.isEmpty) return;
+    if (!forceRefresh && _myStallVisits.isNotEmpty) return;
+
+    _isFetchingStallVisits = true;
+    _stallVisitsErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.fetchMyStallVisits(accessToken: accessToken);
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        _isFetchingStallVisits = false;
+        notifyListeners();
+        return;
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          final dynamic rawData = data['data'];
+          List list = [];
+          if (rawData is List) {
+            list = rawData;
+          } else if (rawData is Map && rawData.containsKey('data') && rawData['data'] is List) {
+            list = rawData['data'];
+          }
+          _myStallVisits = list
+              .whereType<Map<String, dynamic>>()
+              .map((item) => DelegateStallVisit.fromJson(item))
+              .toList();
+          _isFetchingStallVisits = false;
+          notifyListeners();
+          return;
+        } else {
+          _stallVisitsErrorMessage = data['message']?.toString() ?? 'Failed to load visits';
+        }
+      } else {
+        _stallVisitsErrorMessage = 'Server error (${response.statusCode})';
+      }
+    } catch (e) {
+      debugPrint('Error fetching my stall visits in HomeProvider: $e');
+      _stallVisitsErrorMessage = e.toString();
+    } finally {
+      _isFetchingStallVisits = false;
+      notifyListeners();
     }
   }
 

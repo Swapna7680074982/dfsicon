@@ -181,10 +181,11 @@ class VenueLayoutsWidget extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () {
+                  final targetUrl = layout.fullFileUrl.isNotEmpty ? layout.fullFileUrl : layout.fileUrl;
                   if (isPdf) {
-                    _openLayoutFile(context, layout.fileUrl);
+                    _openLayoutFile(context, targetUrl);
                   } else {
-                    _showFullScreenImage(context, layout.fileUrl, layout.title);
+                    _showFullScreenImage(context, targetUrl, layout.title);
                   }
                 },
                 child: Padding(

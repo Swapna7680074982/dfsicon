@@ -510,7 +510,13 @@ class SessionsProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = _safeJsonDecode(response.body);
         if (data['status'] == true && data['data'] != null) {
-          final List list = data['data'];
+          final dynamic rawData = data['data'];
+          List list = [];
+          if (rawData is List) {
+            list = rawData;
+          } else if (rawData is Map && rawData.containsKey('data') && rawData['data'] is List) {
+            list = rawData['data'];
+          }
           _venueLayouts = list
               .whereType<Map<String, dynamic>>()
               .map((item) => VenueLayoutItem.fromJson(item))

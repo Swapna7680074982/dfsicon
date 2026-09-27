@@ -4293,15 +4293,24 @@ class AdminFootfallParticipantDetailSheet extends StatelessWidget {
                             color: Color(0xFF15803D),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${TimeFormatter.formatDate(participant.visitedDate)} at ${TimeFormatter.formatTime(participant.visitedTime)}',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: Color(0xFF166534),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        () {
+                          final String formattedVisitTime = TimeFormatter.formatDateTimeReadable(
+                            participant.visitedDate,
+                            participant.visitedTime,
+                          );
+                          if (formattedVisitTime.isEmpty) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              formattedVisitTime,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF166534),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }(),
                       ],
                     ),
                   ),
