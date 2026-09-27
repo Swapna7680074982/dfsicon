@@ -168,7 +168,6 @@ class DelegateStallVisit {
     }
     if (boothLabel.isNotEmpty) return boothLabel;
     if (boothNumber.isNotEmpty) return boothNumber;
-    return 'Stall #$boothId';
+    return 'Booth #$boothId';
   }
 }
-

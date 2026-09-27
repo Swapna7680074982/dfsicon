@@ -910,7 +910,7 @@ class HomeTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'My Stall Visits',
+              'My Booth Visits',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -970,36 +970,77 @@ class HomeTab extends StatelessWidget {
             ),
             child: const Center(
               child: Text(
-                'No stall visits recorded yet. Visit exhibitor booths to record visits.',
+                'No booth visits recorded yet. Visit exhibitor booths to record visits.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textLight, fontSize: 13),
               ),
             ),
           )
         else ...[
-          ...visits.take(2).map((v) {
-            final String stallTag = v.boothLabel.isNotEmpty
-                ? (v.boothLabel.toUpperCase().startsWith('STALL') ? v.boothLabel : 'STALL ${v.boothLabel}')
-                : (v.boothNumber.isNotEmpty ? v.boothNumber : 'Stall #${v.boothId}');
+          ...visits.take(2).toList().asMap().entries.map((entry) {
+            final int index = entry.key;
+            final v = entry.value;
+            final String boothTag = v.boothLabel.isNotEmpty
+                ? (v.boothLabel.toUpperCase().startsWith('BOOTH') || v.boothLabel.toUpperCase().startsWith('STALL')
+                    ? v.boothLabel.toUpperCase().replaceAll('STALL', 'BOOTH')
+                    : 'BOOTH ${v.boothLabel}')
+                : (v.boothNumber.isNotEmpty ? v.boothNumber : 'Booth #${v.boothId}');
             final String formattedTime = v.lastVisitedAt.isNotEmpty
                 ? TimeFormatter.formatString(v.lastVisitedAt)
                 : '';
 
+            // Multi-color themes with Light Orange, Sky Azure, Mint Green, Violet & Coral
+            final List<Map<String, dynamic>> colorThemes = [
+              {
+                'border': const Color(0xFFFED7AA),
+                'shadow': const Color(0xFFF97316).withValues(alpha: 0.09),
+                'avatarGradient': const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+                'avatarBorder': const Color(0xFFFDBA74),
+                'avatarText': const Color(0xFFEA580C),
+                'contactIcon': const Color(0xFFEA580C),
+                'stallBg': const Color(0xFFFFF7ED),
+                'stallBorder': const Color(0xFFFDBA74),
+                'stallText': const Color(0xFFC2410C),
+                'stallIcon': const Color(0xFFEA580C),
+                'badgeBg': const Color(0xFFFEF3C7),
+                'badgeBorder': const Color(0xFFFCD34D),
+                'badgeText': const Color(0xFFB45309),
+                'badgeIcon': const Color(0xFFD97706),
+                'chevronBg': const Color(0xFFFFF7ED),
+                'chevronIcon': const Color(0xFFEA580C),
+              },
+              {
+                'border': const Color(0xFFBAE6FD),
+                'shadow': const Color(0xFF0284C7).withValues(alpha: 0.09),
+                'avatarGradient': const [Color(0xFFF0F9FF), Color(0xFFE0F2FE)],
+                'avatarBorder': const Color(0xFF7DD3FC),
+                'avatarText': const Color(0xFF0284C7),
+                'contactIcon': const Color(0xFF0284C7),
+                'stallBg': const Color(0xFFF0F9FF),
+                'stallBorder': const Color(0xFF7DD3FC),
+                'stallText': const Color(0xFF0369A1),
+                'stallIcon': const Color(0xFF0284C7),
+                'badgeBg': const Color(0xFFE0F2FE),
+                'badgeBorder': const Color(0xFF38BDF8),
+                'badgeText': const Color(0xFF0369A1),
+                'badgeIcon': const Color(0xFF0284C7),
+                'chevronBg': const Color(0xFFF0F9FF),
+                'chevronIcon': const Color(0xFF0284C7),
+              },
+            ];
+            final t = colorThemes[index % colorThemes.length];
+
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.2),
+                border: Border.all(color: t['border'] as Color, width: 1.3),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
+                    color: t['shadow'] as Color,
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -1032,14 +1073,18 @@ class HomeTab extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Logo / Initials Container with dark gradient background
+                        // Logo / Initials Container with distinct themed gradient
                         Container(
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            gradient: LinearGradient(
+                              colors: t['avatarGradient'] as List<Color>,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1.2),
+                            border: Border.all(color: t['avatarBorder'] as Color, width: 1.2),
                           ),
                           alignment: Alignment.center,
                           child: v.fullLogoUrl.isNotEmpty
@@ -1052,8 +1097,8 @@ class HomeTab extends StatelessWidget {
                                     fit: BoxFit.contain,
                                     errorBuilder: (_, __, ___) => Text(
                                       _getInitials(v.companyName),
-                                      style: const TextStyle(
-                                        color: Color(0xFF38BDF8),
+                                      style: TextStyle(
+                                        color: t['avatarText'] as Color,
                                         fontWeight: FontWeight.w800,
                                         fontSize: 15,
                                       ),
@@ -1062,15 +1107,15 @@ class HomeTab extends StatelessWidget {
                                 )
                               : Text(
                                   _getInitials(v.companyName),
-                                  style: const TextStyle(
-                                    color: Color(0xFF38BDF8),
+                                  style: TextStyle(
+                                    color: t['avatarText'] as Color,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
                                   ),
                                 ),
                         ),
                         const SizedBox(width: 14),
-                        // Company + Contact Info + Glowing Badges
+                        // Company + Contact Info + Badges
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1083,7 +1128,7 @@ class HomeTab extends StatelessWidget {
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white,
+                                        color: Color(0xFF0F172A),
                                         letterSpacing: -0.2,
                                       ),
                                       maxLines: 1,
@@ -1094,25 +1139,25 @@ class HomeTab extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                      color: t['badgeBg'] as Color,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                      border: Border.all(color: t['badgeBorder'] as Color),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.check_circle_outline_rounded,
                                           size: 11,
-                                          color: Color(0xFF34D399),
+                                          color: t['badgeIcon'] as Color,
                                         ),
                                         const SizedBox(width: 3),
                                         Text(
                                           '${v.visitCount} ${v.visitCount == 1 ? 'Visit' : 'Visits'}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 10.5,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF34D399),
+                                            color: t['badgeText'] as Color,
                                           ),
                                         ),
                                       ],
@@ -1124,10 +1169,10 @@ class HomeTab extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.person_outline_rounded,
                                       size: 13,
-                                      color: Color(0xFF38BDF8),
+                                      color: t['contactIcon'] as Color,
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
@@ -1136,7 +1181,7 @@ class HomeTab extends StatelessWidget {
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: Color(0xFFCBD5E1),
+                                          color: Color(0xFF475569),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -1151,25 +1196,25 @@ class HomeTab extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                                      color: t['stallBg'] as Color,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.35)),
+                                      border: Border.all(color: t['stallBorder'] as Color),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.storefront_rounded,
                                           size: 11,
-                                          color: Color(0xFF38BDF8),
+                                          color: t['stallIcon'] as Color,
                                         ),
                                         const SizedBox(width: 3),
                                         Text(
-                                          stallTag,
-                                          style: const TextStyle(
+                                          boothTag,
+                                          style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF7DD3FC),
+                                            color: t['stallText'] as Color,
                                           ),
                                         ),
                                       ],
@@ -1188,7 +1233,7 @@ class HomeTab extends StatelessWidget {
                                         formattedTime,
                                         style: const TextStyle(
                                           fontSize: 10.5,
-                                          color: Color(0xFF94A3B8),
+                                          color: Color(0xFF64748B),
                                           fontWeight: FontWeight.w500,
                                         ),
                                         maxLines: 1,
@@ -1206,14 +1251,14 @@ class HomeTab extends StatelessWidget {
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: t['chevronBg'] as Color,
                             shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
-                          child: const Icon(
+                          child: Icon(
                             Icons.chevron_right_rounded,
                             size: 18,
-                            color: Colors.white70,
+                            color: t['chevronIcon'] as Color,
                           ),
                         ),
                       ],
@@ -1240,15 +1285,14 @@ class HomeTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                      colors: [Color(0xFFEA580C), Color(0xFFF97316)],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.35)),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0F172A).withValues(alpha: 0.3),
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.28),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1259,11 +1303,11 @@ class HomeTab extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'View All ${visits.length} Visited Stalls',
+                        'View All ${visits.length} Visited Booths',
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF38BDF8),
+                          color: Colors.white,
                           letterSpacing: 0.2,
                         ),
                       ),
@@ -1271,7 +1315,7 @@ class HomeTab extends StatelessWidget {
                       const Icon(
                         Icons.arrow_forward_rounded,
                         size: 15,
-                        color: Color(0xFF38BDF8),
+                        color: Colors.white,
                       ),
                     ],
                   ),
@@ -1390,7 +1434,6 @@ class HomeTab extends StatelessWidget {
               await Future.wait([
                 homeProv.fetchSummits(authProvider.accessToken),
                 homeProv.fetchSponsors(summitId, authProvider.accessToken),
-                homeProv.fetchMyStallVisits(authProvider.accessToken, forceRefresh: true),
                 sessionsProv.fetchConfirmedSessions(authProvider.accessToken, forceRefresh: true),
                 sessionsProv.fetchVenueLayouts(authProvider.accessToken, summitId: summitId),
                 sessionsProv.fetchVenueAndHalls(summitId, authProvider.accessToken),
@@ -1399,6 +1442,11 @@ class HomeTab extends StatelessWidget {
                 workshopsProv.fetchMyWorkshops(authProvider.accessToken, forceRefresh: true),
                 notifProv.fetchNotifications(authProvider.accessToken, clearPrevious: false),
               ]);
+
+              // Stagger stall visits API after primary requests finish to reduce concurrent server load
+              if (context.mounted && !authProvider.isAdmin && !authProvider.isExhibitor) {
+                await homeProv.fetchMyStallVisits(authProvider.accessToken, forceRefresh: true);
+              }
             },
             color: AppColors.primary,
             backgroundColor: Colors.white,

@@ -3295,7 +3295,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  'SUMMIT FOOTFALL OVERVIEW',
+                  'BOOTHS FOOTFALL OVERVIEW',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
@@ -3334,7 +3334,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
             ],
           ),
           const SizedBox(height: 12),
-          // 4 Stats Grid
+          // 6 Stats Grid (2 rows x 3 columns)
           Row(
             children: [
               Expanded(
@@ -3350,26 +3350,48 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 child: _buildOverviewMetricItem(
                   icon: Icons.storefront_rounded,
                   iconColor: const Color(0xFF38BDF8),
-                  label: 'Booths (${overview.assignedBooths}/${overview.totalBooths})',
+                  label: 'Total Booths',
                   value: '${overview.totalBooths}',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _buildOverviewMetricItem(
-                  icon: Icons.visibility_rounded,
+                  icon: Icons.check_circle_outline_rounded,
                   iconColor: const Color(0xFF34D399),
-                  label: 'Visits',
+                  label: 'Assigned',
+                  value: '${overview.assignedBooths}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildOverviewMetricItem(
+                  icon: Icons.meeting_room_outlined,
+                  iconColor: const Color(0xFFFBBF24),
+                  label: 'Free Booths',
+                  value: '${overview.freeBooths}',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildOverviewMetricItem(
+                  icon: Icons.visibility_rounded,
+                  iconColor: const Color(0xFFC084FC),
+                  label: 'Total Visits',
                   value: '${overview.totalVisits}',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _buildOverviewMetricItem(
-                  icon: Icons.people_rounded,
-                  iconColor: const Color(0xFFFBBF24),
-                  label: 'Unique',
-                  value: '${overview.uniqueVisitors}',
+                  icon: Icons.military_tech_rounded,
+                  iconColor: const Color(0xFFF43F5E),
+                  label: 'Visited All',
+                  value: '${overview.visitedAllBoothsCount}',
                 ),
               ),
             ],

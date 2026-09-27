@@ -127,7 +127,7 @@ class _MyStallVisitsScreenState extends State<MyStallVisitsScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
-            'My Stall Visits',
+            'My Booth Visits',
             style: TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.bold,
@@ -174,7 +174,7 @@ class _MyStallVisitsScreenState extends State<MyStallVisitsScreen> {
                   },
                   style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Search visited stalls, companies, contacts...',
+                    hintText: 'Search visited booths, companies, contacts...',
                     hintStyle: const TextStyle(fontSize: 13, color: AppColors.textLight),
                     prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
@@ -222,8 +222,8 @@ class _MyStallVisitsScreenState extends State<MyStallVisitsScreen> {
                                   const SizedBox(height: 16),
                                   Text(
                                     _searchQuery.isNotEmpty
-                                        ? 'No stalls match "$_searchQuery"'
-                                        : 'No stall visits recorded yet',
+                                        ? 'No booths match "$_searchQuery"'
+                                        : 'No booth visits recorded yet',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -234,7 +234,7 @@ class _MyStallVisitsScreenState extends State<MyStallVisitsScreen> {
                                   const SizedBox(height: 6),
                                   Text(
                                     _searchQuery.isNotEmpty
-                                        ? 'Try searching with a different keyword or stall number'
+                                        ? 'Try searching with a different keyword or booth number'
                                         : 'Visit exhibitor booths and get your delegate QR badge scanned to track your footfall!',
                                     style: const TextStyle(
                                       fontSize: 12.5,
@@ -254,10 +254,10 @@ class _MyStallVisitsScreenState extends State<MyStallVisitsScreen> {
                             itemBuilder: (context, index) {
                               final v = filteredVisits[index];
                               final String stallTag = v.boothLabel.isNotEmpty
-                                  ? (v.boothLabel.toUpperCase().startsWith('STALL')
+                                  ? (v.boothLabel.toUpperCase().startsWith('BOOTH')
                                       ? v.boothLabel
-                                      : 'STALL ${v.boothLabel}')
-                                  : (v.boothNumber.isNotEmpty ? v.boothNumber : 'Stall #${v.boothId}');
+                                      : 'BOOTH ${v.boothLabel}')
+                                  : (v.boothNumber.isNotEmpty ? v.boothNumber : 'Booth #${v.boothId}');
                               final String formattedTime = v.lastVisitedAt.isNotEmpty
                                   ? TimeFormatter.formatString(v.lastVisitedAt)
                                   : '';

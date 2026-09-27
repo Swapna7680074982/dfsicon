@@ -104,7 +104,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       auth.fetchMyQr(forceRefresh: forceRefresh);
       notificationsProvider.fetchNotifications(auth.accessToken, clearPrevious: false);
-      homeProvider.fetchMyStallVisits(auth.accessToken, forceRefresh: forceRefresh);
 
       // Start fetching sessions and workshops immediately in parallel
       final sessionsFutures = [
@@ -144,6 +143,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }();
 
       await Future.wait([...sessionsFutures, summitFuture]);
+
+      // Stagger stall visits API call after primary dashboard APIs complete to avoid overloading server
+      if (mounted) {
+        homeProvider.fetchMyStallVisits(auth.accessToken, forceRefresh: forceRefresh);
+      }
     } catch (_) {
       // Gracefully catch any network or mapping exceptions so screens do not error
     }
