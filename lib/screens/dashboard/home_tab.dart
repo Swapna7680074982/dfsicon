@@ -75,6 +75,13 @@ class HomeTab extends StatelessWidget {
     return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
   }
 
+  String _extractInitials(String? name) {
+    if (name == null || name.trim().isEmpty || name.trim().toUpperCase() == 'NA') return 'S';
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return parts[0][0].toUpperCase();
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required Color iconColor,
@@ -281,57 +288,159 @@ class HomeTab extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: speakerBg,
-                        shape: BoxShape.circle,
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      alignment: Alignment.center,
-                      child: _getSpeakerProfileImageUrl(speakerProfileImage) != null
-                          ? Image.network(
-                              _getSpeakerProfileImageUrl(speakerProfileImage)!,
-                              fit: BoxFit.cover,
-                              width: 24,
-                              height: 24,
-                              errorBuilder: (c, o, s) => Text(
-                                speakerInitials.toUpperCase(),
+                const SizedBox(height: 10),
+                () {
+                  final List<String> speakerNamesList = [];
+                  if (speaker.isNotEmpty && speaker != 'NA') {
+                    final parts = speaker.split(RegExp(r',|\band\b'));
+                    for (final p in parts) {
+                      final n = p.trim();
+                      if (n.isNotEmpty && n != 'NA' && !speakerNamesList.contains(n)) {
+                        speakerNamesList.add(n);
+                      }
+                    }
+                  }
+
+                  if (speakerNamesList.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  if (speakerNamesList.length > 1) {
+                    final List<Color> avatarColors = [
+                      const Color(0xFF6366F1),
+                      const Color(0xFF0EA5E9),
+                      const Color(0xFF10B981),
+                      const Color(0xFFF59E0B),
+                      const Color(0xFF8B5CF6),
+                      const Color(0xFFEC4899),
+                    ];
+                    final displayAvatars = speakerNamesList.take(2).toList();
+                    final remainingCount = speakerNamesList.length - 2;
+                    final stackWidth = (displayAvatars.length - 1) * 14.0 + 22.0 + (remainingCount > 0 ? 14.0 : 0.0);
+
+                    return Row(
+                      children: [
+                        SizedBox(
+                          width: stackWidth,
+                          height: 22,
+                          child: Stack(
+                            children: [
+                              for (int i = 0; i < displayAvatars.length; i++)
+                                Positioned(
+                                  left: i * 14.0,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: avatarColors[i % avatarColors.length],
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 1.5),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      _extractInitials(displayAvatars[i]),
+                                      style: const TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (remainingCount > 0)
+                                Positioned(
+                                  left: displayAvatars.length * 14.0,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4F46E5),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 1.5),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '+$remainingCount',
+                                      style: const TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            speakerNamesList.join(', '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  final singleName = speakerNamesList.first;
+                  return Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: speakerBg,
+                          shape: BoxShape.circle,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        alignment: Alignment.center,
+                        child: _getSpeakerProfileImageUrl(speakerProfileImage) != null
+                            ? Image.network(
+                                _getSpeakerProfileImageUrl(speakerProfileImage)!,
+                                fit: BoxFit.cover,
+                                width: 24,
+                                height: 24,
+                                errorBuilder: (c, o, s) => Text(
+                                  _extractInitials(singleName),
+                                  style: const TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                _extractInitials(singleName),
                                 style: const TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 9.5,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
-                            )
-                          : Text(
-                              speakerInitials.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        speaker,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          singleName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }(),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -1388,8 +1497,12 @@ class HomeTab extends StatelessWidget {
         bg: homeExhibitor.color,
         description: '',
         products: const [],
-        website: '',
-        email: '',
+        website: homeExhibitor.website,
+        email: homeExhibitor.email,
+        phone: homeExhibitor.phone,
+        contactPerson: homeExhibitor.contactPerson,
+        designation: homeExhibitor.designation,
+        address: homeExhibitor.address,
         logoUrl: homeExhibitor.imageUrl,
       );
       if (context.mounted) {
@@ -1527,37 +1640,42 @@ class HomeTab extends StatelessWidget {
                                     width: 1.5,
                                   ),
                                 ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const Icon(
-                                      Icons.notifications_none,
-                                      color: Colors.white,
-                                      size: 22,
-                                    ),
-                                    if (notifProvider.unreadCount > 0)
-                                      Positioned(
-                                        top: 8,
-                                        right: 9,
-                                        child: Container(
-                                          width: 9,
-                                          height: 9,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFEF4444),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 1.5),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: const Color(0xFFEF4444).withAlpha(160),
-                                                blurRadius: 4,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
-                                          ),
+                                child: SizedBox(
+                                  width: 26,
+                                  height: 26,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      const Center(
+                                        child: Icon(
+                                          Icons.notifications_none_outlined,
+                                          color: Colors.white,
+                                          size: 23,
                                         ),
                                       ),
-                                  ],
+                                      if (notifProvider.unreadCount > 0)
+                                        Positioned(
+                                          top: 0,
+                                          right: 1,
+                                          child: Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFEF4444),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Colors.white, width: 1.5),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFFEF4444).withAlpha(160),
+                                                  blurRadius: 4,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

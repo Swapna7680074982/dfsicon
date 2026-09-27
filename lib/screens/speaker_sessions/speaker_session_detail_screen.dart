@@ -25,6 +25,11 @@ class SpeakerSessionDetailScreen extends StatefulWidget {
   final String? description;
   final String? topicId;
   final String? assignmentId;
+  final List<SessionSpeakerItem>? speakers;
+  final String? speakerName;
+  final String? speakerDesignation;
+  final String? speakerOrganisation;
+  final String? speakerProfileImage;
 
   const SpeakerSessionDetailScreen({
     super.key,
@@ -39,6 +44,11 @@ class SpeakerSessionDetailScreen extends StatefulWidget {
     this.description,
     this.topicId,
     this.assignmentId,
+    this.speakers,
+    this.speakerName,
+    this.speakerDesignation,
+    this.speakerOrganisation,
+    this.speakerProfileImage,
   });
 
   @override
@@ -46,6 +56,12 @@ class SpeakerSessionDetailScreen extends StatefulWidget {
 }
 
 class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen> {
+  String? _getSpeakerProfileImageUrl(String? path) {
+    if (path == null || path.trim().isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return 'https://services.heterohcl.com/dfs-icon/$cleanPath';
+  }
 
   @override
   void initState() {
@@ -156,6 +172,60 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
       final String? background = sessionData['background_introduction']?.toString();
       if (background != null && background.trim().isNotEmpty) {
         displayDescription = background.trim();
+      }
+    }
+
+    final List<SessionSpeakerItem> rawSpeakers = [];
+    if (widget.speakers != null && widget.speakers!.isNotEmpty) {
+      rawSpeakers.addAll(widget.speakers!);
+    }
+    if (widget.speakerName != null &&
+        widget.speakerName!.isNotEmpty &&
+        widget.speakerName != 'Not Assigned' &&
+        widget.speakerName != 'You') {
+      rawSpeakers.add(SessionSpeakerItem(
+        speakerId: '',
+        name: widget.speakerName!,
+        designation: widget.speakerDesignation ?? '',
+        organisation: widget.speakerOrganisation ?? '',
+        profileImage: widget.speakerProfileImage,
+        topicId: widget.topicId,
+        assignmentId: widget.assignmentId,
+      ));
+    }
+    if (topicDetails != null && topicDetails['speakers'] is List) {
+      for (var spMap in topicDetails['speakers']) {
+        if (spMap is Map<String, dynamic>) {
+          rawSpeakers.add(SessionSpeakerItem.fromJson(spMap));
+        }
+      }
+    }
+    if (sessionData != null && sessionData['speakers'] is List) {
+      for (var spMap in sessionData['speakers']) {
+        if (spMap is Map<String, dynamic>) {
+          rawSpeakers.add(SessionSpeakerItem.fromJson(spMap));
+        }
+      }
+    }
+    if (rawSpeakers.isEmpty && auth.userName.isNotEmpty) {
+      rawSpeakers.add(SessionSpeakerItem(
+        speakerId: auth.userId,
+        name: auth.userName,
+        designation: auth.designation,
+        organisation: auth.hospitalClinicName,
+        profileImage: auth.profileImage,
+        topicId: widget.topicId,
+        assignmentId: widget.assignmentId,
+      ));
+    }
+
+    final List<SessionSpeakerItem> displaySpeakers = [];
+    final Set<String> seenSpeakerKeys = {};
+    for (var sp in rawSpeakers) {
+      final key = sp.speakerId.isNotEmpty ? sp.speakerId : sp.name.trim().toLowerCase();
+      if (key.isNotEmpty && !seenSpeakerKeys.contains(key)) {
+        seenSpeakerKeys.add(key);
+        displaySpeakers.add(sp);
       }
     }
 
@@ -383,7 +453,282 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ),
             ),
             const SizedBox(height: 28),
+            Text(
+              displaySpeakers.length > 1 ? 'Speakers (${displaySpeakers.length})' : 'Speaker',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            if (displaySpeakers.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.tileBorder, width: 1.2),
+                ),
+                child: const Text(
+                  'Speaker information will be announced soon.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+              )
+            else if (displaySpeakers.length == 1)
+              Builder(
+                builder: (context) {
+                  final sp = displaySpeakers.first;
+                  final imgUrl = _getSpeakerProfileImageUrl(sp.profileImage);
+                  final hasSpecificTitle = sp.title != null &&
+                      sp.title!.trim().isNotEmpty &&
+                      sp.title!.trim().toLowerCase() != displayTitle.trim().toLowerCase() &&
+                      sp.title!.trim().toLowerCase() != 'null';
+                  const bgCol = Color(0xFF6366F1);
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.tileBorder, width: 1.2),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: bgCol,
+                            shape: BoxShape.circle,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          alignment: Alignment.center,
+                          child: imgUrl != null
+                              ? Image.network(
+                                  imgUrl,
+                                  fit: BoxFit.cover,
+                                  width: 44,
+                                  height: 44,
+                                  errorBuilder: (c, o, s) => Text(
+                                    getInitials(sp.name),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  getInitials(sp.name),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                sp.name.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              if (sp.designation.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  sp.designation.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                              if (sp.organisation.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  sp.organisation.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                              if (hasSpecificTitle) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    sp.title!,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontStyle: FontStyle.italic,
+                                      color: Color(0xFF475569),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: List.generate(displaySpeakers.length, (idx) {
+                    final sp = displaySpeakers[idx];
+                    final imgUrl = _getSpeakerProfileImageUrl(sp.profileImage);
+                    final hasSpecificTitle = sp.title != null &&
+                        sp.title!.trim().isNotEmpty &&
+                        sp.title!.trim().toLowerCase() != displayTitle.trim().toLowerCase() &&
+                        sp.title!.trim().toLowerCase() != 'null';
+
+                    final List<Color> avatarColors = [
+                      const Color(0xFF6366F1),
+                      const Color(0xFF0EA5E9),
+                      const Color(0xFF10B981),
+                      const Color(0xFFF59E0B),
+                      const Color(0xFF8B5CF6),
+                      const Color(0xFFEC4899),
+                      const Color(0xFF14B8A6),
+                    ];
+                    final bgCol = avatarColors[idx % avatarColors.length];
+
+                    return Container(
+                      width: 230,
+                      margin: EdgeInsets.only(right: idx == displaySpeakers.length - 1 ? 0 : 12),
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.tileBorder, width: 1.2),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: bgCol,
+                              shape: BoxShape.circle,
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            alignment: Alignment.center,
+                            child: imgUrl != null
+                                ? Image.network(
+                                    imgUrl,
+                                    fit: BoxFit.cover,
+                                    width: 40,
+                                    height: 40,
+                                    errorBuilder: (c, o, s) => Text(
+                                      getInitials(sp.name),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    getInitials(sp.name),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  sp.name.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (sp.designation.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    sp.designation.toUpperCase(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                                if (sp.organisation.isNotEmpty) ...[
+                                  const SizedBox(height: 1.5),
+                                  Text(
+                                    sp.organisation.toUpperCase(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                                if (hasSpecificTitle) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    sp.title!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 9.5,
+                                      fontStyle: FontStyle.italic,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
             if (coordinatorName.trim().isNotEmpty && coordinatorName.trim().toUpperCase() != 'NOT ASSIGNED') ...[
+              const SizedBox(height: 24),
               const Text(
                 'Coordinator Details',
                 style: TextStyle(
@@ -394,11 +739,11 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.tileBorder, width: 1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.tileBorder, width: 1.2),
                 ),
                 child: Column(
                   children: [
@@ -451,101 +796,6 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
                       child: Divider(height: 1, color: AppColors.tileBorder),
                     ),
                     _buildCoordinatorContact(Icons.mail_outline, coordinatorEmail.isNotEmpty ? coordinatorEmail : 'N/A'),
-                  ],
-                ),
-              ),
-            ] else ...[
-              const Text(
-                'Speaker Details',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.tileBorder, width: 1),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEFF6FF),
-                            shape: BoxShape.circle,
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          alignment: Alignment.center,
-                          child: auth.hasValidProfileImage
-                              ? Image.network(
-                                  auth.profileImage,
-                                  fit: BoxFit.cover,
-                                  width: 44,
-                                  height: 44,
-                                  errorBuilder: (c, o, s) => Text(
-                                    getInitials(auth.userName),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  getInitials(auth.userName),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                auth.userName.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${auth.designation}, ${auth.hospitalClinicName}'.toUpperCase(),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12.0),
-                      child: Divider(height: 1, color: AppColors.tileBorder),
-                    ),
-                    _buildCoordinatorContact(Icons.phone_outlined, auth.mobile.isNotEmpty ? auth.mobile : 'N/A'),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12.0),
-                      child: Divider(height: 1, color: AppColors.tileBorder),
-                    ),
-                    _buildCoordinatorContact(Icons.mail_outline, auth.email.isNotEmpty ? auth.email : 'N/A'),
                   ],
                 ),
               ),
@@ -1176,6 +1426,28 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
               if (success && mounted) {
                 netProvider.fetchPendingRequests(accessToken: auth.accessToken);
                 netProvider.fetchConversations(accessToken: auth.accessToken);
+              } else if (!success && context.mounted) {
+                final errorMsg = connProvider.lastErrorMessage ?? 'Failed to send connection request.';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMsg,
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFFDC2626),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
               }
             },
             icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
@@ -1355,6 +1627,28 @@ class _SpeakerSessionDetailScreenState extends State<SpeakerSessionDetailScreen>
         if (success && mounted) {
           netProvider.fetchPendingRequests(accessToken: auth.accessToken);
           netProvider.fetchConversations(accessToken: auth.accessToken);
+        } else if (!success && context.mounted) {
+          final errorMsg = connProvider.lastErrorMessage ?? 'Failed to send connection request.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      errorMsg,
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              duration: const Duration(seconds: 4),
+            ),
+          );
         }
       },
       icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),

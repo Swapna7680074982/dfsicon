@@ -28,6 +28,8 @@ class CalendarEventItem {
   final String? hallName;
   final String? hallCode;
   final String? speakerName;
+  final List<String> speakers;
+  final List<SessionSpeakerItem> speakerItems;
   final String? speakerDesignation;
   final String? speakerProfileImage;
   final String? speakerInitials;
@@ -57,6 +59,8 @@ class CalendarEventItem {
     this.hallName,
     this.hallCode,
     this.speakerName,
+    this.speakers = const [],
+    this.speakerItems = const [],
     this.speakerDesignation,
     this.speakerProfileImage,
     this.speakerInitials,
@@ -80,7 +84,7 @@ class CalendarEventItem {
     return SessionItem(
       id: int.tryParse(id) ?? id.hashCode,
       title: title,
-      speakerName: speakerName ?? 'Presenter',
+      speakerName: speakerName ?? (speakers.isNotEmpty ? speakers.join(', ') : 'Presenter'),
       speakerTitle: speakerDesignation ?? category ?? '',
       speakerInitials: speakerInitials ?? (speakerName != null && speakerName!.isNotEmpty ? speakerName![0] : 'S'),
       speakerBg: speakerBg ?? const Color(0xFF1E3A8A),
@@ -99,6 +103,7 @@ class CalendarEventItem {
       coordinatorPhone: coordinatorPhone,
       coordinatorEmail: coordinatorEmail,
       isBookmarked: isBookmarked,
+      speakers: speakerItems,
     );
   }
 
@@ -420,10 +425,14 @@ class CalendarDataService {
             slotSpeakerLower.contains('you')
           );
 
+          final String eventTitle = _extractTitleFromSlot(
+              slot.topicTitle, rawLabel, slot.slotName, slot.slotNumber);
+
           // Check if bookmarked
-          final isBookmarked = !isAdmin && (
+          final isBookmarked = (
             (slot.topicId != null && bookmarkedTopicIds.contains(slot.topicId!.trim())) ||
-            (hasTopic && bookmarkedTitles.contains(slotTopicTitle.toLowerCase()))
+            (hasTopic && bookmarkedTitles.contains(slotTopicTitle.toLowerCase())) ||
+            (bookmarkedTitles.contains(eventTitle.trim().toLowerCase()))
           );
 
           final cleanSlotStatus = st.trim();
@@ -453,12 +462,13 @@ class CalendarDataService {
           );
           final isTrulyFree = !isCancelled && (isExplicitlyFree || !isActualSession);
 
-          String eventTitle = _extractTitleFromSlot(
-              slot.topicTitle, rawLabel, slot.slotName, slot.slotNumber);
-
           // Find matching SessionItem from sessionsProv for accurate assignmentId & details
           SessionItem? matchedSession;
           for (final s in sessionsProv.sessions) {
+            if (slot.slotId.isNotEmpty && s.slotId != null && s.slotId == slot.slotId) {
+              matchedSession = s;
+              break;
+            }
             if (slot.topicId != null && s.topicId != null && slot.topicId!.trim() == s.topicId!.trim()) {
               matchedSession = s;
               break;
@@ -467,9 +477,21 @@ class CalendarDataService {
               matchedSession = s;
               break;
             }
+            if (s.title.trim().toLowerCase() == eventTitle.trim().toLowerCase()) {
+              matchedSession = s;
+              break;
+            }
+            if (slot.topicId != null && s.speakers.any((sp) => sp.topicId == slot.topicId)) {
+              matchedSession = s;
+              break;
+            }
           }
           if (matchedSession == null) {
             for (final s in sessionsProv.mySessions) {
+              if (slot.slotId.isNotEmpty && s.slotId != null && s.slotId == slot.slotId) {
+                matchedSession = s;
+                break;
+              }
               if (slot.topicId != null && s.topicId != null && slot.topicId!.trim() == s.topicId!.trim()) {
                 matchedSession = s;
                 break;
@@ -478,8 +500,18 @@ class CalendarDataService {
                 matchedSession = s;
                 break;
               }
+              if (s.title.trim().toLowerCase() == eventTitle.trim().toLowerCase()) {
+                matchedSession = s;
+                break;
+              }
+              if (slot.topicId != null && s.speakers.any((sp) => sp.topicId == slot.topicId)) {
+                matchedSession = s;
+                break;
+              }
             }
           }
+
+          final effectiveIsBookmarked = isBookmarked || (matchedSession != null && matchedSession.isBookmarked);
 
           String? topicCategory;
           if (slot.topicId != null && slot.topicId!.isNotEmpty) {
@@ -503,7 +535,79 @@ class CalendarDataService {
             }
           }
 
-          final effectiveAssignmentId = slot.assignmentId ?? matchedSession?.assignmentId ?? (matchedSession?.id.toString()) ?? slot.slotId;
+          String? effectiveAssignmentId = slot.assignmentId;
+          if (effectiveAssignmentId == null || effectiveAssignmentId.isEmpty || effectiveAssignmentId == '0') {
+            if (matchedSession != null) {
+              if (matchedSession.isBookmarked && matchedSession.speakers.isNotEmpty) {
+                final bmSp = matchedSession.speakers.where((sp) => sp.isBookmarked && sp.assignmentId != null && sp.assignmentId!.isNotEmpty && sp.assignmentId != '0');
+                if (bmSp.isNotEmpty) {
+                  effectiveAssignmentId = bmSp.first.assignmentId;
+                }
+              }
+              if (effectiveAssignmentId == null || effectiveAssignmentId.isEmpty || effectiveAssignmentId == '0') {
+                effectiveAssignmentId = matchedSession.assignmentId;
+              }
+              if ((effectiveAssignmentId == null || effectiveAssignmentId.isEmpty || effectiveAssignmentId == '0') && matchedSession.speakers.isNotEmpty) {
+                final withAssignment = matchedSession.speakers.where((sp) => sp.assignmentId != null && sp.assignmentId!.isNotEmpty && sp.assignmentId != '0');
+                if (withAssignment.isNotEmpty) {
+                  effectiveAssignmentId = withAssignment.first.assignmentId;
+                }
+              }
+            }
+          }
+          if (effectiveAssignmentId == null || effectiveAssignmentId.isEmpty) {
+            effectiveAssignmentId = slot.slotId;
+          }
+
+          final List<String> slotSpeakers = [];
+          final List<SessionSpeakerItem> slotSpeakerItems = [];
+
+          if (matchedSession != null && matchedSession.speakers.isNotEmpty) {
+            slotSpeakerItems.addAll(matchedSession.speakers);
+            for (final sp in matchedSession.speakers) {
+              if (sp.name.isNotEmpty && !slotSpeakers.contains(sp.name)) {
+                slotSpeakers.add(sp.name);
+              }
+            }
+          }
+
+          if (slot.sessions.isNotEmpty) {
+            for (final sess in slot.sessions) {
+              if (sess.speakerName.isNotEmpty && !slotSpeakers.contains(sess.speakerName)) {
+                slotSpeakers.add(sess.speakerName);
+              }
+              if (!slotSpeakerItems.any((si) => (sess.topicId.isNotEmpty && si.topicId == sess.topicId) || si.name.toLowerCase() == sess.speakerName.toLowerCase())) {
+                slotSpeakerItems.add(SessionSpeakerItem(
+                  speakerId: '',
+                  name: sess.speakerName,
+                  designation: sess.speakerDesignation ?? '',
+                  organisation: sess.speakerOrganisation ?? '',
+                  profileImage: sess.speakerProfileImage,
+                  topicId: sess.topicId,
+                  title: sess.topicTitle,
+                  assignmentId: sess.assignmentId,
+                ));
+              }
+            }
+          }
+
+          if (slot.speakerNames.isNotEmpty) {
+            for (final sn in slot.speakerNames) {
+              if (!slotSpeakers.contains(sn)) {
+                slotSpeakers.add(sn);
+              }
+            }
+          }
+
+          if (slotSpeakers.isEmpty && effectiveSpeaker.isNotEmpty) {
+            final parts = effectiveSpeaker.split(RegExp(r'[,;]'));
+            for (final p in parts) {
+              final t = p.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
+              if (t.isNotEmpty && !slotSpeakers.contains(t)) {
+                slotSpeakers.add(t);
+              }
+            }
+          }
 
           final key = 'slot-${slot.slotId}-${slot.slotNumber}-$dateStr-${track.hallId}';
           if (addedKeys.contains(key)) continue;
@@ -530,9 +634,11 @@ class CalendarDataService {
             endTime: endTimeStr,
             hallName: cleanHall,
             hallCode: cleanHallName(track.hallName),
-            speakerName: effectiveSpeaker.isNotEmpty ? effectiveSpeaker : null,
+            speakerName: slotSpeakers.isNotEmpty ? slotSpeakers.join(', ') : (effectiveSpeaker.isNotEmpty ? effectiveSpeaker : null),
+            speakers: slotSpeakers,
+            speakerItems: slotSpeakerItems,
             slotStatus: isCancelled ? 'CANCELLED' : slot.slotStatus,
-            isBookmarked: isBookmarked,
+            isBookmarked: effectiveIsBookmarked,
             topicId: slot.topicId ?? matchedSession?.topicId,
             assignmentId: effectiveAssignmentId,
             description: matchedSession?.description,

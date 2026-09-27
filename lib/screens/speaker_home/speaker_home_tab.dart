@@ -203,37 +203,42 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                                         ),
                                       ),
                                       alignment: Alignment.center,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          const Icon(
-                                            Icons.notifications_none_outlined,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                          if (notifProvider.unreadCount > 0)
-                                            Positioned(
-                                              top: 8,
-                                              right: 9,
-                                              child: Container(
-                                                width: 9,
-                                                height: 9,
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFEF4444),
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(color: Colors.white, width: 1.5),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: const Color(0xFFEF4444).withAlpha(160),
-                                                      blurRadius: 4,
-                                                      spreadRadius: 1,
-                                                    ),
-                                                  ],
-                                                ),
+                                      child: SizedBox(
+                                        width: 26,
+                                        height: 26,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            const Center(
+                                              child: Icon(
+                                                Icons.notifications_none_outlined,
+                                                color: Colors.white,
+                                                size: 24,
                                               ),
                                             ),
-                                        ],
+                                            if (notifProvider.unreadCount > 0)
+                                              Positioned(
+                                                top: 0,
+                                                right: 1,
+                                                child: Container(
+                                                  width: 8,
+                                                  height: 8,
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFEF4444),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(color: Colors.white, width: 1.5),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: const Color(0xFFEF4444).withAlpha(160),
+                                                        blurRadius: 4,
+                                                        spreadRadius: 1,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   );
@@ -670,6 +675,11 @@ class _SpeakerHomeTabState extends State<SpeakerHomeTab> {
                               description: s.description,
                               topicId: s.topicId,
                               assignmentId: s.assignmentId,
+                              speakers: s.speakers,
+                              speakerName: s.speakerName,
+                              speakerDesignation: s.speakerDesignation,
+                              speakerOrganisation: s.speakerOrganisation,
+                              speakerProfileImage: s.speakerProfileImage,
                             ),
                           ),
                         );

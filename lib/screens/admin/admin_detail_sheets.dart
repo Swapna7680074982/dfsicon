@@ -3215,6 +3215,28 @@ class _AdminSlotDetailsSheetState extends State<AdminSlotDetailsSheet> {
                     if (speaker.email.isNotEmpty)
                       _buildInfoRow('Email', speaker.email, Icons.mail_outline_rounded, copyable: true),
                   ],
+                  if (speaker.speakerId.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 34,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          showAdminSpeakerDetailsModal(context, userId: speaker.speakerId);
+                        },
+                        icon: const Icon(Icons.person_search_rounded, size: 14, color: AppColors.primary),
+                        label: const Text(
+                          'View Speaker Profile',
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary, width: 1),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
             ),

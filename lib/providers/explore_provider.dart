@@ -88,6 +88,10 @@ class Exhibitor {
   final List<String> products;
   final String website;
   final String email;
+  final String phone;
+  final String contactPerson;
+  final String designation;
+  final String address;
   final String? logoUrl;
   final String? bannerUrl;
   final String? brochureUrl;
@@ -105,6 +109,10 @@ class Exhibitor {
     required this.products,
     required this.website,
     required this.email,
+    this.phone = '',
+    this.contactPerson = '',
+    this.designation = '',
+    this.address = '',
     this.logoUrl,
     this.bannerUrl,
     this.brochureUrl,
@@ -227,8 +235,12 @@ class ExploreProvider with ChangeNotifier {
             final String sponsorId = item['sponsor_id']?.toString() ?? '';
             final String companyName = item['company_name']?.toString() ?? '';
             final String category = item['sponsor_category']?.toString() ?? 'Standard';
-            final String email = item['email']?.toString() ?? '';
-            final String website = item['website']?.toString() ?? '';
+            final String email = (item['email'] ?? item['company_email'] ?? item['contact_email'] ?? '').toString().trim();
+            final String website = (item['website'] ?? item['company_website'] ?? item['web_url'] ?? '').toString().trim();
+            final String phone = (item['mobile'] ?? item['phone'] ?? item['phone_number'] ?? item['contact_no'] ?? item['contact_number'] ?? item['mobile_no'] ?? '').toString().trim();
+            final String contactPerson = (item['contact_person'] ?? item['contactPerson'] ?? item['contact_name'] ?? item['representative_name'] ?? '').toString().trim();
+            final String designation = (item['designation'] ?? item['contact_designation'] ?? '').toString().trim();
+            final String address = (item['address'] ?? item['location'] ?? item['city'] ?? item['state'] ?? '').toString().trim();
             final String description = item['company_description']?.toString() ?? '';
             
             String? logoUrl;
@@ -314,6 +326,10 @@ class ExploreProvider with ChangeNotifier {
                 products: parsedProducts,
                 website: website,
                 email: email,
+                phone: phone,
+                contactPerson: contactPerson,
+                designation: designation,
+                address: address,
                 logoUrl: logoUrl,
                 bannerUrl: bannerUrl,
                 brochureUrl: brochureUrl,

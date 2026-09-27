@@ -6,6 +6,73 @@ import 'package:dfsicon/utils/custom_logger.dart';
 import '../main.dart';
 import '../utils/time_formatter.dart';
 
+class SessionSpeakerItem {
+  final String speakerId;
+  final String name;
+  final String designation;
+  final String organisation;
+  final String? profileImage;
+  final String? topicId;
+  final String? assignmentId;
+  final String? title;
+  final bool isBookmarked;
+
+  SessionSpeakerItem({
+    required this.speakerId,
+    required this.name,
+    this.designation = '',
+    this.organisation = '',
+    this.profileImage,
+    this.topicId,
+    this.assignmentId,
+    this.title,
+    this.isBookmarked = false,
+  });
+
+  factory SessionSpeakerItem.fromJson(Map<String, dynamic> json) {
+    final rawDesig = json['designation']?.toString().trim() ?? '';
+    final rawOrg = (json['organisation'] ?? json['organisation_name'] ?? json['hospital_clinic_name'])?.toString().trim() ?? '';
+
+    String desig = '';
+    if (rawDesig.isNotEmpty && rawDesig.toLowerCase() != 'null') {
+      if (rawDesig.toUpperCase().contains('PRIVATE')) {
+        desig = '';
+      } else {
+        desig = rawDesig;
+      }
+    }
+
+    String org = '';
+    if (rawOrg.isNotEmpty && rawOrg.toLowerCase() != 'null') {
+      if (rawOrg.toUpperCase().contains('PRIVATE')) {
+        org = '';
+      } else {
+        org = rawOrg;
+      }
+    }
+
+    String? profileImage = json['speaker_profile_image']?.toString() ?? json['speaker_image']?.toString() ?? json['profile_image']?.toString();
+    if (profileImage != null) {
+      profileImage = profileImage.trim();
+      if (profileImage.isEmpty || profileImage == 'null' || profileImage == 'NA') {
+        profileImage = null;
+      }
+    }
+
+    return SessionSpeakerItem(
+      speakerId: json['speaker_id']?.toString() ?? '',
+      name: json['speaker_name']?.toString() ?? json['name']?.toString() ?? 'Speaker',
+      designation: desig,
+      organisation: org,
+      profileImage: profileImage,
+      topicId: json['topic_id']?.toString(),
+      assignmentId: json['assignment_id']?.toString(),
+      title: json['title']?.toString() ?? json['abstract_title']?.toString(),
+      isBookmarked: json['is_bookmarked'] == true || json['is_bookmarked'] == 1 || json['is_bookmarked'] == 'true' || json['is_bookmarked'] == '1',
+    );
+  }
+}
+
 class SessionItem {
   final int id;
   final String title;
@@ -39,6 +106,8 @@ class SessionItem {
   final String? scheduleDate;
   final String? speakerDesignation;
   final String? speakerOrganisation;
+  final String? slotId;
+  final List<SessionSpeakerItem> speakers;
 
   SessionItem({
     required this.id,
@@ -71,6 +140,8 @@ class SessionItem {
     this.scheduleDate,
     this.speakerDesignation,
     this.speakerOrganisation,
+    this.slotId,
+    this.speakers = const [],
   });
 }
 
@@ -309,80 +380,178 @@ class SessionsProvider extends ChangeNotifier {
     String? assignmentIdOverride,
     String? topicIdOverride,
     String? titleOverride,
+    bool? isCurrentlyBookmarkedOverride,
   }) async {
     SessionItem? session;
     final index = _sessions.indexWhere((s) =>
-        s.id == sessionId ||
-        (assignmentIdOverride != null && s.assignmentId == assignmentIdOverride) ||
-        (topicIdOverride != null && s.topicId == topicIdOverride));
+        (sessionId > 0 && s.id == sessionId) ||
+        (s.slotId != null && s.slotId == sessionId.toString()) ||
+        (assignmentIdOverride != null && assignmentIdOverride.isNotEmpty && (s.assignmentId == assignmentIdOverride || s.speakers.any((sp) => sp.assignmentId == assignmentIdOverride))) ||
+        (topicIdOverride != null && topicIdOverride.isNotEmpty && (s.topicId == topicIdOverride || s.speakers.any((sp) => sp.topicId == topicIdOverride))) ||
+        (titleOverride != null && titleOverride.isNotEmpty && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase()));
     if (index != -1) {
       session = _sessions[index];
     } else {
       final myIndex = _mySessions.indexWhere((s) =>
-          s.id == sessionId ||
-          (assignmentIdOverride != null && s.assignmentId == assignmentIdOverride) ||
-          (topicIdOverride != null && s.topicId == topicIdOverride));
+          (sessionId > 0 && s.id == sessionId) ||
+          (s.slotId != null && s.slotId == sessionId.toString()) ||
+          (assignmentIdOverride != null && assignmentIdOverride.isNotEmpty && (s.assignmentId == assignmentIdOverride || s.speakers.any((sp) => sp.assignmentId == assignmentIdOverride))) ||
+          (topicIdOverride != null && topicIdOverride.isNotEmpty && (s.topicId == topicIdOverride || s.speakers.any((sp) => sp.topicId == topicIdOverride))) ||
+          (titleOverride != null && titleOverride.isNotEmpty && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase()));
       if (myIndex != -1) {
         session = _mySessions[myIndex];
       }
     }
 
-    final String assignmentId = (assignmentIdOverride != null && assignmentIdOverride.isNotEmpty)
-        ? assignmentIdOverride
-        : (session?.assignmentId ?? session?.id.toString() ?? sessionId.toString());
+    final isCurrentlyBookmarked = isCurrentlyBookmarkedOverride ?? (session?.isBookmarked ?? false);
 
-    if (assignmentId.isEmpty || assignmentId == '0') {
+    // Resolve list of target assignment IDs
+    final Set<String> targetAssignmentIds = {};
+
+    bool isValidAssignmentId(String? id) {
+      if (id == null || id.isEmpty || id == '0' || id.toLowerCase() == 'null') return false;
+      if (id.startsWith('slot-') || id.startsWith('ws-')) return false;
+      return true;
+    }
+
+    // 1. If override is given and valid
+    if (isValidAssignmentId(assignmentIdOverride)) {
+      targetAssignmentIds.add(assignmentIdOverride!);
+    }
+
+    // 2. If unbookmarking, collect assignment IDs of all currently bookmarked speakers in this session
+    if (isCurrentlyBookmarked && session != null && session.speakers.isNotEmpty) {
+      for (final sp in session.speakers) {
+        if (sp.isBookmarked && isValidAssignmentId(sp.assignmentId)) {
+          targetAssignmentIds.add(sp.assignmentId!);
+        }
+      }
+    }
+
+    // 3. If still empty, check session's direct assignmentId
+    if (targetAssignmentIds.isEmpty && session != null && isValidAssignmentId(session.assignmentId)) {
+      targetAssignmentIds.add(session.assignmentId!);
+    }
+
+    // 4. If still empty, check any speaker's assignmentId in session
+    if (targetAssignmentIds.isEmpty && session != null && session.speakers.isNotEmpty) {
+      for (final sp in session.speakers) {
+        if (isValidAssignmentId(sp.assignmentId)) {
+          targetAssignmentIds.add(sp.assignmentId!);
+          break; // Take the first available speaker assignment
+        }
+      }
+    }
+
+    // 5. If still empty, search across all _sessions and _mySessions for matching title or topicId
+    if (targetAssignmentIds.isEmpty) {
+      final allList = [..._sessions, ..._mySessions];
+      for (final s in allList) {
+        final matches = (sessionId > 0 && s.id == sessionId) ||
+            (topicIdOverride != null && topicIdOverride.isNotEmpty && (s.topicId == topicIdOverride || s.speakers.any((sp) => sp.topicId == topicIdOverride))) ||
+            (titleOverride != null && titleOverride.isNotEmpty && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase());
+        if (matches) {
+          if (isCurrentlyBookmarked && s.speakers.isNotEmpty) {
+            for (final sp in s.speakers) {
+              if (sp.isBookmarked && isValidAssignmentId(sp.assignmentId)) {
+                targetAssignmentIds.add(sp.assignmentId!);
+              }
+            }
+          }
+          if (targetAssignmentIds.isEmpty && isValidAssignmentId(s.assignmentId)) {
+            targetAssignmentIds.add(s.assignmentId!);
+          }
+          if (targetAssignmentIds.isEmpty && s.speakers.isNotEmpty) {
+            for (final sp in s.speakers) {
+              if (isValidAssignmentId(sp.assignmentId)) {
+                targetAssignmentIds.add(sp.assignmentId!);
+                break;
+              }
+            }
+          }
+          if (targetAssignmentIds.isNotEmpty) break;
+        }
+      }
+    }
+
+    // 6. Last resort fallback to sessionId if positive integer
+    if (targetAssignmentIds.isEmpty && sessionId > 0) {
+      targetAssignmentIds.add(sessionId.toString());
+    }
+
+    if (targetAssignmentIds.isEmpty) {
       return 'Invalid session assignment ID';
     }
 
-    final isCurrentlyBookmarked = session?.isBookmarked ?? true;
-
+    // Only check for conflicts when bookmarking, NEVER when unbookmarking
     if (!isCurrentlyBookmarked && session != null) {
       final allSessionsToCheck = [..._sessions, ..._mySessions];
       for (final other in allSessionsToCheck) {
-        if (other.id != session.id && other.isBookmarked && _isTimeOverlap(session, other)) {
+        final bool isSelf = other.id == session.id ||
+            (session.assignmentId != null && other.assignmentId == session.assignmentId) ||
+            (session.topicId != null && session.topicId!.isNotEmpty && other.topicId == session.topicId) ||
+            (other.title.trim().toLowerCase() == session.title.trim().toLowerCase());
+        if (isSelf) continue;
+
+        if (other.isBookmarked && _isTimeOverlap(session, other)) {
           return 'This session conflicts with another bookmarked session ("${other.title}") scheduled at the same time!';
         }
       }
     }
 
     try {
-      final response = isCurrentlyBookmarked
-          ? await ApiService.unbookmarkSession(assignmentId: assignmentId, accessToken: accessToken)
-          : await ApiService.bookmarkSession(assignmentId: assignmentId, accessToken: accessToken);
+      String? lastErrorMessage;
+      bool anySuccess = false;
 
-      final dynamic data = _safeJsonDecode(response.body);
-      if (response.statusCode == 200) {
-        if (data is Map && data['status'] == true) {
-          if (session != null) {
-            session.isBookmarked = !isCurrentlyBookmarked;
-          }
-          for (final s in _sessions) {
-            if (s.id == sessionId || (assignmentId.isNotEmpty && s.assignmentId == assignmentId)) {
-              s.isBookmarked = !isCurrentlyBookmarked;
-            }
-          }
-          for (final s in _mySessions) {
-            if (s.id == sessionId || (assignmentId.isNotEmpty && s.assignmentId == assignmentId)) {
-              s.isBookmarked = !isCurrentlyBookmarked;
-            }
-          }
-          if (isCurrentlyBookmarked) {
-            fetchConfirmedSessions(accessToken, forceRefresh: true);
-          }
-          notifyListeners();
-          return null; // Success
+      for (final aid in targetAssignmentIds) {
+        final response = isCurrentlyBookmarked
+            ? await ApiService.unbookmarkSession(assignmentId: aid, accessToken: accessToken)
+            : await ApiService.bookmarkSession(assignmentId: aid, accessToken: accessToken);
+
+        final dynamic data = _safeJsonDecode(response.body);
+        if (response.statusCode == 200 && data is Map && data['status'] == true) {
+          anySuccess = true;
         } else if (data is Map && data['message'] != null) {
-          return data['message'].toString();
-        } else {
-          return 'Failed to update bookmark status';
+          lastErrorMessage = data['message'].toString();
         }
-      } else {
-        if (data is Map && data['message'] != null && data['message'].toString().trim().isNotEmpty) {
-          return data['message'].toString();
-        }
-        return 'Server error: ${response.statusCode}';
       }
+
+      if (anySuccess || targetAssignmentIds.isNotEmpty) {
+        // Update local memory state
+        if (session != null) {
+          session.isBookmarked = !isCurrentlyBookmarked;
+        }
+        for (final s in _sessions) {
+          if (s.id == sessionId ||
+              targetAssignmentIds.contains(s.assignmentId) ||
+              (s.slotId != null && s.slotId == sessionId.toString()) ||
+              (titleOverride != null && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase())) {
+            s.isBookmarked = !isCurrentlyBookmarked;
+          }
+        }
+        for (final s in _mySessions) {
+          if (s.id == sessionId ||
+              targetAssignmentIds.contains(s.assignmentId) ||
+              (s.slotId != null && s.slotId == sessionId.toString()) ||
+              (titleOverride != null && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase())) {
+            s.isBookmarked = !isCurrentlyBookmarked;
+          }
+        }
+
+        if (isCurrentlyBookmarked) {
+          fetchConfirmedSessions(accessToken, forceRefresh: true);
+        }
+        notifyListeners();
+
+        if (anySuccess) {
+          return null; // Success
+        }
+      }
+
+      if (lastErrorMessage != null && lastErrorMessage.isNotEmpty) {
+        return lastErrorMessage;
+      }
+      return 'Failed to update bookmark status';
     } catch (e, stack) {
       CustomLogger.logError('Bookmark API failure', e, stack);
       return 'Failed to toggle bookmark. Please check your internet connection.';
@@ -937,8 +1106,6 @@ class SessionsProvider extends ChangeNotifier {
   }
 
   SessionItem _mapJsonToSession(Map<String, dynamic> json, int index) {
-    final abstractId = json['abstract_id']?.toString() ?? json['topic_id']?.toString() ?? json['assignment_id']?.toString() ?? '';
-    final id = int.tryParse(abstractId) ?? index;
     final title = json['abstract_title']?.toString() ?? json['title']?.toString() ?? 'Session';
     final speakerName = json['speaker_name']?.toString() ?? '';
     final rawDesignation = json['designation']?.toString().trim() ?? '';
@@ -1036,21 +1203,87 @@ class SessionsProvider extends ChangeNotifier {
       }
     }
 
+    final List<SessionSpeakerItem> parsedSpeakers = [];
+    if (json['sessions'] is List && (json['sessions'] as List).isNotEmpty) {
+      for (final s in (json['sessions'] as List)) {
+        if (s is Map<String, dynamic>) {
+          parsedSpeakers.add(SessionSpeakerItem.fromJson(s));
+        } else if (s is Map) {
+          parsedSpeakers.add(SessionSpeakerItem.fromJson(Map<String, dynamic>.from(s)));
+        }
+      }
+    }
+
+    String effectiveSpeakerName = speakerName;
+    if (effectiveSpeakerName.isEmpty && parsedSpeakers.isNotEmpty) {
+      effectiveSpeakerName = parsedSpeakers.map((s) => s.name).where((n) => n.isNotEmpty).toSet().join(', ');
+    }
+
+    final bool effectiveIsBookmarked = isBookmarked || parsedSpeakers.any((sp) => sp.isBookmarked);
+
+    String? effectiveAssignmentId = json['assignment_id']?.toString() ?? sessDetails?['assignment_id']?.toString();
+    if ((effectiveAssignmentId == null || effectiveAssignmentId.isEmpty || effectiveAssignmentId == '0') && parsedSpeakers.isNotEmpty) {
+      final bookmarkedSp = parsedSpeakers.where((sp) => sp.isBookmarked && sp.assignmentId != null && sp.assignmentId!.isNotEmpty && sp.assignmentId != '0');
+      if (bookmarkedSp.isNotEmpty) {
+        effectiveAssignmentId = bookmarkedSp.first.assignmentId;
+      } else {
+        final withAssignment = parsedSpeakers.where((sp) => sp.assignmentId != null && sp.assignmentId!.isNotEmpty && sp.assignmentId != '0');
+        if (withAssignment.isNotEmpty) {
+          effectiveAssignmentId = withAssignment.first.assignmentId;
+        }
+      }
+    }
+
+    String? effectiveTopicId = json['topic_id']?.toString() ?? sessDetails?['topic_id']?.toString();
+    if ((effectiveTopicId == null || effectiveTopicId.isEmpty) && parsedSpeakers.isNotEmpty) {
+      final bookmarkedSp = parsedSpeakers.where((sp) => sp.isBookmarked && sp.topicId != null && sp.topicId!.isNotEmpty);
+      if (bookmarkedSp.isNotEmpty) {
+        effectiveTopicId = bookmarkedSp.first.topicId;
+      } else {
+        final withTopic = parsedSpeakers.where((sp) => sp.topicId != null && sp.topicId!.isNotEmpty);
+        if (withTopic.isNotEmpty) {
+          effectiveTopicId = withTopic.first.topicId;
+        }
+      }
+    }
+
+    int? effectiveBookmarkId = bookmarkId;
+    if (effectiveBookmarkId == null && parsedSpeakers.isNotEmpty && json['sessions'] is List) {
+      for (final raw in (json['sessions'] as List)) {
+        if (raw is Map && (raw['is_bookmarked'] == true || raw['is_bookmarked'] == 1 || raw['is_bookmarked'] == 'true' || raw['is_bookmarked'] == '1')) {
+          final bmId = int.tryParse(raw['bookmark_id']?.toString() ?? '');
+          if (bmId != null) {
+            effectiveBookmarkId = bmId;
+            break;
+          }
+        }
+      }
+    }
+
+    final abstractId = json['abstract_id']?.toString() ??
+        json['topic_id']?.toString() ??
+        json['assignment_id']?.toString() ??
+        effectiveAssignmentId ??
+        effectiveTopicId ??
+        json['slot_id']?.toString() ??
+        '';
+    final id = int.tryParse(abstractId) ?? index;
+
     return SessionItem(
       id: id,
       title: title,
-      speakerName: speakerName,
+      speakerName: effectiveSpeakerName,
       speakerTitle: speakerTitle,
-      speakerInitials: _getInitials(speakerName),
+      speakerInitials: _getInitials(effectiveSpeakerName),
       speakerBg: _getColorForIndex(index),
       date: displayDate,
       time: timeStr,
       location: locationStr,
-      isBookmarked: isBookmarked,
+      isBookmarked: effectiveIsBookmarked,
       isAdded: false,
-      assignmentId: json['assignment_id']?.toString() ?? sessDetails?['assignment_id']?.toString(),
-      topicId: json['topic_id']?.toString(),
-      bookmarkId: bookmarkId,
+      assignmentId: effectiveAssignmentId,
+      topicId: effectiveTopicId,
+      bookmarkId: effectiveBookmarkId,
       participantsCount: participantsCount,
       description: json['abstract_description']?.toString() ?? json['background_introduction']?.toString() ?? json['description']?.toString() ?? '',
       thumbnail: json['thumbnail']?.toString(),
@@ -1067,6 +1300,8 @@ class SessionsProvider extends ChangeNotifier {
       scheduleDate: scheduleDateStr,
       speakerDesignation: speakerDesignation,
       speakerOrganisation: speakerOrganisation,
+      slotId: json['slot_id']?.toString() ?? sessDetails?['slot_id']?.toString(),
+      speakers: parsedSpeakers,
     );
   }
 }

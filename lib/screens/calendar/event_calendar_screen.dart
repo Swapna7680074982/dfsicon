@@ -7,6 +7,8 @@ import '../../services/calendar_data_service.dart';
 import '../../services/documents_service.dart';
 import '../../widgets/documents_modal_sheet.dart';
 import '../admin/admin_detail_sheets.dart';
+import '../session_details/session_details_screen.dart';
+import '../workshops/workshop_details_screen.dart';
 
 enum CalendarRole {
   admin,
@@ -76,8 +78,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     _selectedDayIndex = widget.initialDayIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final role = _effectiveRole;
-      // Admin and Exhibitor always show Full Agenda; Speaker/Delegate default to My Schedule
-      if (role == CalendarRole.admin || role == CalendarRole.exhibitor) {
+      if (role == CalendarRole.exhibitor) {
         _viewFilter = CalendarViewFilter.fullAgenda;
       } else {
         _viewFilter = CalendarViewFilter.mySchedule;
@@ -290,8 +291,9 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       // Find matching session from sessionsProv
       SessionItem? matched;
       for (final s in sessionsProv.sessions) {
-        if ((event.assignmentId != null && s.assignmentId == event.assignmentId) ||
-            (event.topicId != null && s.topicId == event.topicId) ||
+        if ((event.assignmentId != null && event.assignmentId!.isNotEmpty && s.assignmentId == event.assignmentId) ||
+            (event.topicId != null && event.topicId!.isNotEmpty && (s.topicId == event.topicId || s.speakers.any((sp) => sp.topicId == event.topicId))) ||
+            (s.slotId != null && s.slotId == event.id) ||
             s.title.trim().toLowerCase() == event.title.trim().toLowerCase()) {
           matched = s;
           break;
@@ -299,8 +301,9 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       }
       if (matched == null) {
         for (final s in sessionsProv.mySessions) {
-          if ((event.assignmentId != null && s.assignmentId == event.assignmentId) ||
-              (event.topicId != null && s.topicId == event.topicId) ||
+          if ((event.assignmentId != null && event.assignmentId!.isNotEmpty && s.assignmentId == event.assignmentId) ||
+              (event.topicId != null && event.topicId!.isNotEmpty && (s.topicId == event.topicId || s.speakers.any((sp) => sp.topicId == event.topicId))) ||
+              (s.slotId != null && s.slotId == event.id) ||
               s.title.trim().toLowerCase() == event.title.trim().toLowerCase()) {
             matched = s;
             break;
@@ -308,18 +311,41 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         }
       }
 
-      final String effectiveAssignmentId = (event.assignmentId != null && event.assignmentId!.isNotEmpty)
-          ? event.assignmentId!
-          : (matched?.assignmentId ?? event.id.replaceAll(RegExp(r'^[^\d]+'), ''));
+      String? effectiveAssignmentId;
+      if (event.assignmentId != null &&
+          event.assignmentId!.isNotEmpty &&
+          !event.assignmentId!.startsWith('slot-') &&
+          !event.assignmentId!.startsWith('ws-') &&
+          event.assignmentId != event.id) {
+        effectiveAssignmentId = event.assignmentId;
+      }
+      if (effectiveAssignmentId == null && matched != null) {
+        if (event.isBookmarked && matched.speakers.isNotEmpty) {
+          final bmSp = matched.speakers.where((sp) => sp.isBookmarked && sp.assignmentId != null && sp.assignmentId!.isNotEmpty);
+          if (bmSp.isNotEmpty) {
+            effectiveAssignmentId = bmSp.first.assignmentId;
+          }
+        }
+        if (effectiveAssignmentId == null && matched.assignmentId != null && matched.assignmentId!.isNotEmpty) {
+          effectiveAssignmentId = matched.assignmentId;
+        }
+        if (effectiveAssignmentId == null && matched.speakers.isNotEmpty) {
+          final spWithAssignment = matched.speakers.where((sp) => sp.assignmentId != null && sp.assignmentId!.isNotEmpty);
+          if (spWithAssignment.isNotEmpty) {
+            effectiveAssignmentId = spWithAssignment.first.assignmentId;
+          }
+        }
+      }
 
-      final int sessionId = matched?.id ?? int.tryParse(effectiveAssignmentId) ?? int.tryParse(event.id) ?? 0;
+      final int sessionId = matched?.id ?? int.tryParse(event.id) ?? 0;
 
       final error = await sessionsProv.toggleBookmark(
         sessionId,
         auth.accessToken,
-        assignmentIdOverride: effectiveAssignmentId.isNotEmpty ? effectiveAssignmentId : null,
+        assignmentIdOverride: effectiveAssignmentId,
         topicIdOverride: event.topicId,
         titleOverride: event.title,
+        isCurrentlyBookmarkedOverride: event.isBookmarked,
       );
 
       if (mounted) {
@@ -330,7 +356,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             if (!event.isBookmarked && _viewFilter == CalendarViewFilter.mySchedule) {
               _allEvents.removeWhere((e) =>
                   e.id == event.id ||
-                  (effectiveAssignmentId.isNotEmpty && e.assignmentId == effectiveAssignmentId) ||
+                  (effectiveAssignmentId != null && effectiveAssignmentId.isNotEmpty && e.assignmentId == effectiveAssignmentId) ||
                   (event.topicId != null && e.topicId == event.topicId));
             }
           }
@@ -338,13 +364,37 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              error ?? (event.isBookmarked ? 'Slot added to your schedule' : 'Slot removed from your schedule'),
+            content: Row(
+              children: [
+                Icon(
+                  error != null
+                      ? Icons.error_outline_rounded
+                      : (event.isBookmarked ? Icons.bookmark_added_rounded : Icons.bookmark_remove_rounded),
+                  color: error != null ? const Color(0xFFDC2626) : const Color(0xFF047857),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    error ?? (event.isBookmarked ? 'Slot added to your schedule' : 'Slot removed from your schedule'),
+                    style: TextStyle(
+                      color: error != null ? const Color(0xFFB91C1C) : const Color(0xFF065F46),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            backgroundColor: error != null
-                ? const Color(0xFFDC2626)
-                : (event.isBookmarked ? const Color(0xFF059669) : const Color(0xFF475569)),
-            duration: const Duration(seconds: 2),
+            backgroundColor: error != null ? const Color(0xFFFEF2F2) : const Color(0xFFECFDF5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: error != null ? const Color(0xFFFECACA) : const Color(0xFFA7F3D0),
+                width: 1.2,
+              ),
+            ),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -410,12 +460,15 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     String titleText;
     String subtitleText;
 
-    if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) {
+    if (currentRole == CalendarRole.exhibitor) {
       titleText = 'Master Schedule & Slots';
       subtitleText = 'All Conference Slots, Tracks & Workshops';
     } else if (currentRole == CalendarRole.speaker) {
       titleText = 'My Schedule';
       subtitleText = 'Presentations, Bookmarks & Workshops';
+    } else if (currentRole == CalendarRole.admin) {
+      titleText = 'Event Schedule & Agenda';
+      subtitleText = 'Master Slots, Bookmarks & Agenda';
     } else {
       titleText = 'Slots & Event Agenda';
       subtitleText = 'Day-Wise Slots, Sessions & Workshops';
@@ -492,8 +545,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                   // Search Bar
                   _buildSearchBar(currentRole),
 
-                  // View Tabs — Admin & Exhibitor: category pills only | Speaker/Delegate: My Schedule / Full Agenda
-                  if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) ...[
+                  // View Tabs — Exhibitor: category pills only | Admin, Speaker, Delegate: My Schedule / Full Agenda
+                  if (currentRole == CalendarRole.exhibitor) ...[
                     const SizedBox(height: 10),
                     _buildCategoryPills(),
                   ] else ...[
@@ -575,8 +628,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         if (!matches) continue;
       }
 
-      // ── ADMIN & EXHIBITOR: always show everything, filtered by category pill ──
-      if (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor) {
+      // ── EXHIBITOR: always show everything, filtered by category pill ──
+      if (currentRole == CalendarRole.exhibitor) {
         if (_adminCategory == AdminCalendarCategory.all) {
           rawItems.add(event);
         } else if (_adminCategory == AdminCalendarCategory.sessions) {
@@ -595,74 +648,38 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         continue;
       }
 
-      // ── SPEAKER ──────────────────────────────────────────────────
-      if (currentRole == CalendarRole.speaker) {
-        if (_viewFilter == CalendarViewFilter.mySchedule) {
-          // My Schedule = own presentations + bookmarked sessions + registered workshops
-          final isMyPresentation = event.type == CalendarItemType.myPresentation;
-          final isMyWorkshop = event.type == CalendarItemType.myWorkshop ||
-              (event.type == CalendarItemType.workshop && event.isRegistered);
-          final isBookmarkedSession = event.isBookmarked &&
-              (event.type == CalendarItemType.session ||
-               event.type == CalendarItemType.myPresentation);
+      // ── ADMIN, SPEAKER, DELEGATE: Unified flow with My Schedule & Full Agenda ──
+      if (_viewFilter == CalendarViewFilter.mySchedule) {
+        // My Schedule = own presentations + bookmarked sessions + registered workshops
+        final isMyPresentation = event.type == CalendarItemType.myPresentation;
+        final isMyWorkshop = event.type == CalendarItemType.myWorkshop ||
+            (event.type == CalendarItemType.workshop && event.isRegistered);
+        final isBookmarkedSession = event.isBookmarked &&
+            (event.type == CalendarItemType.session ||
+             event.type == CalendarItemType.myPresentation);
 
-          if (isMyPresentation || isMyWorkshop || isBookmarkedSession) {
-            rawItems.add(event);
-          }
-        } else {
-          // Full Agenda = everything (same as admin), filtered by category
-          if (_adminCategory == AdminCalendarCategory.all) {
-            rawItems.add(event);
-          } else if (_adminCategory == AdminCalendarCategory.sessions) {
-            if (event.type == CalendarItemType.session ||
-                event.type == CalendarItemType.myPresentation) {
-              rawItems.add(event);
-            }
-          } else if (_adminCategory == AdminCalendarCategory.workshops) {
-            if (event.type == CalendarItemType.workshop ||
-                event.type == CalendarItemType.myWorkshop) {
-              rawItems.add(event);
-            }
-          } else if (_adminCategory == AdminCalendarCategory.freeSlots) {
-            if (event.type == CalendarItemType.freeSlot) rawItems.add(event);
-          }
+        if (isMyPresentation || isMyWorkshop || isBookmarkedSession) {
+          rawItems.add(event);
         }
-        continue;
-      }
-
-      // ── DELEGATE ─────────────────────────────────────────────────
-      if (currentRole == CalendarRole.delegate) {
-        if (_viewFilter == CalendarViewFilter.mySchedule) {
-          // My Schedule = bookmarked sessions + registered workshops
-          final isBookmarked = event.isBookmarked &&
-              (event.type == CalendarItemType.session ||
-               event.type == CalendarItemType.myPresentation);
-          final isMyWorkshop = event.type == CalendarItemType.myWorkshop ||
-              (event.type == CalendarItemType.workshop && event.isRegistered);
-
-          if (isBookmarked || isMyWorkshop) {
+      } else {
+        // Full Agenda = everything, filtered by category
+        if (_adminCategory == AdminCalendarCategory.all) {
+          rawItems.add(event);
+        } else if (_adminCategory == AdminCalendarCategory.sessions) {
+          if (event.type == CalendarItemType.session ||
+              event.type == CalendarItemType.myPresentation) {
             rawItems.add(event);
           }
-        } else {
-          // Full Agenda = everything, filtered by category
-          if (_adminCategory == AdminCalendarCategory.all) {
+        } else if (_adminCategory == AdminCalendarCategory.workshops) {
+          if (event.type == CalendarItemType.workshop ||
+              event.type == CalendarItemType.myWorkshop) {
             rawItems.add(event);
-          } else if (_adminCategory == AdminCalendarCategory.sessions) {
-            if (event.type == CalendarItemType.session ||
-                event.type == CalendarItemType.myPresentation) {
-              rawItems.add(event);
-            }
-          } else if (_adminCategory == AdminCalendarCategory.workshops) {
-            if (event.type == CalendarItemType.workshop ||
-                event.type == CalendarItemType.myWorkshop) {
-              rawItems.add(event);
-            }
-          } else if (_adminCategory == AdminCalendarCategory.freeSlots) {
-            if (event.type == CalendarItemType.freeSlot) rawItems.add(event);
           }
+        } else if (_adminCategory == AdminCalendarCategory.freeSlots) {
+          if (event.type == CalendarItemType.freeSlot) rawItems.add(event);
         }
-        continue;
       }
+      continue;
     }
 
     // Sort chronologically by start time
@@ -672,10 +689,10 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       return aStart.compareTo(bStart);
     });
 
-    // Free Time Gap injection (only for My Schedule in non-admin roles)
+    // Free Time Gap injection (only for My Schedule in non-exhibitor roles)
     if (_viewFilter == CalendarViewFilter.mySchedule &&
         rawItems.isNotEmpty &&
-        currentRole != CalendarRole.admin) {
+        currentRole != CalendarRole.exhibitor) {
       final List<dynamic> enrichedList = [];
       for (int i = 0; i < rawItems.length; i++) {
         final current = rawItems[i];
@@ -749,10 +766,15 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             label: 'My Schedule',
             icon: Icons.schedule_rounded,
             isSelected: _viewFilter == CalendarViewFilter.mySchedule,
-            onTap: () => setState(() {
-              _viewFilter = CalendarViewFilter.mySchedule;
-              _adminCategory = AdminCalendarCategory.all;
-            }),
+            onTap: () {
+              if (_viewFilter != CalendarViewFilter.mySchedule) {
+                setState(() {
+                  _viewFilter = CalendarViewFilter.mySchedule;
+                  _adminCategory = AdminCalendarCategory.all;
+                });
+                _loadEvents(forceRefresh: true);
+              }
+            },
           ),
         ),
         const SizedBox(width: 8),
@@ -761,10 +783,15 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             label: 'Full Agenda',
             icon: Icons.view_timeline_outlined,
             isSelected: _viewFilter == CalendarViewFilter.fullAgenda,
-            onTap: () => setState(() {
-              _viewFilter = CalendarViewFilter.fullAgenda;
-              _adminCategory = AdminCalendarCategory.all;
-            }),
+            onTap: () {
+              if (_viewFilter != CalendarViewFilter.fullAgenda) {
+                setState(() {
+                  _viewFilter = CalendarViewFilter.fullAgenda;
+                  _adminCategory = AdminCalendarCategory.all;
+                });
+                _loadEvents(forceRefresh: true);
+              }
+            },
           ),
         ),
       ],
@@ -1032,7 +1059,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   }
 
   Widget _buildScheduleHeaderBar(DateTime activeDate, List<dynamic> items, CalendarRole currentRole) {
-    final viewLabel = (currentRole == CalendarRole.admin || currentRole == CalendarRole.exhibitor)
+    final viewLabel = (currentRole == CalendarRole.exhibitor)
         ? 'MASTER AGENDA'
         : (_viewFilter == CalendarViewFilter.mySchedule ? 'MY SCHEDULE' : 'FULL AGENDA');
 
@@ -1220,6 +1247,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     IconData badgeIcon;
     String badgeText;
 
+    final hideBookmarks = currentRole == CalendarRole.exhibitor;
+
     if (isCancelled) {
       borderColor = const Color(0xFFFECACA);
       badgeColor = const Color(0xFFDC2626);
@@ -1259,7 +1288,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       badgeIcon = Icons.event_available_rounded;
       badgeText = 'ALLOCATED';
     } else {
-      borderColor = (!isAdminRole && event.isBookmarked) ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0);
+      borderColor = (!hideBookmarks && event.isBookmarked) ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0);
       badgeColor = const Color(0xFF4338CA);
       badgeBg = const Color(0xFFEEF2FF);
       badgeIcon = Icons.menu_book_rounded;
@@ -1323,11 +1352,10 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                     ),
                   ),
 
-                  // Bookmark button — ONLY in My Schedule for sessions (so they can unbookmark/remove from My Schedule)
-                  // In Full Agenda, do NOT show the bookmark button
-                  if (!isAdminRole &&
-                      _viewFilter == CalendarViewFilter.mySchedule &&
+                  // Bookmark button based on role (same as Sessions screen: available for Delegate & Speaker)
+                  if (!hideBookmarks &&
                       !isMyPresentation &&
+                      !isMyWorkshop &&
                       !isWorkshop &&
                       !isFreeSlot &&
                       !isCancelled)
@@ -1366,7 +1394,9 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
               ],
 
               // Speaker Row
-              if (event.speakerName != null && event.speakerName!.isNotEmpty && event.speakerName != 'NA') ...[
+              if ((event.speakerName != null && event.speakerName!.isNotEmpty && event.speakerName != 'NA') ||
+                  event.speakers.isNotEmpty ||
+                  event.speakerItems.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 _buildSpeakerRow(event),
               ],
@@ -1386,6 +1416,22 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         showAdminTopicDetailsModal(context, topicId: event.topicId!);
       } else {
         showAdminSlotDetailsModal(context, slotId: event.id);
+      }
+    } else {
+      if (isWorkshop) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WorkshopDetailsScreen(workshop: event.toWorkshopItem()),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SessionDetailsScreen(session: event.toSessionItem()),
+          ),
+        );
       }
     }
   }
@@ -1508,59 +1554,476 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   }
 
   Widget _buildSpeakerRow(CalendarEventItem event) {
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: event.speakerBg ?? const Color(0xFF1E3A8A), shape: BoxShape.circle),
-          clipBehavior: Clip.antiAlias,
-          alignment: Alignment.center,
-          child: _getSpeakerProfileImageUrl(event.speakerProfileImage) != null
-              ? Image.network(
-                  _getSpeakerProfileImageUrl(event.speakerProfileImage)!,
-                  fit: BoxFit.cover,
-                  width: 28,
-                  height: 28,
-                  errorBuilder: (c, o, s) => Text(
-                    _extractInitials(event.speakerName),
+    final List<String> speakerNamesList = [];
+    if (event.speakerItems.isNotEmpty) {
+      for (final sp in event.speakerItems) {
+        final n = sp.name.trim();
+        if (n.isNotEmpty && n != 'NA' && !speakerNamesList.contains(n)) {
+          speakerNamesList.add(n);
+        }
+      }
+    } else if (event.speakers.isNotEmpty) {
+      for (final s in event.speakers) {
+        final n = s.trim();
+        if (n.isNotEmpty && n != 'NA' && !speakerNamesList.contains(n)) {
+          speakerNamesList.add(n);
+        }
+      }
+    } else if (event.speakerName != null && event.speakerName!.isNotEmpty && event.speakerName != 'NA') {
+      final parts = event.speakerName!.split(RegExp(r',|\band\b'));
+      for (final p in parts) {
+        final n = p.trim();
+        if (n.isNotEmpty && n != 'NA' && !speakerNamesList.contains(n)) {
+          speakerNamesList.add(n);
+        }
+      }
+    }
+
+    if (speakerNamesList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isMultiple = speakerNamesList.length > 1;
+
+    if (isMultiple) {
+      final List<Color> avatarColors = [
+        const Color(0xFF6366F1),
+        const Color(0xFF0EA5E9),
+        const Color(0xFF10B981),
+        const Color(0xFFF59E0B),
+        const Color(0xFF8B5CF6),
+        const Color(0xFFEC4899),
+        const Color(0xFF14B8A6),
+      ];
+
+      final displayAvatars = speakerNamesList.take(3).toList();
+      final remainingCount = speakerNamesList.length - 3;
+      final stackWidth = (displayAvatars.length - 1) * 16.0 + 26.0 + (remainingCount > 0 ? 16.0 : 0.0);
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showSpeakersModal(event),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SizedBox(
+                  width: stackWidth,
+                  height: 26,
+                  child: Stack(
+                    children: [
+                      for (int i = 0; i < displayAvatars.length; i++)
+                        Positioned(
+                          left: i * 16.0,
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: avatarColors[i % avatarColors.length],
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _extractInitials(displayAvatars[i]),
+                              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      if (remainingCount > 0)
+                        Positioned(
+                          left: displayAvatars.length * 16.0,
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4F46E5),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '+$remainingCount',
+                              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.people_alt_rounded, size: 10, color: Color(0xFF4F46E5)),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${speakerNamesList.length} Speakers',
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4F46E5),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.keyboard_arrow_down_rounded, size: 12, color: Color(0xFF4F46E5)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              speakerNamesList.join(', '),
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+                height: 1.25,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final singleSpeakerName = speakerNamesList.first;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showSpeakersModal(event),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(color: event.speakerBg ?? const Color(0xFF1E3A8A), shape: BoxShape.circle),
+            clipBehavior: Clip.antiAlias,
+            alignment: Alignment.center,
+            child: _getSpeakerProfileImageUrl(event.speakerProfileImage) != null
+                ? Image.network(
+                    _getSpeakerProfileImageUrl(event.speakerProfileImage)!,
+                    fit: BoxFit.cover,
+                    width: 28,
+                    height: 28,
+                    errorBuilder: (c, o, s) => Text(
+                      _extractInitials(singleSpeakerName),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  )
+                : Text(
+                    _extractInitials(singleSpeakerName),
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                )
-              : Text(
-                  _extractInitials(event.speakerName),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  singleSpeakerName,
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
+                if (event.speakerDesignation != null && event.speakerDesignation!.isNotEmpty)
+                  Text(
+                    event.speakerDesignation!,
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                else if (event.category != null && event.category!.isNotEmpty)
+                  Text(
+                    event.category!,
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSpeakersModal(CalendarEventItem event) {
+    final List<SessionSpeakerItem> displaySpeakers = [];
+    if (event.speakerItems.isNotEmpty) {
+      displaySpeakers.addAll(event.speakerItems);
+    } else if (event.speakers.isNotEmpty) {
+      for (int i = 0; i < event.speakers.length; i++) {
+        final s = event.speakers[i];
+        displaySpeakers.add(
+          SessionSpeakerItem(
+            speakerId: 'sp_$i',
+            name: s,
+            designation: event.speakerDesignation ?? '',
+            organisation: event.category ?? '',
+            profileImage: event.speakerProfileImage,
+          ),
+        );
+      }
+    } else if (event.speakerName != null && event.speakerName!.isNotEmpty && event.speakerName != 'NA') {
+      final parts = event.speakerName!.split(RegExp(r',|\band\b'));
+      for (int i = 0; i < parts.length; i++) {
+        final n = parts[i].trim();
+        if (n.isNotEmpty && n != 'NA') {
+          displaySpeakers.add(
+            SessionSpeakerItem(
+              speakerId: 'sp_$i',
+              name: n,
+              designation: event.speakerDesignation ?? '',
+              organisation: event.category ?? '',
+              profileImage: event.speakerProfileImage,
+            ),
+          );
+        }
+      }
+    }
+
+    if (displaySpeakers.isEmpty) return;
+
+    final List<Color> avatarColors = [
+      const Color(0xFF6366F1),
+      const Color(0xFF0EA5E9),
+      const Color(0xFF10B981),
+      const Color(0xFFF59E0B),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFEC4899),
+      const Color(0xFF14B8A6),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                event.speakerName!,
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (event.speakerDesignation != null && event.speakerDesignation!.isNotEmpty)
-                Text(
-                  event.speakerDesignation!,
-                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              else if (event.category != null && event.category!.isNotEmpty)
-                Text(
-                  event.category!,
-                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
+              ),
+              const SizedBox(height: 12),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFC7D2FE), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.people_alt_rounded, size: 14, color: Color(0xFF4F46E5)),
+                              const SizedBox(width: 5),
+                              Text(
+                                displaySpeakers.length > 1
+                                    ? 'SESSION SPEAKERS (${displaySpeakers.length})'
+                                    : 'SESSION SPEAKER',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF4F46E5),
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 22),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 16, color: Color(0xFFF1F5F9)),
+
+              // Body - Speakers List Only
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Speaker Cards
+                      ...List.generate(displaySpeakers.length, (idx) {
+                        final sp = displaySpeakers[idx];
+                        final bgCol = avatarColors[idx % avatarColors.length];
+                        final imgUrl = _getSpeakerProfileImageUrl(sp.profileImage);
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(2),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: bgCol,
+                                  shape: BoxShape.circle,
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                alignment: Alignment.center,
+                                child: imgUrl != null
+                                    ? Image.network(
+                                        imgUrl,
+                                        fit: BoxFit.cover,
+                                        width: 44,
+                                        height: 44,
+                                        errorBuilder: (c, o, s) => Text(
+                                          _extractInitials(sp.name),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
+                                        _extractInitials(sp.name),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      sp.name.toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    if (sp.designation.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        sp.designation.toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                    if (sp.organisation.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        sp.organisation.toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                    if (sp.title != null &&
+                                        sp.title!.trim().isNotEmpty &&
+                                        sp.title!.trim().toLowerCase() != event.title.trim().toLowerCase() &&
+                                        sp.title!.trim().toLowerCase() != 'null') ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          sp.title!,
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontStyle: FontStyle.italic,
+                                            color: Color(0xFF475569),
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

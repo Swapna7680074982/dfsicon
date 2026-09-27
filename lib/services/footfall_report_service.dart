@@ -268,7 +268,7 @@ class FootfallReportService {
                           ),
                           const SizedBox(width: 10),
                           const Text(
-                            'Footfall Reports (Excel)',
+                            'Download Visits Report (Excel)',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
@@ -381,7 +381,7 @@ class FootfallReportService {
                             )
                           : const Icon(Icons.file_download_rounded, size: 20),
                       label: Text(
-                        isProcessing ? 'Downloading...' : 'Download Report (.xlsx)',
+                        isProcessing ? 'Downloading...' : 'Download Visits Report (.xlsx)',
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(

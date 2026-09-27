@@ -1297,6 +1297,55 @@ class AdminFootfallParticipant {
   }
 }
 
+class AdminSlotSessionItem {
+  final String topicId;
+  final String topicTitle;
+  final String speakerName;
+  final String? speakerDesignation;
+  final String? speakerOrganisation;
+  final String? speakerProfileImage;
+  final String? assignmentId;
+
+  const AdminSlotSessionItem({
+    this.topicId = '',
+    this.topicTitle = '',
+    this.speakerName = '',
+    this.speakerDesignation,
+    this.speakerOrganisation,
+    this.speakerProfileImage,
+    this.assignmentId,
+  });
+
+  factory AdminSlotSessionItem.fromJson(Map<String, dynamic> json) {
+    String? rawSpeakerName = json['speaker_name']?.toString() ??
+        json['full_name']?.toString() ??
+        json['speaker_full_name']?.toString() ??
+        json['candidate_name']?.toString();
+    if (json['speaker'] is Map) {
+      final s = json['speaker'] as Map<String, dynamic>;
+      rawSpeakerName ??= s['full_name']?.toString() ?? s['speaker_name']?.toString() ?? s['name']?.toString();
+    }
+
+    String? rawTopicTitle = json['topic_title']?.toString() ??
+        json['title']?.toString() ??
+        json['topic_name']?.toString();
+    if (json['topic'] is Map) {
+      final t = json['topic'] as Map<String, dynamic>;
+      rawTopicTitle ??= t['title']?.toString() ?? t['topic_title']?.toString();
+    }
+
+    return AdminSlotSessionItem(
+      topicId: (json['topic_id'] ?? json['id'] ?? (json['topic'] is Map ? json['topic']['topic_id'] : '') ?? '').toString(),
+      topicTitle: (rawTopicTitle ?? '').trim(),
+      speakerName: (rawSpeakerName ?? '').trim(),
+      speakerDesignation: json['designation']?.toString().trim(),
+      speakerOrganisation: (json['organisation'] ?? json['hospital_clinic_name'])?.toString().trim(),
+      speakerProfileImage: (json['speaker_profile_image'] ?? json['profile_image'])?.toString(),
+      assignmentId: (json['assignment_id'] ?? json['session_assignment_id'])?.toString(),
+    );
+  }
+}
+
 class AdminSlotItem {
   final String slotId;
   final String slotName;
@@ -1310,6 +1359,8 @@ class AdminSlotItem {
   final String? topicTitle;
   final String? speakerName;
   final String? assignmentId;
+  final List<AdminSlotSessionItem> sessions;
+  final List<String> speakerNames;
 
   bool get isCancelled => slotStatus.toUpperCase() == 'CANCELLED';
 
@@ -1326,6 +1377,8 @@ class AdminSlotItem {
     this.topicTitle,
     this.speakerName,
     this.assignmentId,
+    this.sessions = const [],
+    this.speakerNames = const [],
   });
 
   factory AdminSlotItem.fromJson(Map<String, dynamic> json) {
@@ -1348,25 +1401,32 @@ class AdminSlotItem {
       rawSpeakerName ??= s['full_name']?.toString() ?? s['speaker_name']?.toString() ?? s['name']?.toString();
     }
 
+    final List<AdminSlotSessionItem> parsedSessions = [];
+    final List<String> extractedSpeakerNames = [];
+
     // Check nested sessions list
     if (json['sessions'] is List && (json['sessions'] as List).isNotEmpty) {
-      final firstSess = (json['sessions'] as List).first;
-      if (firstSess is Map<String, dynamic>) {
-        if (firstSess['topic'] is Map) {
-          final t = firstSess['topic'] as Map<String, dynamic>;
-          rawTopicId ??= t['topic_id']?.toString() ?? t['id']?.toString();
-          rawTopicTitle ??= t['title']?.toString() ?? t['topic_title']?.toString();
-        } else {
-          rawTopicId ??= firstSess['topic_id']?.toString();
-          rawTopicTitle ??= firstSess['topic_title']?.toString() ?? firstSess['title']?.toString();
+      for (final s in (json['sessions'] as List)) {
+        if (s is Map<String, dynamic>) {
+          final item = AdminSlotSessionItem.fromJson(s);
+          parsedSessions.add(item);
+          if (item.speakerName.isNotEmpty && item.speakerName.toLowerCase() != 'null' && !extractedSpeakerNames.contains(item.speakerName)) {
+            extractedSpeakerNames.add(item.speakerName);
+          }
+        } else if (s is Map) {
+          final item = AdminSlotSessionItem.fromJson(Map<String, dynamic>.from(s));
+          parsedSessions.add(item);
+          if (item.speakerName.isNotEmpty && item.speakerName.toLowerCase() != 'null' && !extractedSpeakerNames.contains(item.speakerName)) {
+            extractedSpeakerNames.add(item.speakerName);
+          }
         }
+      }
 
-        if (firstSess['speaker'] is Map) {
-          final s = firstSess['speaker'] as Map<String, dynamic>;
-          rawSpeakerName ??= s['full_name']?.toString() ?? s['speaker_name']?.toString();
-        } else {
-          rawSpeakerName ??= firstSess['speaker_name']?.toString() ?? firstSess['full_name']?.toString();
-        }
+      if (parsedSessions.isNotEmpty) {
+        final firstSess = parsedSessions.first;
+        rawTopicId ??= firstSess.topicId.isNotEmpty ? firstSess.topicId : null;
+        rawTopicTitle ??= firstSess.topicTitle.isNotEmpty ? firstSess.topicTitle : null;
+        rawAssignmentId ??= firstSess.assignmentId;
       }
     } else if (json['session'] is Map) {
       final sMap = json['session'] as Map<String, dynamic>;
@@ -1384,6 +1444,48 @@ class AdminSlotItem {
         rawSpeakerName ??= sp['full_name']?.toString() ?? sp['speaker_name']?.toString();
       } else {
         rawSpeakerName ??= sMap['speaker_name']?.toString() ?? sMap['full_name']?.toString();
+      }
+
+      if (rawSpeakerName != null && rawSpeakerName.isNotEmpty && !extractedSpeakerNames.contains(rawSpeakerName)) {
+        extractedSpeakerNames.add(rawSpeakerName);
+      }
+    }
+
+    if (extractedSpeakerNames.isNotEmpty) {
+      rawSpeakerName = extractedSpeakerNames.join(', ');
+    } else if (rawSpeakerName != null && rawSpeakerName.isNotEmpty && rawSpeakerName != 'null') {
+      extractedSpeakerNames.add(rawSpeakerName);
+    } else {
+      final slotLabelStr = (json['slot_label'] ?? '').toString();
+      if (slotLabelStr.isNotEmpty) {
+        final labelRegex = RegExp(r'(?:Speakers?|Chairpersons?|Faculty)\s*[-:]\s*([^|]+)', caseSensitive: false);
+        final m = labelRegex.firstMatch(slotLabelStr);
+        if (m != null) {
+          final parts = m.group(1)!.split(RegExp(r'[,;]'));
+          for (final p in parts) {
+            final t = p.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
+            if (t.isNotEmpty && !extractedSpeakerNames.contains(t)) {
+              extractedSpeakerNames.add(t);
+            }
+          }
+        } else if (slotLabelStr.contains('|')) {
+          final parts = slotLabelStr.split('|');
+          if (parts.length > 1) {
+            final lastPart = parts.last.trim();
+            if (lastPart.isNotEmpty && !lastPart.toLowerCase().startsWith('slot')) {
+              final subParts = lastPart.split(RegExp(r'[,;]'));
+              for (final p in subParts) {
+                final t = p.replaceAll(RegExp(r'\([^)]*\)'), '').trim();
+                if (t.isNotEmpty && !extractedSpeakerNames.contains(t)) {
+                  extractedSpeakerNames.add(t);
+                }
+              }
+            }
+          }
+        }
+        if (extractedSpeakerNames.isNotEmpty) {
+          rawSpeakerName = extractedSpeakerNames.join(', ');
+        }
       }
     }
 
@@ -1436,6 +1538,8 @@ class AdminSlotItem {
       topicTitle: isCancelled ? null : rawTopicTitle,
       speakerName: isCancelled ? null : rawSpeakerName,
       assignmentId: rawAssignmentId,
+      sessions: parsedSessions,
+      speakerNames: extractedSpeakerNames,
     );
   }
 }

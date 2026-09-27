@@ -820,7 +820,14 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sessionsProvider = Provider.of<SessionsProvider>(context, listen: false);
-    final errorMessage = await sessionsProvider.toggleBookmark(session.id, auth.accessToken);
+    final errorMessage = await sessionsProvider.toggleBookmark(
+      session.id,
+      auth.accessToken,
+      assignmentIdOverride: session.assignmentId,
+      topicIdOverride: session.topicId,
+      titleOverride: session.title,
+      isCurrentlyBookmarkedOverride: session.isBookmarked,
+    );
 
     if (mounted) {
       setState(() {
@@ -873,8 +880,6 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final allSessions = sessionsProvider.sessions;
     final mySessions = sessionsProvider.mySessions;
@@ -908,7 +913,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           currentList = otherSessions;
           break;
         case SpeakerSessionFilter.bookmarked:
-          currentList = isAdmin ? allSessions : bookmarkedSessions;
+          currentList = bookmarkedSessions;
           break;
       }
     }
@@ -1202,20 +1207,18 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                               });
                             },
                           ),
-                          if (!isAdmin) ...[
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                              label: 'BOOKMARKED',
-                              isSelected: _selectedFilter == SpeakerSessionFilter.bookmarked,
-                              count: bookmarkedSessions.length,
-                              icon: Icons.bookmark,
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = SpeakerSessionFilter.bookmarked;
-                                });
-                              },
-                            ),
-                          ],
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            label: 'BOOKMARKED',
+                            isSelected: _selectedFilter == SpeakerSessionFilter.bookmarked,
+                            count: bookmarkedSessions.length,
+                            icon: Icons.bookmark,
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = SpeakerSessionFilter.bookmarked;
+                              });
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -1917,8 +1920,6 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   }
 
   Widget _buildCalendarSessionCard(SessionItem session) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1934,7 +1935,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: (!isAdmin && session.isBookmarked) ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
+            color: session.isBookmarked ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
             width: 1.2,
           ),
           boxShadow: [
@@ -1963,133 +1964,36 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     ),
                   ),
                 ),
-                if (!isAdmin) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => _handleToggleBookmark(session),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: _loadingBookmarks.contains(session.id)
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primary,
-                              ),
-                            )
-                          : Icon(
-                              session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                              color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
-                              size: 18,
-                            ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _handleToggleBookmark(session),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(6),
                     ),
+                    child: _loadingBookmarks.contains(session.id)
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Icon(
+                            session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                            color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
+                            size: 18,
+                          ),
                   ),
-                ],
+                ),
               ],
             ),
 
-            // Speaker Row (if exists)
-            if (session.speakerName.isNotEmpty && session.speakerName != 'NA') ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: session.speakerBg,
-                      shape: BoxShape.circle,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    alignment: Alignment.center,
-                    child: _getSpeakerProfileImageUrl(session.speakerProfileImage) != null
-                        ? Image.network(
-                            _getSpeakerProfileImageUrl(session.speakerProfileImage)!,
-                            fit: BoxFit.cover,
-                            width: 28,
-                            height: 28,
-                            errorBuilder: (c, o, s) => Text(
-                              session.speakerInitials.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            session.speakerInitials.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          session.speakerName.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            session.speakerDesignation!.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
-                          const SizedBox(height: 1.5),
-                          Text(
-                            session.speakerOrganisation!.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        if ((session.speakerDesignation == null || session.speakerDesignation!.isEmpty) &&
-                            (session.speakerOrganisation == null || session.speakerOrganisation!.isEmpty) &&
-                            session.speakerTitle.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            session.speakerTitle.toUpperCase(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            // Speaker Row
+            _buildSpeakerSection(session),
 
             // Location
             // if (session.location.isNotEmpty) ...[
@@ -2167,6 +2071,11 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
               description: s.description,
               topicId: s.topicId,
               assignmentId: s.assignmentId,
+              speakers: s.speakers,
+              speakerName: s.speakerName,
+              speakerDesignation: s.speakerDesignation,
+              speakerOrganisation: s.speakerOrganisation,
+              speakerProfileImage: s.speakerProfileImage,
             ),
           ),
         );
@@ -2314,8 +2223,6 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
   // Summit Session Card (with Date & Time in Last Row)
   // ==========================================
   Widget _buildSummitSessionCard(SessionItem session) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
     final displayTime = _getSessionDisplayTime(session);
     final displayDate = _formatDateForDisplay(session);
 
@@ -2335,7 +2242,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: (!isAdmin && session.isBookmarked) ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
+            color: session.isBookmarked ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
             width: 1.5,
           ),
           boxShadow: [
@@ -2364,131 +2271,36 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
                     ),
                   ),
                 ),
-                if (!isAdmin) ...[
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => _handleToggleBookmark(session),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: _loadingBookmarks.contains(session.id)
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primary,
-                              ),
-                            )
-                          : Icon(
-                              session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                              color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
-                              size: 20,
-                            ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () => _handleToggleBookmark(session),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: session.isBookmarked ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    child: _loadingBookmarks.contains(session.id)
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Icon(
+                            session.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                            color: session.isBookmarked ? AppColors.primary : AppColors.textLight,
+                            size: 20,
+                          ),
                   ),
-                ],
+                ),
               ],
             ),
 
             // Speaker Info Row
-            if (session.speakerName.isNotEmpty && session.speakerName != 'NA') ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: session.speakerBg,
-                      shape: BoxShape.circle,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    alignment: Alignment.center,
-                    child: _getSpeakerProfileImageUrl(session.speakerProfileImage) != null
-                        ? Image.network(
-                            _getSpeakerProfileImageUrl(session.speakerProfileImage)!,
-                            fit: BoxFit.cover,
-                            width: 36,
-                            height: 36,
-                            errorBuilder: (c, o, s) => Text(
-                              session.speakerInitials.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            session.speakerInitials.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          session.speakerName.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
-                          const SizedBox(height: 2.5),
-                          Text(
-                            session.speakerDesignation!.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            session.speakerOrganisation!.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        if ((session.speakerDesignation == null || session.speakerDesignation!.isEmpty) &&
-                            (session.speakerOrganisation == null || session.speakerOrganisation!.isEmpty) &&
-                            session.speakerTitle.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            session.speakerTitle.toUpperCase(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            _buildSpeakerSection(session),
 
             // Location
             // if (session.location.isNotEmpty) ...[
@@ -2621,6 +2433,11 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
             description: s.description,
             topicId: s.topicId,
             assignmentId: s.assignmentId,
+            speakers: s.speakers,
+            speakerName: s.speakerName,
+            speakerDesignation: s.speakerDesignation,
+            speakerOrganisation: s.speakerOrganisation,
+            speakerProfileImage: s.speakerProfileImage,
           ),
         ),
       );
@@ -2785,4 +2602,250 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       ),
     );
   }
+
+  String _extractInitials(String? name) {
+    if (name == null || name.trim().isEmpty || name.trim().toUpperCase() == 'NA') return 'S';
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return parts[0][0].toUpperCase();
+  }
+
+  Widget _buildSpeakerSection(SessionItem session) {
+    final List<String> speakerNamesList = [];
+    if (session.speakers.isNotEmpty) {
+      for (final sp in session.speakers) {
+        final n = sp.name.trim();
+        if (n.isNotEmpty && n != 'NA' && !speakerNamesList.contains(n)) {
+          speakerNamesList.add(n);
+        }
+      }
+    } else if (session.speakerName.isNotEmpty && session.speakerName != 'NA') {
+      final parts = session.speakerName.split(RegExp(r',|\band\b'));
+      for (final p in parts) {
+        final n = p.trim();
+        if (n.isNotEmpty && n != 'NA' && !speakerNamesList.contains(n)) {
+          speakerNamesList.add(n);
+        }
+      }
+    }
+
+    if (speakerNamesList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isMultiple = speakerNamesList.length > 1;
+
+    if (isMultiple) {
+      final List<Color> avatarColors = [
+        const Color(0xFF6366F1),
+        const Color(0xFF0EA5E9),
+        const Color(0xFF10B981),
+        const Color(0xFFF59E0B),
+        const Color(0xFF8B5CF6),
+        const Color(0xFFEC4899),
+        const Color(0xFF14B8A6),
+      ];
+
+      final displayAvatars = speakerNamesList.take(3).toList();
+      final remainingCount = speakerNamesList.length - 3;
+      final stackWidth = (displayAvatars.length - 1) * 16.0 + 26.0 + (remainingCount > 0 ? 16.0 : 0.0);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              SizedBox(
+                width: stackWidth,
+                height: 26,
+                child: Stack(
+                  children: [
+                    for (int i = 0; i < displayAvatars.length; i++)
+                      Positioned(
+                        left: i * 16.0,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: avatarColors[i % avatarColors.length],
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            _extractInitials(displayAvatars[i]),
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (remainingCount > 0)
+                      Positioned(
+                        left: displayAvatars.length * 16.0,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F46E5),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '+$remainingCount',
+                            style: const TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFC7D2FE)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.people_alt_rounded, size: 10, color: Color(0xFF4F46E5)),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${speakerNamesList.length} Speakers',
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4F46E5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            speakerNamesList.join(', '),
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+              height: 1.25,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      );
+    }
+
+    final singleSpeakerName = speakerNamesList.first;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: session.speakerBg,
+                shape: BoxShape.circle,
+              ),
+              clipBehavior: Clip.antiAlias,
+              alignment: Alignment.center,
+              child: _getSpeakerProfileImageUrl(session.speakerProfileImage) != null
+                  ? Image.network(
+                      _getSpeakerProfileImageUrl(session.speakerProfileImage)!,
+                      fit: BoxFit.cover,
+                      width: 30,
+                      height: 30,
+                      errorBuilder: (c, o, s) => Text(
+                        _extractInitials(singleSpeakerName),
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      _extractInitials(singleSpeakerName),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    singleSpeakerName.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (session.speakerDesignation != null && session.speakerDesignation!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      session.speakerDesignation!.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ] else if (session.speakerOrganisation != null && session.speakerOrganisation!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      session.speakerOrganisation!.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ] else if (session.speakerTitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      session.speakerTitle.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
+

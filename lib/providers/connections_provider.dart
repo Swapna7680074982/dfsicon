@@ -162,12 +162,19 @@ class ConnectionsProvider extends ChangeNotifier {
     }
   }
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   Future<bool> sendConnectionRequest({
     required String targetUserId,
     String? assignmentId,
     required String accessToken,
   }) async {
-    if (accessToken.isEmpty) return false;
+    if (accessToken.isEmpty) {
+      _lastErrorMessage = 'Please log in to send connection requests.';
+      return false;
+    }
+    _lastErrorMessage = null;
     final index = _participants.indexWhere((p) => p.id == targetUserId);
     if (index != -1) {
       _participants[index].isConnecting = true;
@@ -188,6 +195,7 @@ class ConnectionsProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
+          _lastErrorMessage = null;
           if (index != -1) {
             _participants[index].action = 'REQUESTED';
             _participants[index].connectionStatus = 'PENDING';
@@ -199,14 +207,25 @@ class ConnectionsProvider extends ChangeNotifier {
           }
           notifyListeners();
           return true;
+        } else {
+          _lastErrorMessage = data['message'] ?? 'Failed to send connection request.';
+        }
+      } else {
+        try {
+          final data = json.decode(response.body);
+          _lastErrorMessage = data['message'] ?? 'Unable to send connection request (${response.statusCode}).';
+        } catch (_) {
+          _lastErrorMessage = 'Unable to send connection request. Please try again.';
         }
       }
+
       if (index != -1) {
         notifyListeners();
       }
       return false;
     } catch (e, stack) {
       CustomLogger.logError('ConnectionsProvider.sendConnectionRequest failed', e, stack);
+      _lastErrorMessage = 'Network error: ${e.toString()}';
       if (index != -1) {
         _participants[index].isConnecting = false;
         notifyListeners();

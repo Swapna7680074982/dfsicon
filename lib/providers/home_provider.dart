@@ -66,6 +66,12 @@ class HomeExhibitor {
   final String boothLabel;
   final String boothNumber;
   final String? imageUrl;
+  final String email;
+  final String website;
+  final String phone;
+  final String contactPerson;
+  final String designation;
+  final String address;
 
   HomeExhibitor({
     this.sponsorId = '',
@@ -77,6 +83,12 @@ class HomeExhibitor {
     this.boothLabel = '',
     this.boothNumber = '',
     this.imageUrl,
+    this.email = '',
+    this.website = '',
+    this.phone = '',
+    this.contactPerson = '',
+    this.designation = '',
+    this.address = '',
   });
 }
 
@@ -439,6 +451,13 @@ class HomeProvider with ChangeNotifier {
               }
             }
 
+            final String email = (item['email'] ?? item['company_email'] ?? item['contact_email'] ?? '').toString().trim();
+            final String website = (item['website'] ?? item['company_website'] ?? item['web_url'] ?? '').toString().trim();
+            final String phone = (item['mobile'] ?? item['phone'] ?? item['phone_number'] ?? item['contact_no'] ?? item['contact_number'] ?? item['mobile_no'] ?? '').toString().trim();
+            final String contactPerson = (item['contact_person'] ?? item['contactPerson'] ?? item['contact_name'] ?? item['representative_name'] ?? '').toString().trim();
+            final String designation = (item['designation'] ?? item['contact_designation'] ?? '').toString().trim();
+            final String address = (item['address'] ?? item['location'] ?? item['city'] ?? item['state'] ?? '').toString().trim();
+
             final String initials = _getInitials(companyName);
             final Color bg = _getCategoryColor(category);
 
@@ -453,6 +472,12 @@ class HomeProvider with ChangeNotifier {
                 boothLabel: boothLabel,
                 boothNumber: boothNumber,
                 imageUrl: logoUrl,
+                email: email,
+                website: website,
+                phone: phone,
+                contactPerson: contactPerson,
+                designation: designation,
+                address: address,
               ),
             );
           }

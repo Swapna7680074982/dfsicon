@@ -17,8 +17,11 @@ class ExhibitorDetailsScreen extends StatelessWidget {
     String formattedUrl = urlString.trim();
     if (!formattedUrl.startsWith('http://') &&
         !formattedUrl.startsWith('https://') &&
-        !formattedUrl.startsWith('mailto:')) {
-      if (formattedUrl.contains('@')) {
+        !formattedUrl.startsWith('mailto:') &&
+        !formattedUrl.startsWith('tel:')) {
+      if (formattedUrl.startsWith('+') || RegExp(r'^\+?[0-9\s\-]{7,15}$').hasMatch(formattedUrl)) {
+        formattedUrl = 'tel:${formattedUrl.replaceAll(RegExp(r'[\s\-]'), '')}';
+      } else if (formattedUrl.contains('@')) {
         formattedUrl = 'mailto:$formattedUrl';
       } else {
         formattedUrl = 'https://$formattedUrl';
@@ -754,6 +757,13 @@ class ExhibitorDetailsScreen extends StatelessWidget {
 
   // --- CONTACT CARD ---
   Widget _buildContactCard(BuildContext context) {
+    final hasContactPerson = exhibitor.contactPerson.isNotEmpty;
+    final hasPhone = exhibitor.phone.isNotEmpty;
+    final hasEmail = exhibitor.email.isNotEmpty;
+    final hasWebsite = exhibitor.website.isNotEmpty;
+    final hasAddress = exhibitor.address.isNotEmpty;
+    final hasAnyContact = hasContactPerson || hasPhone || hasEmail || hasWebsite || hasAddress;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -777,26 +787,90 @@ class ExhibitorDetailsScreen extends StatelessWidget {
             title: 'GET IN TOUCH',
           ),
           const SizedBox(height: 16),
-          if (exhibitor.website.isNotEmpty)
-            _buildContactRow(
-              context,
-              icon: Icons.language_rounded,
-              title: 'Official Website',
-              text: exhibitor.website,
-              onTap: () => _launchUrl(context, exhibitor.website),
-              onCopy: () => _copyToClipboard(context, exhibitor.website, 'Website URL'),
-            ),
-          if (exhibitor.website.isNotEmpty && exhibitor.email.isNotEmpty)
-            const SizedBox(height: 14),
-          if (exhibitor.email.isNotEmpty)
-            _buildContactRow(
-              context,
-              icon: Icons.email_rounded,
-              title: 'Email Address',
-              text: exhibitor.email,
-              onTap: () => _launchUrl(context, 'mailto:${exhibitor.email}'),
-              onCopy: () => _copyToClipboard(context, exhibitor.email, 'Email address'),
-            ),
+          if (!hasAnyContact)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200, width: 1),
+              ),
+              child: const Center(
+                child: Text(
+                  'No direct contact details provided for this exhibitor. You can visit their booth during summit hours.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textLight,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            )
+          else ...[
+            if (hasContactPerson) ...[
+              _buildContactRow(
+                context,
+                icon: Icons.person_rounded,
+                title: exhibitor.designation.isNotEmpty
+                    ? 'Contact Person (${exhibitor.designation})'
+                    : 'Contact Person',
+                text: exhibitor.contactPerson,
+                isInteractive: false,
+                onTap: () => _copyToClipboard(context, exhibitor.contactPerson, 'Contact person'),
+                onCopy: () => _copyToClipboard(context, exhibitor.contactPerson, 'Contact person'),
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (hasPhone) ...[
+              _buildContactRow(
+                context,
+                icon: Icons.phone_rounded,
+                title: 'Phone / Contact Number',
+                text: exhibitor.phone,
+                actionIcon: Icons.call_rounded,
+                onTap: () => _launchUrl(context, 'tel:${exhibitor.phone}'),
+                onCopy: () => _copyToClipboard(context, exhibitor.phone, 'Phone number'),
+              ),
+              if (hasEmail || hasWebsite || hasAddress) const SizedBox(height: 14),
+            ],
+            if (hasEmail) ...[
+              _buildContactRow(
+                context,
+                icon: Icons.email_rounded,
+                title: 'Email Address',
+                text: exhibitor.email,
+                actionIcon: Icons.outgoing_mail,
+                onTap: () => _launchUrl(context, 'mailto:${exhibitor.email}'),
+                onCopy: () => _copyToClipboard(context, exhibitor.email, 'Email address'),
+              ),
+              if (hasWebsite || hasAddress) const SizedBox(height: 14),
+            ],
+            if (hasWebsite) ...[
+              _buildContactRow(
+                context,
+                icon: Icons.language_rounded,
+                title: 'Official Website',
+                text: exhibitor.website,
+                actionIcon: Icons.open_in_new_rounded,
+                onTap: () => _launchUrl(context, exhibitor.website),
+                onCopy: () => _copyToClipboard(context, exhibitor.website, 'Website URL'),
+              ),
+              if (hasAddress) const SizedBox(height: 14),
+            ],
+            if (hasAddress) ...[
+              _buildContactRow(
+                context,
+                icon: Icons.location_on_rounded,
+                title: 'Office / Location',
+                text: exhibitor.address,
+                actionIcon: Icons.map_rounded,
+                onTap: () => _launchUrl(context, 'https://maps.google.com/?q=${Uri.encodeComponent(exhibitor.address)}'),
+                onCopy: () => _copyToClipboard(context, exhibitor.address, 'Address'),
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -809,6 +883,8 @@ class ExhibitorDetailsScreen extends StatelessWidget {
     required String text,
     required VoidCallback onTap,
     required VoidCallback onCopy,
+    bool isInteractive = true,
+    IconData? actionIcon,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -847,19 +923,26 @@ class ExhibitorDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      decoration: TextDecoration.underline,
+                      color: isInteractive ? AppColors.primary : AppColors.textPrimary,
+                      decoration: isInteractive ? TextDecoration.underline : TextDecoration.none,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
           ),
+          if (actionIcon != null && isInteractive) ...[
+            IconButton(
+              icon: Icon(actionIcon, size: 18, color: AppColors.primary),
+              onPressed: onTap,
+              tooltip: 'Open',
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
             onPressed: onCopy,

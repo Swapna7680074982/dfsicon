@@ -115,7 +115,11 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
       final query = _searchQuery.toLowerCase();
       return ex.name.toLowerCase().contains(query) ||
           ex.category.toLowerCase().contains(query) ||
-          ex.boothCode.toLowerCase().contains(query);
+          ex.boothCode.toLowerCase().contains(query) ||
+          ex.boothZone.toLowerCase().contains(query) ||
+          ex.contactPerson.toLowerCase().contains(query) ||
+          ex.phone.toLowerCase().contains(query) ||
+          ex.email.toLowerCase().contains(query);
     }).toList()
       ..sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
 
@@ -407,6 +411,33 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
                                                   ),
                                                 ],
                                               ),
+                                            if (ex.contactPerson.isNotEmpty || ex.phone.isNotEmpty) ...[
+                                              const SizedBox(height: 3),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    ex.phone.isNotEmpty ? Icons.phone_outlined : Icons.person_outline_rounded,
+                                                    size: 12,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      ex.contactPerson.isNotEmpty && ex.phone.isNotEmpty
+                                                          ? '${ex.contactPerson}  •  ${ex.phone}'
+                                                          : (ex.contactPerson.isNotEmpty ? ex.contactPerson : ex.phone),
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: AppColors.primary,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),
