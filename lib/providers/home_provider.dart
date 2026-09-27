@@ -461,7 +461,8 @@ class HomeProvider with ChangeNotifier {
             final key = e.sponsorId.isNotEmpty ? e.sponsorId : (e.title.isNotEmpty ? e.title : e.initials);
             if (key.isNotEmpty) uniqueMap.putIfAbsent(key, () => e);
           }
-          _exhibitors = uniqueMap.values.toList();
+          _exhibitors = uniqueMap.values.toList()
+            ..sort((a, b) => a.title.trim().toLowerCase().compareTo(b.title.trim().toLowerCase()));
           notifyListeners();
         }
       }

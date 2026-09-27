@@ -116,7 +116,8 @@ class _ExhibitorsListScreenState extends State<ExhibitorsListScreen> {
       return ex.name.toLowerCase().contains(query) ||
           ex.category.toLowerCase().contains(query) ||
           ex.boothCode.toLowerCase().contains(query);
-    }).toList();
+    }).toList()
+      ..sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
 
     return WaterDropletsBackground(
       child: Scaffold(

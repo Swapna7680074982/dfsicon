@@ -327,7 +327,8 @@ class ExploreProvider with ChangeNotifier {
             final key = e.id.isNotEmpty ? e.id : e.name;
             if (key.isNotEmpty) uniqueMap.putIfAbsent(key, () => e);
           }
-          _exhibitors = uniqueMap.values.toList();
+          _exhibitors = uniqueMap.values.toList()
+            ..sort((a, b) => a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()));
           notifyListeners();
           return true;
         } else {

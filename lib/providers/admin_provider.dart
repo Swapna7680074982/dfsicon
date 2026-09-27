@@ -2232,7 +2232,8 @@ class AdminProvider with ChangeNotifier {
             final key = s.sponsorId.isNotEmpty ? s.sponsorId : s.companyName;
             if (key.isNotEmpty) existingMap[key] = s;
           }
-          _sponsors = existingMap.values.toList();
+          _sponsors = existingMap.values.toList()
+            ..sort((a, b) => a.companyName.trim().toLowerCase().compareTo(b.companyName.trim().toLowerCase()));
 
           if (body['pagination'] != null) {
             _sponsorsPagination = AdminPagination.fromJson(body['pagination']);

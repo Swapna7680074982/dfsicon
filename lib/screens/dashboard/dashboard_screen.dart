@@ -44,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _lastRoleCode = auth.isAdmin
           ? 'AD'
           : (auth.isSpeaker ? 'SK' : (auth.isExhibitor ? 'EX' : 'DL'));
-      _loadDashboardData(auth, forceRefresh: false);
+      _loadDashboardData(auth, forceRefresh: true);
     });
   }
 
@@ -144,9 +144,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       await Future.wait([...sessionsFutures, summitFuture]);
 
-      // Stagger stall visits API call after primary dashboard APIs complete to avoid overloading server
-      if (mounted) {
-        homeProvider.fetchMyStallVisits(auth.accessToken, forceRefresh: forceRefresh);
+      // Ensure stall visits API call completes for delegate/speaker
+      if (mounted && !auth.isAdmin && !auth.isExhibitor) {
+        await homeProvider.fetchMyStallVisits(auth.accessToken, forceRefresh: true);
       }
     } catch (_) {
       // Gracefully catch any network or mapping exceptions so screens do not error
