@@ -40,12 +40,14 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
   String _selectedTopicStatus = 'All'; // 'All', 'Confirmed', 'Approved'
   String _selectedExhibitorCategory = 'All';
   String _selectedBoothStatus = 'All'; // 'All', 'Allocated', 'Free'
-  String? _selectedFootfallSponsorId;
+  String? _selectedFootfallSponsorId = 'All';
   String _selectedFootfallBoothId = 'All';
   String? _selectedFootfallDate;
   AdminSponsorBoothStatsData? _footfallStatsData;
   AdminFootfallOverviewData? _footfallOverviewData;
   List<AdminFootfallParticipant> _footfallParticipants = [];
+  List<_TopExhibitorRankItem> _topExhibitorsList = [];
+  bool _isLoadingTopExhibitors = false;
   AdminPagination _footfallPagination = const AdminPagination();
   bool _isLoadingFootfall = false;
   bool _isLoadingMoreParticipants = false;
@@ -93,16 +95,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
         // Booth Footfall Tab
         if ((admin.sponsors.isEmpty || admin.sponsors.length < 20) && !admin.isLoadingSponsors && auth.accessToken.isNotEmpty) {
           admin.fetchSponsors(auth.accessToken, forceRefresh: true, limit: 200).then((_) {
-            if (mounted && admin.sponsors.isNotEmpty) {
-              if (_selectedFootfallSponsorId == null || _selectedFootfallSponsorId!.isEmpty) {
-                setState(() {
-                  _selectedFootfallSponsorId = admin.sponsors.first.sponsorId;
-                });
-              }
+            if (mounted) {
               _loadFootfallData();
             }
           });
-        } else if (_footfallStatsData == null && !_isLoadingFootfall) {
+        } else if ((_selectedFootfallSponsorId == 'All' && _topExhibitorsList.isEmpty) ||
+            (_selectedFootfallSponsorId != 'All' && _footfallStatsData == null && !_isLoadingFootfall)) {
           _loadFootfallData();
         }
       }
@@ -175,16 +173,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     if (auth.accessToken.isEmpty) return;
 
     if (_selectedFootfallSponsorId == null || _selectedFootfallSponsorId!.isEmpty) {
-      if (admin.sponsors.isNotEmpty) {
-        _selectedFootfallSponsorId = admin.sponsors.first.sponsorId;
-      } else {
-        await admin.fetchSponsors(auth.accessToken);
-        if (admin.sponsors.isNotEmpty) {
-          _selectedFootfallSponsorId = admin.sponsors.first.sponsorId;
-        } else {
-          return;
-        }
-      }
+      _selectedFootfallSponsorId = 'All';
     }
 
     if (reset) {
@@ -197,6 +186,74 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
       setState(() {
         _isLoadingMoreParticipants = true;
       });
+    }
+
+    // Special flow: ALL EXHIBITORS (Top 10 Rankings)
+    if (_selectedFootfallSponsorId == 'All') {
+      if (reset) {
+        setState(() {
+          _isLoadingTopExhibitors = true;
+        });
+      }
+
+      try {
+        if (admin.sponsors.isEmpty) {
+          await admin.fetchSponsors(auth.accessToken, limit: 200);
+        }
+
+        final overviewFuture = admin.fetchFootfallOverview(auth.accessToken, summitId: 1);
+
+        // Fetch stats for all sponsors to compute Top 10
+        final List<Future<_TopExhibitorRankItem>> statsFutures = admin.sponsors.map((sp) async {
+          try {
+            final stats = await admin.fetchSponsorBoothStats(
+              auth.accessToken,
+              sponsorId: sp.sponsorId,
+              date: _selectedFootfallDate,
+            );
+            final uniqueCount = stats?.summary.uniqueVisitors ?? 0;
+            final totalCount = stats?.summary.totalVisits ?? 0;
+            return _TopExhibitorRankItem(
+              sponsor: sp,
+              uniqueVisitors: uniqueCount,
+              totalVisits: totalCount > 0 ? totalCount : uniqueCount,
+              totalBooths: stats?.summary.totalBooths ?? (int.tryParse(sp.boothCount) ?? 0),
+            );
+          } catch (_) {
+            return _TopExhibitorRankItem(sponsor: sp);
+          }
+        }).toList();
+
+        final overview = await overviewFuture;
+        final rankResults = await Future.wait(statsFutures);
+
+        // Sort descending by highest visits
+        rankResults.sort((a, b) {
+          final cmp = b.uniqueVisitors.compareTo(a.uniqueVisitors);
+          if (cmp != 0) return cmp;
+          return b.totalVisits.compareTo(a.totalVisits);
+        });
+
+        if (mounted) {
+          setState(() {
+            if (overview != null) {
+              _footfallOverviewData = overview;
+            }
+            _topExhibitorsList = rankResults;
+            _isLoadingFootfall = false;
+            _isLoadingTopExhibitors = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _footfallError = e.toString();
+            _isLoadingFootfall = false;
+            _isLoadingTopExhibitors = false;
+          });
+        }
+      }
+      return;
     }
 
     final targetPage = loadMore ? _footfallPagination.currentPage + 1 : 1;
@@ -2534,9 +2591,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
         WidgetsBinding.instance.addPostFrameCallback((_) {
           admin.fetchSponsors(auth.accessToken).then((_) {
             if (mounted && admin.sponsors.isNotEmpty) {
-              setState(() {
-                _selectedFootfallSponsorId ??= admin.sponsors.first.sponsorId;
-              });
               _loadFootfallData();
             }
           });
@@ -2550,29 +2604,24 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
       );
     }
 
-    // Auto-select first sponsor if not set
-    if ((_selectedFootfallSponsorId == null || _selectedFootfallSponsorId!.isEmpty) &&
-        admin.sponsors.isNotEmpty) {
-      _selectedFootfallSponsorId = admin.sponsors.first.sponsorId;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadFootfallData();
-      });
-    }
+    _selectedFootfallSponsorId ??= 'All';
 
     // Current selected sponsor
     AdminSponsor? currentSponsor;
-    for (final sp in admin.sponsors) {
-      if (sp.sponsorId == _selectedFootfallSponsorId) {
-        currentSponsor = sp;
-        break;
+    if (_selectedFootfallSponsorId != 'All') {
+      for (final sp in admin.sponsors) {
+        if (sp.sponsorId == _selectedFootfallSponsorId) {
+          currentSponsor = sp;
+          break;
+        }
       }
     }
-    currentSponsor ??= admin.sponsors.isNotEmpty ? admin.sponsors.first : null;
 
     final summary = _footfallStatsData?.summary ?? const AdminSponsorBoothSummary();
     final boothsList = _footfallStatsData?.booths ?? [];
+    final isAllMode = _selectedFootfallSponsorId == 'All';
 
-    // Filter participants based on search text
+    // Filter participants based on search text (when viewing individual sponsor)
     final filteredParticipants = _footfallParticipants.where((p) {
       if (_footfallFilterText.trim().isNotEmpty) {
         final q = _footfallFilterText.trim().toLowerCase();
@@ -2593,194 +2642,174 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
 
     return Column(
       children: [
-        // Sponsor selector & filter bar
-        _buildFootfallHeaderBar(auth, admin, currentSponsor, boothsList),
-
-        // Participant search bar
-        _buildSearchBar(
-          controller: _footfallSearchCtrl,
-          hint: 'Search attendee by name, mobile, role...',
-          onChanged: (val) {
-            setState(() => _footfallFilterText = val);
-          },
-          onSubmitted: (val) {
-            setState(() => _footfallFilterText = val);
-          },
-          onClear: () {
-            _footfallSearchCtrl.clear();
-            setState(() => _footfallFilterText = '');
-          },
-        ),
+        // Sponsor selector, search & date filter bar
+        _buildFootfallHeaderBar(auth, admin, currentSponsor, boothsList, isAllMode),
 
         // Main Footfall Content
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () => _loadFootfallData(reset: true),
-            color: const Color(0xFF059669),
-            child: _isLoadingFootfall && _footfallStatsData == null
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF059669)))
-                : _footfallError != null && _footfallStatsData == null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.error_outline_rounded, size: 40, color: Color(0xFFEF4444)),
-                              const SizedBox(height: 12),
-                              Text(
-                                _footfallError!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: () => _loadFootfallData(reset: true),
-                                icon: const Icon(Icons.refresh_rounded, size: 16),
-                                label: const Text('Try Again'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF059669),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : ListView(
-                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    children: [
-                      // Selected Exhibitor Footfall Summary Cards
-                      _buildFootfallStatsGrid(summary),
-                      const SizedBox(height: 14),
-
-                      // Booth Breakdown (if multiple or available)
-                      if (boothsList.isNotEmpty) ...[
-                        _buildBoothsFootfallBreakdown(boothsList),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // Attendees Header Bar
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFECFDF5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.people_alt_rounded,
-                              size: 14,
-                              color: Color(0xFF059669),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'ATTENDEE VISITS (${filteredParticipants.length})',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.6,
-                              color: Color(0xFF047857),
-                            ),
-                          ),
-                          const Spacer(),
-                          // Download Report Button
-                          if (filteredParticipants.isNotEmpty) ...[
-                            InkWell(
-                              onTap: () {
-                                final total = filteredParticipants.length;
-                                final speakers = filteredParticipants
-                                    .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
-                                    .length;
-                                final delegates = total - speakers;
-
-                                FootfallReportService.showDownloadReportModal(
-                                  context: context,
-                                  totalCount: total,
-                                  speakersCount: speakers,
-                                  delegatesCount: delegates,
-                                  onDownload: (filter) async {
-                                    await FootfallReportService.downloadAdminFootfallReport(
-                                      context: context,
-                                      participants: filteredParticipants,
-                                      filter: filter,
-                                      sponsorName: currentSponsor?.companyName,
-                                    );
-                                  },
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
+          child: isAllMode
+              ? _buildAllExhibitorsFootfallOverview(auth, admin)
+              : RefreshIndicator(
+                  onRefresh: () => _loadFootfallData(reset: true),
+                  color: const Color(0xFF059669),
+                  child: _isLoadingFootfall && _footfallStatsData == null
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFF059669)))
+                      : _footfallError != null && _footfallStatsData == null
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.file_download_outlined, size: 13, color: Color(0xFF059669)),
-                                    SizedBox(width: 4),
+                                    const Icon(Icons.error_outline_rounded, size: 40, color: Color(0xFFEF4444)),
+                                    const SizedBox(height: 12),
                                     Text(
-                                      'Report',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF047857),
+                                      _footfallError!,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _loadFootfallData(reset: true),
+                                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                                      label: const Text('Try Again'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF059669),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          if (_footfallPagination.totalRecords > 0)
-                            Text(
-                              'Total: ${_footfallPagination.totalRecords}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
+                            )
+                          : ListView(
+                              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              children: [
+                                // Selected Exhibitor Footfall Summary Cards
+                                _buildFootfallStatsGrid(summary),
+                                const SizedBox(height: 14),
 
-                      // List of Participants
-                      if (filteredParticipants.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: _buildEmptyState(
-                            _footfallFilterText.isNotEmpty
-                                ? 'No attendee visits match your search'
-                                : 'No attendee footfall logged yet for this filter.',
-                          ),
-                        )
-                      else
-                        ...filteredParticipants.map((p) => _buildFootfallParticipantCard(p)),
+                                // Attendees Header Bar
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFECFDF5),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.people_alt_rounded,
+                                        size: 14,
+                                        color: Color(0xFF059669),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'ATTENDEE VISITS (${filteredParticipants.length})',
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.6,
+                                        color: Color(0xFF047857),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    // Download Report Button
+                                    if (filteredParticipants.isNotEmpty) ...[
+                                      InkWell(
+                                        onTap: () {
+                                          final total = filteredParticipants.length;
+                                          final speakers = filteredParticipants
+                                              .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
+                                              .length;
+                                          final delegates = total - speakers;
 
-                      // Load More Button
-                      if (_footfallPagination.hasNext && _footfallFilterText.isEmpty)
-                        _buildLoadMoreButton(
-                          isLoading: _isLoadingMoreParticipants,
-                          onPressed: () => _loadFootfallData(loadMore: true),
-                        ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-          ),
+                                          FootfallReportService.showDownloadReportModal(
+                                            context: context,
+                                            totalCount: total,
+                                            speakersCount: speakers,
+                                            delegatesCount: delegates,
+                                            onDownload: (filter) async {
+                                              await FootfallReportService.downloadAdminFootfallReport(
+                                                context: context,
+                                                participants: filteredParticipants,
+                                                filter: filter,
+                                                sponsorName: currentSponsor?.companyName,
+                                              );
+                                            },
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFECFDF5),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.file_download_outlined, size: 13, color: Color(0xFF059669)),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'Report',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF047857),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    if (_footfallPagination.totalRecords > 0)
+                                      Text(
+                                        'Total: ${_footfallPagination.totalRecords}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
+                                // List of Participants
+                                if (filteredParticipants.isEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                    ),
+                                    child: _buildEmptyState(
+                                      _footfallFilterText.isNotEmpty
+                                          ? 'No attendee visits match your search'
+                                          : 'No attendee footfall logged yet for this filter.',
+                                    ),
+                                  )
+                                else
+                                  ...filteredParticipants.map((p) => _buildFootfallParticipantCard(p)),
+
+                                // Load More Button
+                                if (_footfallPagination.hasNext && _footfallFilterText.isEmpty)
+                                  _buildLoadMoreButton(
+                                    isLoading: _isLoadingMoreParticipants,
+                                    onPressed: () => _loadFootfallData(loadMore: true),
+                                  ),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
+                ),
         ),
       ],
     );
@@ -2791,10 +2820,11 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     AdminProvider admin,
     AdminSponsor? currentSponsor,
     List<AdminSponsorBoothStatItem> boothsList,
+    bool isAllMode,
   ) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
         children: [
           // Exhibitor Selector Card
@@ -2804,9 +2834,9 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: isAllMode ? const Color(0xFFFFFBEB) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: isAllMode ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0)),
               ),
               child: Row(
                 children: [
@@ -2814,34 +2844,40 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
+                      color: isAllMode ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.business_rounded, color: Color(0xFF059669), size: 17),
+                    child: Icon(
+                      isAllMode ? Icons.emoji_events_rounded : Icons.business_rounded,
+                      color: isAllMode ? const Color(0xFFD97706) : const Color(0xFF059669),
+                      size: 17,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'SELECT EXHIBITOR',
+                        Text(
+                          isAllMode ? 'VIEWING MODE' : 'SELECT EXHIBITOR',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
-                            color: Color(0xFF64748B),
+                            color: isAllMode ? const Color(0xFFB45309) : const Color(0xFF64748B),
                           ),
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          currentSponsor?.companyName.isNotEmpty == true
-                              ? currentSponsor!.companyName
-                              : 'Select an Exhibitor',
-                          style: const TextStyle(
+                          isAllMode
+                              ? 'All Exhibitors (Top 10 Rankings)'
+                              : (currentSponsor?.companyName.isNotEmpty == true
+                                  ? currentSponsor!.companyName
+                                  : 'Select an Exhibitor'),
+                          style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: isAllMode ? const Color(0xFF92400E) : AppColors.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -2854,64 +2890,117 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               ),
             ),
           ),
+
+          if (!isAllMode && boothsList.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            // Booth Dropdown Filter
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedFootfallBoothId,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Color(0xFF64748B)),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: 'All',
+                      child: Text('All Booths'),
+                    ),
+                    ...boothsList.map((b) {
+                      final label = b.boothLabel.isNotEmpty
+                          ? '${b.boothLabel}${b.boothNumber.isNotEmpty ? " (${b.boothNumber})" : ""}'
+                          : (b.boothNumber.isNotEmpty ? b.boothNumber : 'Booth ${b.boothId}');
+                      return DropdownMenuItem<String>(
+                        value: b.boothId,
+                        child: Text(label, overflow: TextOverflow.ellipsis),
+                      );
+                    }),
+                  ],
+                  onChanged: (newBooth) {
+                    if (newBooth == null) return;
+                    setState(() {
+                      _selectedFootfallBoothId = newBooth;
+                    });
+                    _loadFootfallData(reset: true);
+                  },
+                ),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 8),
 
-          // Sub-filters: Booths filter & Date picker
+          // Search Box & Date Filter side-by-side in one compact row
           Row(
             children: [
-              // Booth Dropdown Filter
+              // Search Input Box
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedFootfallBoothId,
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Color(0xFF64748B)),
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                child: SizedBox(
+                  height: 42,
+                  child: TextField(
+                    controller: _footfallSearchCtrl,
+                    textInputAction: TextInputAction.search,
+                    onChanged: (val) {
+                      setState(() => _footfallFilterText = val);
+                    },
+                    onSubmitted: (val) {
+                      setState(() => _footfallFilterText = val);
+                    },
+                    decoration: InputDecoration(
+                      hintText: isAllMode
+                          ? 'Search top exhibitors...'
+                          : 'Search attendees...',
+                      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                      suffixIcon: _footfallSearchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 16, color: Color(0xFF64748B)),
+                              onPressed: () {
+                                _footfallSearchCtrl.clear();
+                                setState(() => _footfallFilterText = '');
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                       ),
-                      items: [
-                        const DropdownMenuItem<String>(
-                          value: 'All',
-                          child: Text('All Booths'),
-                        ),
-                        ...boothsList.map((b) {
-                          final label = b.boothLabel.isNotEmpty
-                              ? '${b.boothLabel}${b.boothNumber.isNotEmpty ? " (${b.boothNumber})" : ""}'
-                              : (b.boothNumber.isNotEmpty ? b.boothNumber : 'Booth ${b.boothId}');
-                          return DropdownMenuItem<String>(
-                            value: b.boothId,
-                            child: Text(label, overflow: TextOverflow.ellipsis),
-                          );
-                        }),
-                      ],
-                      onChanged: (newBooth) {
-                        if (newBooth == null) return;
-                        setState(() {
-                          _selectedFootfallBoothId = newBooth;
-                        });
-                        _loadFootfallData(reset: true);
-                      },
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF059669), width: 1.2),
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
 
-              // Date Filter Button
+              // Date Filter Button (Beside Search Box)
               InkWell(
                 onTap: () => _pickFootfallDate(context),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
                     color: _selectedFootfallDate != null ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(10),
@@ -2924,12 +3013,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                     children: [
                       Icon(
                         Icons.calendar_today_rounded,
-                        size: 13,
+                        size: 14,
                         color: _selectedFootfallDate != null ? const Color(0xFF059669) : const Color(0xFF64748B),
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        _selectedFootfallDate != null ? TimeFormatter.formatDate(_selectedFootfallDate!) : 'All Dates',
+                        _selectedFootfallDate != null ? TimeFormatter.formatDate(_selectedFootfallDate!) : 'Date',
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -2952,65 +3041,68 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
 
-              // Export / Download Report Button (Inside only for Admin, auto-disabled when no data)
-              InkWell(
-                onTap: _footfallParticipants.isNotEmpty
-                    ? () {
-                        final total = _footfallParticipants.length;
-                        final speakers = _footfallParticipants
-                            .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
-                            .length;
-                        final delegates = total - speakers;
+              if (!isAllMode) ...[
+                const SizedBox(width: 8),
+                // Export / Download Report Button (Inside only for Admin, auto-disabled when no data)
+                InkWell(
+                  onTap: _footfallParticipants.isNotEmpty
+                      ? () {
+                          final total = _footfallParticipants.length;
+                          final speakers = _footfallParticipants
+                              .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
+                              .length;
+                          final delegates = total - speakers;
 
-                        FootfallReportService.showDownloadReportModal(
-                          context: context,
-                          totalCount: total,
-                          speakersCount: speakers,
-                          delegatesCount: delegates,
-                          onDownload: (filter) async {
-                            await FootfallReportService.downloadAdminFootfallReport(
-                              context: context,
-                              participants: _footfallParticipants,
-                              filter: filter,
-                              sponsorName: currentSponsor?.companyName,
-                            );
-                          },
-                        );
-                      }
-                    : null,
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _footfallParticipants.isNotEmpty ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _footfallParticipants.isNotEmpty ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                          FootfallReportService.showDownloadReportModal(
+                            context: context,
+                            totalCount: total,
+                            speakersCount: speakers,
+                            delegatesCount: delegates,
+                            onDownload: (filter) async {
+                              await FootfallReportService.downloadAdminFootfallReport(
+                                context: context,
+                                participants: _footfallParticipants,
+                                filter: filter,
+                                sponsorName: currentSponsor?.companyName,
+                              );
+                            },
+                          );
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: _footfallParticipants.isNotEmpty ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _footfallParticipants.isNotEmpty ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.file_download_outlined,
+                          size: 14,
+                          color: _footfallParticipants.isNotEmpty ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Report',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: _footfallParticipants.isNotEmpty ? const Color(0xFF047857) : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.file_download_outlined,
-                        size: 14,
-                        color: _footfallParticipants.isNotEmpty ? const Color(0xFF059669) : const Color(0xFF94A3B8),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Report',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          color: _footfallParticipants.isNotEmpty ? const Color(0xFF047857) : const Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -3173,14 +3265,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                             ? const Center(
                                 child: CircularProgressIndicator(color: Color(0xFF059669)),
                               )
-                            : filtered.isEmpty
+                            : (filtered.isEmpty && searchQuery.isNotEmpty)
                                 ? Center(
                                     child: Padding(
                                       padding: const EdgeInsets.all(24.0),
                                       child: Text(
-                                        searchQuery.isNotEmpty
-                                            ? 'No exhibitors found for "$searchQuery"'
-                                            : 'No exhibitors available.',
+                                        'No exhibitors found for "$searchQuery"',
                                         style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                                       ),
                                     ),
@@ -3188,10 +3278,55 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                                 : ListView.separated(
                                     physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                                    itemCount: filtered.length,
+                                    itemCount: (searchQuery.isEmpty ? 1 : 0) + filtered.length,
                                     separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
                                     itemBuilder: (context, index) {
-                                      final sp = filtered[index];
+                                      if (searchQuery.isEmpty && index == 0) {
+                                        final isSelected = _selectedFootfallSponsorId == 'All';
+                                        return ListTile(
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          leading: Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? const Color(0xFFD97706) : const Color(0xFFFEF3C7),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              Icons.emoji_events_rounded,
+                                              size: 18,
+                                              color: isSelected ? Colors.white : const Color(0xFFD97706),
+                                            ),
+                                          ),
+                                          title: Text(
+                                            'All Exhibitors (Top 10 Rankings)',
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                              color: isSelected ? const Color(0xFFB45309) : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          subtitle: const Text(
+                                            'Leaderboard ranked by highest total footfall visits',
+                                            style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                          ),
+                                          trailing: isSelected
+                                              ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD97706), size: 20)
+                                              : null,
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            setState(() {
+                                              _selectedFootfallSponsorId = 'All';
+                                              _selectedFootfallBoothId = 'All';
+                                              _footfallStatsData = null;
+                                              _footfallParticipants = [];
+                                            });
+                                            _loadFootfallData(reset: true);
+                                          },
+                                        );
+                                      }
+
+                                      final sp = filtered[searchQuery.isEmpty ? index - 1 : index];
                                       final isSelected = sp.sponsorId == _selectedFootfallSponsorId;
                                       return ListTile(
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3247,6 +3382,365 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
           },
         );
       },
+    );
+  }
+
+  Widget _buildAllExhibitorsFootfallOverview(AuthProvider auth, AdminProvider admin) {
+    final filteredRankList = _topExhibitorsList.where((item) {
+      if (_footfallFilterText.trim().isEmpty) return true;
+      final q = _footfallFilterText.trim().toLowerCase();
+      return item.sponsor.companyName.toLowerCase().contains(q) ||
+          item.sponsor.sponsorCategory.toLowerCase().contains(q) ||
+          item.sponsor.contactPerson.toLowerCase().contains(q);
+    }).toList();
+    final top10 = filteredRankList.take(10).toList();
+
+    return RefreshIndicator(
+      onRefresh: () => _loadFootfallData(reset: true),
+      color: const Color(0xFF059669),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: [
+          // Leaderboard Section Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.emoji_events_rounded,
+                  size: 15,
+                  color: Color(0xFFD97706),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TOP 10 EXHIBITORS (HIGHEST VISITS)',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.6,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                    Text(
+                      'Ranked by total visits recorded across booths',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_topExhibitorsList.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Text(
+                    '${top10.length} Shown',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Leaderboard Content
+          if (_isLoadingTopExhibitors)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Center(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF059669)),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Calculating Top 10 Exhibitors by footfall...',
+                      style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_footfallError != null && top10.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.error_outline_rounded, size: 36, color: Color(0xFFEF4444)),
+                  const SizedBox(height: 10),
+                  Text(
+                    _footfallError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => _loadFootfallData(reset: true),
+                    icon: const Icon(Icons.refresh_rounded, size: 15),
+                    label: const Text('Try Again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (top10.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: _buildEmptyState(_footfallFilterText.isNotEmpty
+                  ? 'No exhibitors match "$_footfallFilterText"'
+                  : 'No footfall data logged yet across exhibitors.'),
+            )
+          else
+            ...List.generate(
+              top10.length,
+              (index) => _buildTopExhibitorRankCard(top10[index], index + 1),
+            ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopExhibitorRankCard(_TopExhibitorRankItem item, int rank) {
+    // Rank styling
+    Color rankBg;
+    Color rankTextColor;
+    Color rankBorder;
+    IconData? rankIcon;
+
+    if (rank == 1) {
+      rankBg = const Color(0xFFFEF3C7);
+      rankTextColor = const Color(0xFFB45309);
+      rankBorder = const Color(0xFFFCD34D);
+      rankIcon = Icons.military_tech_rounded;
+    } else if (rank == 2) {
+      rankBg = const Color(0xFFF1F5F9);
+      rankTextColor = const Color(0xFF475569);
+      rankBorder = const Color(0xFFCBD5E1);
+      rankIcon = Icons.workspace_premium_rounded;
+    } else if (rank == 3) {
+      rankBg = const Color(0xFFFFEDD5);
+      rankTextColor = const Color(0xFFC2410C);
+      rankBorder = const Color(0xFFFDBA74);
+      rankIcon = Icons.workspace_premium_rounded;
+    } else {
+      rankBg = const Color(0xFFF8FAFC);
+      rankTextColor = const Color(0xFF64748B);
+      rankBorder = const Color(0xFFE2E8F0);
+      rankIcon = null;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: rank == 1 ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0),
+          width: rank == 1 ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: rank == 1 ? 0.04 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedFootfallSponsorId = item.sponsor.sponsorId;
+            _selectedFootfallBoothId = 'All';
+            _footfallStatsData = null;
+            _footfallParticipants = [];
+          });
+          _loadFootfallData(reset: true);
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              // Rank Badge
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: rankBg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: rankBorder),
+                ),
+                child: Center(
+                  child: rankIcon != null
+                      ? Icon(rankIcon, size: 20, color: rankTextColor)
+                      : Text(
+                          '#$rank',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: rankTextColor,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Exhibitor Name & Category
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.sponsor.companyName,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (rank <= 3) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: rankBg,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Top $rank',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: rankTextColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        if (item.sponsor.sponsorCategory.isNotEmpty) ...[
+                          Text(
+                            item.sponsor.sponsorCategory,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('•', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 10)),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          '${item.totalBooths} Booth${item.totalBooths == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Metric: Total Visits
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                    ),
+                    child: Text(
+                      '${item.uniqueVisitors} Visits',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF047857),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Details',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 13, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -3374,7 +3868,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   icon: Icons.visibility_rounded,
                   iconColor: const Color(0xFFC084FC),
                   label: 'Total Visits',
-                  value: '${overview.totalVisits}',
+                  value: '${overview.totalVisits > 0 ? overview.totalVisits : overview.uniqueVisitors}',
                 ),
               ),
               const SizedBox(width: 8),
@@ -3685,23 +4179,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
             value: '${summary.totalBooths}',
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildFootfallMetricCard(
-            icon: Icons.remove_red_eye_rounded,
-            iconColor: const Color(0xFF0284C7),
-            iconBg: const Color(0xFFF0F9FF),
-            label: 'TOTAL VISITS',
-            value: '${summary.totalVisits}',
-          ),
-        ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
           child: _buildFootfallMetricCard(
             icon: Icons.people_alt_rounded,
             iconColor: const Color(0xFF059669),
             iconBg: const Color(0xFFECFDF5),
-            label: 'UNIQUE VISITORS',
+            label: 'TOTAL VISITS',
             value: '${summary.uniqueVisitors}',
           ),
         ),
@@ -3767,107 +4251,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     );
   }
 
-  Widget _buildBoothsFootfallBreakdown(List<AdminSponsorBoothStatItem> booths) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.meeting_room_rounded, size: 14, color: Color(0xFF4F46E5)),
-              SizedBox(width: 6),
-              Text(
-                'BOOTHS BREAKDOWN',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  color: Color(0xFF4F46E5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: booths.map((b) {
-              final isSelected = _selectedFootfallBoothId == b.boothId;
-              final primaryTitle = b.boothLabel.isNotEmpty
-                  ? b.boothLabel
-                  : (b.boothNumber.isNotEmpty ? b.boothNumber : 'Booth ${b.boothId}');
-              final secondaryTitle = (b.boothLabel.isNotEmpty && b.boothNumber.isNotEmpty)
-                  ? b.boothNumber
-                  : '';
 
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedFootfallBoothId = isSelected ? 'All' : b.boothId;
-                  });
-                  _loadFootfallData(reset: true);
-                },
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFEEF2FF) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFE2E8F0),
-                      width: isSelected ? 1.2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        primaryTitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? const Color(0xFF4338CA) : AppColors.textPrimary,
-                        ),
-                      ),
-                      if (secondaryTitle.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          '($secondaryTitle)',
-                          style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                        ),
-                      ],
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${b.totalVisits} visits',
-                          style: const TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF059669),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFootfallParticipantCard(AdminFootfallParticipant p) {
     // Resolve booth label if missing from stats list
@@ -4283,3 +4667,18 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     );
   }
 }
+
+class _TopExhibitorRankItem {
+  final AdminSponsor sponsor;
+  final int uniqueVisitors;
+  final int totalVisits;
+  final int totalBooths;
+
+  const _TopExhibitorRankItem({
+    required this.sponsor,
+    this.uniqueVisitors = 0,
+    this.totalVisits = 0,
+    this.totalBooths = 0,
+  });
+}
+

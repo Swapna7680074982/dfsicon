@@ -4277,68 +4277,7 @@ class AdminFootfallParticipantDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             const Divider(height: 1, color: Color(0xFFE2E8F0)),
-            const SizedBox(height: 16),
 
-            // Visit Information Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDCFCE7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          participant.boothLabel.isNotEmpty
-                              ? 'Visited ${participant.boothLabel}${participant.boothNumber.isNotEmpty ? " (${participant.boothNumber})" : ""}'
-                              : (participant.boothNumber.isNotEmpty
-                                  ? 'Visited ${participant.boothNumber}'
-                                  : 'Booth Footfall Recorded'),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF15803D),
-                          ),
-                        ),
-                        () {
-                          final String formattedVisitTime = TimeFormatter.formatDateTimeReadable(
-                            participant.visitedDate,
-                            participant.visitedTime,
-                          );
-                          if (formattedVisitTime.isEmpty) return const SizedBox.shrink();
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              formattedVisitTime,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: Color(0xFF166534),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 16),
 
             // Professional Details Section

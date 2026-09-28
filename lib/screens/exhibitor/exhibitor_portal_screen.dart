@@ -795,149 +795,6 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
             // Exhibitor Sponsor QR Code Section
             _buildSponsorQrSection(auth, exhibitor),
 
-            // Booth Breakdown Cards (if available)
-            if (byBoothDay.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.dashboard_outlined, size: 16, color: Color(0xFF64748B)),
-                        SizedBox(width: 6),
-                        Text(
-                          'BOOTH BREAKDOWN',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (byBoothDay.isNotEmpty)
-                      TextButton(
-                        onPressed: () => _showAllBoothsModal(context, byBoothDay),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Row(
-                          children: [
-                            Text(
-                              'VIEW ALL',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4F46E5),
-                              ),
-                            ),
-                            SizedBox(width: 2),
-                            Icon(Icons.chevron_right_rounded, size: 15, color: Color(0xFF4F46E5)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 96,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: byBoothDay.length > 2 ? 2 : byBoothDay.length,
-                  itemBuilder: (context, index) {
-                    final item = byBoothDay[index];
-                    return Container(
-                      width: 200,
-                      margin: const EdgeInsets.only(right: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFDF2F8),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  item.boothLabel.isNotEmpty ? item.boothLabel : item.boothNumber,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFDB2777),
-                                  ),
-                                ),
-                              ),
-                              if (item.visitedDate.isNotEmpty)
-                                Text(
-                                  TimeFormatter.formatDate(item.visitedDate),
-                                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
-                                ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Visits',
-                                    style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    '${item.totalVisits}',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-                                  ),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    'Unique',
-                                    style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    '${item.uniqueVisitors}',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-
             // Footfall Counts Summary Header & Role Filter Dropdown
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
@@ -1012,16 +869,13 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
             Builder(
               builder: (context) {
                 final isRoleFiltered = exhibitor.selectedRoleFilter != 'All';
-                final displayTotalVisits = !isRoleFiltered
-                    ? summary.totalVisits
-                    : filteredParticipants.fold<int>(0, (sum, p) => sum + (p.visitCount > 0 ? p.visitCount : 1));
                 final displayUniqueVisitors = !isRoleFiltered
                     ? summary.uniqueVisitors
                     : filteredParticipants.length;
 
-                final uniqueLabel = isRoleFiltered
-                    ? 'Unique ${exhibitor.selectedRoleFilter}'
-                    : 'Unique Visitors';
+                final totalVisitsLabel = isRoleFiltered
+                    ? 'Total ${exhibitor.selectedRoleFilter} Visits'
+                    : 'Total Visits';
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1029,23 +883,12 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                     children: [
                       Expanded(
                         child: _buildSummaryMetricCard(
-                          label: 'Total Visits',
-                          value: displayTotalVisits.toString(),
+                          label: totalVisitsLabel,
+                          value: displayUniqueVisitors.toString(),
                           icon: Icons.trending_up_rounded,
                           accentColor: const Color(0xFF4F46E5),
                           bgColor: const Color(0xFFEEF2FF),
                           borderColor: const Color(0xFFC7D2FE),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSummaryMetricCard(
-                          label: uniqueLabel,
-                          value: displayUniqueVisitors.toString(),
-                          icon: Icons.people_alt_rounded,
-                          accentColor: const Color(0xFF059669),
-                          bgColor: const Color(0xFFECFDF5),
-                          borderColor: const Color(0xFFA7F3D0),
                         ),
                       ),
                     ],
@@ -2672,213 +2515,6 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                   ),
                 ),
               ),
-      ),
-    );
-  }
-
-  void _showAllBoothsModal(BuildContext context, List<BoothDayCount> booths) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFDF2F8),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.dashboard_outlined,
-                      size: 20,
-                      color: Color(0xFFDB2777),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Booth Breakdown',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        Text(
-                          '${booths.length} total records across event days',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: booths.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = booths[index];
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFDF2F8),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                item.boothLabel.isNotEmpty ? item.boothLabel : item.boothNumber,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFDB2777),
-                                ),
-                              ),
-                            ),
-                            if (item.visitedDate.isNotEmpty)
-                              Text(
-                                TimeFormatter.formatDate(item.visitedDate),
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Total Visits',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF64748B),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${item.totalVisits}',
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF1E293B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Unique Visitors',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF047857),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${item.uniqueVisitors}',
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF059669),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
