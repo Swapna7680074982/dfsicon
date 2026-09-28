@@ -77,11 +77,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final exhibitorProvider = Provider.of<ExhibitorProvider>(context, listen: false);
 
     try {
-      if (forceRefresh || auth.accessToken.isEmpty) {
-        await auth.refreshSessionToken();
-        if (!mounted) return;
-      }
-
       auth.registerDeviceToken();
       AppVersionService.checkAndShowUpdateDialog(
         context,

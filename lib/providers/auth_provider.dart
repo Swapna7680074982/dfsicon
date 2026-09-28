@@ -491,29 +491,9 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // API Call: Refresh Token (with concurrency lock & fallback)
-  Future<bool>? _refreshFuture;
-
+  // API Call: Refresh Token
   Future<bool> refreshSessionToken() async {
-    if (_refreshFuture != null) {
-      return _refreshFuture!;
-    }
-    _refreshFuture = _executeRefreshToken();
-    try {
-      final result = await _refreshFuture!;
-      return result;
-    } finally {
-      _refreshFuture = null;
-    }
-  }
-
-  Future<bool> _executeRefreshToken() async {
-    if (_refreshToken.isEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      _refreshToken = prefs.getString('refresh_token') ?? '';
-    }
     if (_refreshToken.isEmpty) return false;
-
     try {
       final meta = await _getMeta();
       final response = await ApiService.refreshSessionToken(
@@ -525,19 +505,13 @@ class AuthProvider with ChangeNotifier {
         final data = json.decode(response.body);
         if (data['status'] == true) {
           _accessToken = data['access_token'] ?? '';
-          _refreshToken = data['refresh_token'] ?? _refreshToken;
+          _refreshToken = data['refresh_token'] ?? '';
           
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('access_token', _accessToken);
           await prefs.setString('refresh_token', _refreshToken);
-          notifyListeners();
           return true;
         }
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        debugPrint('⚠️ [AuthProvider] Refresh token expired or revoked. Logging out.');
-        await _clearSession();
-        MyApp.redirectToLogin();
-        return false;
       }
       return false;
     } catch (e, stack) {
