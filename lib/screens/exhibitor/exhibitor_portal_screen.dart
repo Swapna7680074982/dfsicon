@@ -2679,5 +2679,5 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
         );
       },
     );
-  } 
+  }
 }
