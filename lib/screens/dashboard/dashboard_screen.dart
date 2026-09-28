@@ -22,6 +22,7 @@ import '../speaker_abstract/speaker_abstract_tab.dart';
 import '../speaker_sessions/speaker_sessions_tab.dart';
 import '../admin/admin_dashboard_tab.dart';
 import '../exhibitor/exhibitor_portal_screen.dart';
+import '../../services/app_version_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -77,6 +78,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       auth.registerDeviceToken();
+      AppVersionService.checkAndShowUpdateDialog(
+        context,
+        accessToken: auth.accessToken,
+      );
 
       if (auth.isAdmin) {
         await adminProvider.fetchAllAdminData(auth.accessToken, forceRefresh: forceRefresh);

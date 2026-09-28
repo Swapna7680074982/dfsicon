@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dfsicon/domain/api_service.dart';
 import 'package:dfsicon/domain/utility_models.dart';
@@ -36,11 +37,16 @@ class AuthProvider with ChangeNotifier {
 
   Future<Map<String, String>> _getMeta() async {
     final token = await FcmService.getFcmToken();
+    String appVer = "1.0.15";
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      appVer = packageInfo.version;
+    } catch (_) {}
     return {
       "device_id": "ANDROID_123",
       "device_name": Platform.isAndroid ? "Android Device" : (Platform.isIOS ? "iOS Device" : "Device"),
       "device_type": Platform.isAndroid ? "Android" : (Platform.isIOS ? "iOS" : "Unknown"),
-      "app_version": "1.0.0",
+      "app_version": appVer,
       "latitude": "",
       "longitude": "",
       "fcmToken": token

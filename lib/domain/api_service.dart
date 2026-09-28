@@ -2466,6 +2466,36 @@ class ApiService {
     CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
     return response;
   }
+
+  // ==========================================
+  // App Version Check API Call
+  // ==========================================
+  static Future<http.Response> checkAppVersion({
+    required String platform,
+    required int versionCode,
+    required String accessToken,
+  }) async {
+    final url = Uri.parse(ApiUrls.checkVersion);
+    final headers = {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
+    final requestBody = json.encode({
+      "platform": platform,
+      "version_code": versionCode,
+    });
+
+    CustomLogger.logRequest('POST', url.toString(), headers: headers, body: requestBody);
+
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: requestBody,
+    );
+
+    CustomLogger.logResponse('POST', url.toString(), response.statusCode, response.body);
+    return response;
+  }
 }
 
 

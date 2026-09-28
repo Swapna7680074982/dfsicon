@@ -15,6 +15,7 @@ import '../admin/admin_detail_sheets.dart';
 import '../../services/footfall_report_service.dart';
 import 'exhibitor_live_scanner_screen.dart';
 import 'exhibitor_participant_detail_modal.dart';
+import '../../services/app_version_service.dart';
 
 class ExhibitorPortalScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -121,6 +122,8 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
 
     final token = auth.accessToken;
     if (token.isEmpty) return;
+
+    AppVersionService.checkAndShowUpdateDialog(context, accessToken: token);
 
     try {
       final futures = <Future>[];

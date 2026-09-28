@@ -11,6 +11,7 @@ class ApiUrls {
   static const String logout = '$baseUrl/auth/logout';
 
   static const String uploadProfilePicture = '$baseUrl/utility/upload_profile_picture';
+  static const String checkVersion = '$baseUrl/utility/check_version';
   static const String getSummits = '$baseUrl/utility/get_summits';
   static const String submitAbstract = '$baseUrl/speaker/submit_abstract';
   static const String myAbstracts = '$baseUrl/speaker/my_abstracts';

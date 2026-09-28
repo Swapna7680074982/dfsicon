@@ -62,7 +62,7 @@ class VenueLayoutItem {
     required this.venueName,
     required this.uploadedOn,
   });
-
+  
   factory VenueLayoutItem.fromJson(Map<String, dynamic> json) {
     return VenueLayoutItem(
       layoutId: json['layout_id'],
@@ -169,5 +169,44 @@ class DelegateStallVisit {
     if (boothLabel.isNotEmpty) return boothLabel;
     if (boothNumber.isNotEmpty) return boothNumber;
     return 'Booth #$boothId';
+  }
+}
+
+class AppVersionInfo {
+  final String platform;
+  final int currentVersionCode;
+  final String latestVersionName;
+  final int latestVersionCode;
+  final bool forceUpdate;
+  final bool updateAvailable;
+  final String message;
+  final String updateUrl;
+
+  AppVersionInfo({
+    required this.platform,
+    required this.currentVersionCode,
+    required this.latestVersionName,
+    required this.latestVersionCode,
+    required this.forceUpdate,
+    required this.updateAvailable,
+    required this.message,
+    required this.updateUrl,
+  });
+
+  factory AppVersionInfo.fromJson(Map<String, dynamic> json) {
+    return AppVersionInfo(
+      platform: json['platform']?.toString() ?? '',
+      currentVersionCode: int.tryParse(json['current_version_code']?.toString() ?? '0') ?? 0,
+      latestVersionName: json['latest_version_name']?.toString() ?? '',
+      latestVersionCode: int.tryParse(json['latest_version_code']?.toString() ?? '0') ?? 0,
+      forceUpdate: json['force_update'] == true ||
+          json['force_update']?.toString() == '1' ||
+          json['force_update']?.toString().toLowerCase() == 'true',
+      updateAvailable: json['update_available'] == true ||
+          json['update_available']?.toString() == '1' ||
+          json['update_available']?.toString().toLowerCase() == 'true',
+      message: json['message']?.toString() ?? '',
+      updateUrl: json['update_url']?.toString() ?? '',
+    );
   }
 }

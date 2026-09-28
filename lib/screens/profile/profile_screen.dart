@@ -999,65 +999,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => EventQrModal(
-                        userName: name,
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.tileBorder, width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                if (!authProvider.isExhibitor && authProvider.roleCode.toUpperCase() != 'EX') ...[
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => EventQrModal(
+                          userName: name,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'My Event QR Code',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Tap to view & share your QR code',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.tileBorder, width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        const Icon(
-                          Icons.qr_code_2_outlined,
-                          color: AppColors.primary,
-                          size: 32,
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'My Event QR Code',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Tap to view & share your QR code',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Icon(
+                            Icons.qr_code_2_outlined,
+                            color: AppColors.primary,
+                            size: 32,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 20),
                 Container(
                   decoration: BoxDecoration(
