@@ -795,122 +795,6 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
             // Exhibitor Sponsor QR Code Section
             _buildSponsorQrSection(auth, exhibitor),
 
-            // Footfall Counts Summary Header & Role Filter Dropdown
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                        child: const Icon(Icons.analytics_outlined, size: 15, color: Color(0xFF4F46E5)),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'FOOTFALL SUMMARY',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Master Filter Dropdown for all sections
-                  Container(
-                    height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: exhibitor.selectedRoleFilter,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF4F46E5)),
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'All', child: Text('All Visitors')),
-                          DropdownMenuItem(value: 'Delegates', child: Text('Delegates Only')),
-                          DropdownMenuItem(value: 'Speakers', child: Text('Speakers Only')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            exhibitor.setSelectedRoleFilter(val);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Footfall Counts Summary Grid
-            Builder(
-              builder: (context) {
-                final isRoleFiltered = exhibitor.selectedRoleFilter != 'All';
-                final displayTotalVisits = !isRoleFiltered
-                    ? summary.totalVisits
-                    : filteredParticipants.fold<int>(0, (sum, p) => sum + (p.visitCount > 0 ? p.visitCount : 1));
-                final displayUniqueVisitors = !isRoleFiltered
-                    ? summary.uniqueVisitors
-                    : filteredParticipants.length;
-
-                final uniqueLabel = isRoleFiltered
-                    ? 'Unique ${exhibitor.selectedRoleFilter}'
-                    : 'Unique Visitors';
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryMetricCard(
-                          label: 'Total Visits',
-                          value: displayTotalVisits.toString(),
-                          icon: Icons.trending_up_rounded,
-                          accentColor: const Color(0xFF4F46E5),
-                          bgColor: const Color(0xFFEEF2FF),
-                          borderColor: const Color(0xFFC7D2FE),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSummaryMetricCard(
-                          label: uniqueLabel,
-                          value: displayUniqueVisitors.toString(),
-                          icon: Icons.people_alt_rounded,
-                          accentColor: const Color(0xFF059669),
-                          bgColor: const Color(0xFFECFDF5),
-                          borderColor: const Color(0xFFA7F3D0),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
             // Booth Breakdown Cards (if available)
             if (byBoothDay.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -1053,6 +937,122 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                 ),
               ),
             ],
+
+            // Footfall Counts Summary Header & Role Filter Dropdown
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: const Icon(Icons.analytics_outlined, size: 15, color: Color(0xFF4F46E5)),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'FOOTFALL SUMMARY',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Master Filter Dropdown for all sections
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: exhibitor.selectedRoleFilter,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF4F46E5)),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'All', child: Text('All Visitors')),
+                          DropdownMenuItem(value: 'Delegates', child: Text('Delegates Only')),
+                          DropdownMenuItem(value: 'Speakers', child: Text('Speakers Only')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            exhibitor.setSelectedRoleFilter(val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Footfall Counts Summary Grid
+            Builder(
+              builder: (context) {
+                final isRoleFiltered = exhibitor.selectedRoleFilter != 'All';
+                final displayTotalVisits = !isRoleFiltered
+                    ? summary.totalVisits
+                    : filteredParticipants.fold<int>(0, (sum, p) => sum + (p.visitCount > 0 ? p.visitCount : 1));
+                final displayUniqueVisitors = !isRoleFiltered
+                    ? summary.uniqueVisitors
+                    : filteredParticipants.length;
+
+                final uniqueLabel = isRoleFiltered
+                    ? 'Unique ${exhibitor.selectedRoleFilter}'
+                    : 'Unique Visitors';
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryMetricCard(
+                          label: 'Total Visits',
+                          value: displayTotalVisits.toString(),
+                          icon: Icons.trending_up_rounded,
+                          accentColor: const Color(0xFF4F46E5),
+                          bgColor: const Color(0xFFEEF2FF),
+                          borderColor: const Color(0xFFC7D2FE),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSummaryMetricCard(
+                          label: uniqueLabel,
+                          value: displayUniqueVisitors.toString(),
+                          icon: Icons.people_alt_rounded,
+                          accentColor: const Color(0xFF059669),
+                          bgColor: const Color(0xFFECFDF5),
+                          borderColor: const Color(0xFFA7F3D0),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
 
             // Offline Pending Sync Banner
             _buildOfflineSyncBanner(context, exhibitor, auth),
@@ -1794,12 +1794,6 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                                     : (p.role == 'DL' ? 'Delegate' : p.role),
                                 const Color(0xFF4F46E5),
                                 const Color(0xFFEEF2FF),
-                              ),
-                              const SizedBox(width: 6),
-                              _buildBadge(
-                                '${p.visitCount} Visit${p.visitCount > 1 ? 's' : ''}',
-                                const Color(0xFF059669),
-                                const Color(0xFFECFDF5),
                               ),
                             ],
                           ),

@@ -140,22 +140,6 @@ class ExhibitorParticipantDetailModal extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFECFDF5),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '${participant.visitCount} Visit${participant.visitCount > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF059669),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ],

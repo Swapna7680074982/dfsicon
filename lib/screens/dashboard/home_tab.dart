@@ -1098,65 +1098,94 @@ class HomeTab extends StatelessWidget {
                 ? TimeFormatter.formatString(v.lastVisitedAt)
                 : '';
 
-            // Multi-color themes with Light Orange, Sky Azure, Mint Green, Violet & Coral
-            final List<Map<String, dynamic>> colorThemes = [
+            final List<Map<String, dynamic>> cardThemes = [
               {
-                'border': const Color(0xFFFED7AA),
-                'shadow': const Color(0xFFF97316).withValues(alpha: 0.09),
-                'avatarGradient': const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
-                'avatarBorder': const Color(0xFFFDBA74),
-                'avatarText': const Color(0xFFEA580C),
-                'contactIcon': const Color(0xFFEA580C),
-                'stallBg': const Color(0xFFFFF7ED),
-                'stallBorder': const Color(0xFFFDBA74),
-                'stallText': const Color(0xFFC2410C),
-                'stallIcon': const Color(0xFFEA580C),
-                'badgeBg': const Color(0xFFFEF3C7),
-                'badgeBorder': const Color(0xFFFCD34D),
-                'badgeText': const Color(0xFFB45309),
-                'badgeIcon': const Color(0xFFD97706),
-                'chevronBg': const Color(0xFFFFF7ED),
-                'chevronIcon': const Color(0xFFEA580C),
+                'avatarBg': const Color(0xFFEEF2FF),
+                'avatarBorder': const Color(0xFFC7D2FE),
+                'avatarText': const Color(0xFF4338CA),
+                'boothBg': const Color(0xFFEEF2FF),
+                'boothBorder': const Color(0xFFC7D2FE),
+                'boothText': const Color(0xFF4338CA),
+                'boothIcon': const Color(0xFF4F46E5),
+                'chevronBg': const Color(0xFFEEF2FF),
+                'chevronColor': const Color(0xFF4F46E5),
               },
               {
-                'border': const Color(0xFFBAE6FD),
-                'shadow': const Color(0xFF0284C7).withValues(alpha: 0.09),
-                'avatarGradient': const [Color(0xFFF0F9FF), Color(0xFFE0F2FE)],
-                'avatarBorder': const Color(0xFF7DD3FC),
-                'avatarText': const Color(0xFF0284C7),
-                'contactIcon': const Color(0xFF0284C7),
-                'stallBg': const Color(0xFFF0F9FF),
-                'stallBorder': const Color(0xFF7DD3FC),
-                'stallText': const Color(0xFF0369A1),
-                'stallIcon': const Color(0xFF0284C7),
-                'badgeBg': const Color(0xFFE0F2FE),
-                'badgeBorder': const Color(0xFF38BDF8),
-                'badgeText': const Color(0xFF0369A1),
-                'badgeIcon': const Color(0xFF0284C7),
+                'avatarBg': const Color(0xFFECFDF5),
+                'avatarBorder': const Color(0xFFA7F3D0),
+                'avatarText': const Color(0xFF047857),
+                'boothBg': const Color(0xFFECFDF5),
+                'boothBorder': const Color(0xFFA7F3D0),
+                'boothText': const Color(0xFF047857),
+                'boothIcon': const Color(0xFF059669),
+                'chevronBg': const Color(0xFFECFDF5),
+                'chevronColor': const Color(0xFF059669),
+              },
+              {
+                'avatarBg': const Color(0xFFFAF5FF),
+                'avatarBorder': const Color(0xFFE9D5FF),
+                'avatarText': const Color(0xFF6D28D9),
+                'boothBg': const Color(0xFFFAF5FF),
+                'boothBorder': const Color(0xFFE9D5FF),
+                'boothText': const Color(0xFF6D28D9),
+                'boothIcon': const Color(0xFF7C3AED),
+                'chevronBg': const Color(0xFFFAF5FF),
+                'chevronColor': const Color(0xFF7C3AED),
+              },
+              {
+                'avatarBg': const Color(0xFFFFFBEB),
+                'avatarBorder': const Color(0xFFFDE68A),
+                'avatarText': const Color(0xFFB45309),
+                'boothBg': const Color(0xFFFFFBEB),
+                'boothBorder': const Color(0xFFFDE68A),
+                'boothText': const Color(0xFFB45309),
+                'boothIcon': const Color(0xFFD97706),
+                'chevronBg': const Color(0xFFFFFBEB),
+                'chevronColor': const Color(0xFFD97706),
+              },
+              {
+                'avatarBg': const Color(0xFFF0F9FF),
+                'avatarBorder': const Color(0xFFBAE6FD),
+                'avatarText': const Color(0xFF0369A1),
+                'boothBg': const Color(0xFFF0F9FF),
+                'boothBorder': const Color(0xFFBAE6FD),
+                'boothText': const Color(0xFF0369A1),
+                'boothIcon': const Color(0xFF0284C7),
                 'chevronBg': const Color(0xFFF0F9FF),
-                'chevronIcon': const Color(0xFF0284C7),
+                'chevronColor': const Color(0xFF0284C7),
+              },
+              {
+                'avatarBg': const Color(0xFFFDF2F8),
+                'avatarBorder': const Color(0xFFFBCFE8),
+                'avatarText': const Color(0xFFBE185D),
+                'boothBg': const Color(0xFFFDF2F8),
+                'boothBorder': const Color(0xFFFBCFE8),
+                'boothText': const Color(0xFFBE185D),
+                'boothIcon': const Color(0xFFDB2777),
+                'chevronBg': const Color(0xFFFDF2F8),
+                'chevronColor': const Color(0xFFDB2777),
               },
             ];
-            final t = colorThemes[index % colorThemes.length];
+            final t = cardThemes[index % cardThemes.length];
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: t['border'] as Color, width: 1.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
                 boxShadow: [
                   BoxShadow(
-                    color: t['shadow'] as Color,
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   onTap: () {
                     final exploreProvider = Provider.of<ExploreProvider>(context, listen: false);
                     Exhibitor? matchedEx;
@@ -1178,31 +1207,27 @@ class HomeTab extends StatelessWidget {
                     }
                   },
                   child: Padding(
-                    padding: const EdgeInsets.all(15.0),
+                    padding: const EdgeInsets.all(14.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Logo / Initials Container with distinct themed gradient
+                        // Logo / Initials Container
                         Container(
-                          width: 50,
-                          height: 50,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: t['avatarGradient'] as List<Color>,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: t['avatarBorder'] as Color, width: 1.2),
+                            color: t['avatarBg'] as Color,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: t['avatarBorder'] as Color, width: 1.0),
                           ),
                           alignment: Alignment.center,
                           child: v.fullLogoUrl.isNotEmpty
                               ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(13),
+                                  borderRadius: BorderRadius.circular(11),
                                   child: Image.network(
                                     v.fullLogoUrl,
-                                    width: 46,
-                                    height: 46,
+                                    width: 44,
+                                    height: 44,
                                     fit: BoxFit.contain,
                                     errorBuilder: (_, __, ___) => Text(
                                       _getInitials(v.companyName),
@@ -1223,65 +1248,31 @@ class HomeTab extends StatelessWidget {
                                   ),
                                 ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         // Company + Contact Info + Badges
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      v.companyName.isNotEmpty ? v.companyName : 'Exhibitor',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF0F172A),
-                                        letterSpacing: -0.2,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: t['badgeBg'] as Color,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: t['badgeBorder'] as Color),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.check_circle_outline_rounded,
-                                          size: 11,
-                                          color: t['badgeIcon'] as Color,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          '${v.visitCount} ${v.visitCount == 1 ? 'Visit' : 'Visits'}',
-                                          style: TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: t['badgeText'] as Color,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                v.companyName.isNotEmpty ? v.companyName : 'Exhibitor',
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                  letterSpacing: -0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               if (v.contactPerson.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.person_outline_rounded,
                                       size: 13,
-                                      color: t['contactIcon'] as Color,
+                                      color: Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
@@ -1289,7 +1280,7 @@ class HomeTab extends StatelessWidget {
                                         'Contact: ${v.contactPerson}',
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w500,
                                           color: Color(0xFF475569),
                                         ),
                                         maxLines: 1,
@@ -1299,15 +1290,15 @@ class HomeTab extends StatelessWidget {
                                   ],
                                 ),
                               ],
-                              const SizedBox(height: 7),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                                     decoration: BoxDecoration(
-                                      color: t['stallBg'] as Color,
+                                      color: t['boothBg'] as Color,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: t['stallBorder'] as Color),
+                                      border: Border.all(color: t['boothBorder'] as Color),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -1315,15 +1306,15 @@ class HomeTab extends StatelessWidget {
                                         Icon(
                                           Icons.storefront_rounded,
                                           size: 11,
-                                          color: t['stallIcon'] as Color,
+                                          color: t['boothIcon'] as Color,
                                         ),
-                                        const SizedBox(width: 3),
+                                        const SizedBox(width: 3.5),
                                         Text(
                                           boothTag,
                                           style: TextStyle(
                                             fontSize: 10,
-                                            fontWeight: FontWeight.w700,
-                                            color: t['stallText'] as Color,
+                                            fontWeight: FontWeight.w600,
+                                            color: t['boothText'] as Color,
                                           ),
                                         ),
                                       ],
@@ -1355,10 +1346,10 @@ class HomeTab extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
-                          width: 28,
-                          height: 28,
+                          width: 26,
+                          height: 26,
                           decoration: BoxDecoration(
                             color: t['chevronBg'] as Color,
                             shape: BoxShape.circle,
@@ -1366,8 +1357,8 @@ class HomeTab extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Icon(
                             Icons.chevron_right_rounded,
-                            size: 18,
-                            color: t['chevronIcon'] as Color,
+                            size: 17,
+                            color: t['chevronColor'] as Color,
                           ),
                         ),
                       ],
@@ -1388,22 +1379,22 @@ class HomeTab extends StatelessWidget {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFEA580C), Color(0xFFF97316)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                      colors: [Color(0xFF0A1E3D), Color(0xFF1E3A8A)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEA580C).withValues(alpha: 0.28),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: const Color(0xFF1E3A8A).withValues(alpha: 0.22),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
@@ -1415,7 +1406,7 @@ class HomeTab extends StatelessWidget {
                         'View All ${visits.length} Visited Booths',
                         style: const TextStyle(
                           fontSize: 13.5,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: 0.2,
                         ),

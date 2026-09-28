@@ -623,7 +623,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 ),
               )
             else ...[
-              // Grid of 6 Stats Cards
+              // Grid of Stats Cards
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
@@ -632,14 +632,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                 crossAxisSpacing: 10,
                 childAspectRatio: 1.38,
                 children: [
-                  _buildStatCard(
-                    icon: Icons.record_voice_over_rounded,
-                    iconBg: const Color(0xFFEEF2FF),
-                    iconColor: const Color(0xFF4F46E5),
-                    count: '${stats.totalSpeakers}',
-                    label: 'SPEAKERS',
-                    onTap: () => _tabController.animateTo(1),
-                  ),
                   _buildStatCard(
                     icon: Icons.people_alt_rounded,
                     iconBg: const Color(0xFFECFDF5),
