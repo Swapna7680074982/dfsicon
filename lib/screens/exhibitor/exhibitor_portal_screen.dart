@@ -320,6 +320,11 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
     final home = Provider.of<HomeProvider>(context, listen: false);
     final exhibitor = Provider.of<ExhibitorProvider>(context, listen: false);
 
+    if (forceRefresh || auth.accessToken.isEmpty) {
+      await auth.refreshSessionToken();
+      if (!mounted) return;
+    }
+
     final token = auth.accessToken;
     if (token.isEmpty) return;
 
@@ -643,11 +648,15 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: () => exhibitor.fetchAllExhibitorData(
-        auth.accessToken,
-        summitId: summitId,
-        forceRefresh: true,
-      ),
+      onRefresh: () async {
+        await auth.refreshSessionToken();
+        if (!context.mounted) return;
+        await exhibitor.fetchAllExhibitorData(
+          auth.accessToken,
+          summitId: summitId,
+          forceRefresh: true,
+        );
+      },
       color: const Color(0xFF4F46E5),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
