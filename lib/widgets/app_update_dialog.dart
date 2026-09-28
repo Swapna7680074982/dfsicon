@@ -8,11 +8,6 @@ class AppUpdateDialog extends StatelessWidget {
   final AppVersionInfo versionInfo;
   final String installedVersionName;
 
-  static const String defaultIosStoreUrl =
-      'https://apps.apple.com/us/app/dfsicon/id6804636698';
-  static const String defaultAndroidStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.hhcl.dfsicon&pcampaignid=web_share';
-
   const AppUpdateDialog({
     super.key,
     required this.versionInfo,
@@ -20,9 +15,17 @@ class AppUpdateDialog extends StatelessWidget {
   });
 
   Future<void> _launchStoreUrl(BuildContext context) async {
-    String targetUrl = versionInfo.updateUrl.trim();
+    final String targetUrl = versionInfo.updateUrl.trim();
     if (targetUrl.isEmpty) {
-      targetUrl = Platform.isIOS ? defaultIosStoreUrl : defaultAndroidStoreUrl;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Update link is currently not available.'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+      return;
     }
 
     try {
@@ -30,39 +33,25 @@ class AppUpdateDialog extends StatelessWidget {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        // Fallback to default platform URL
-        final fallbackUri = Uri.parse(
-          Platform.isIOS ? defaultIosStoreUrl : defaultAndroidStoreUrl,
-        );
-        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+        await launchUrl(uri);
       }
-    } catch (_) {
-      try {
-        final fallbackUri = Uri.parse(
-          Platform.isIOS ? defaultIosStoreUrl : defaultAndroidStoreUrl,
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open update link: $targetUrl'),
+            backgroundColor: Colors.red.shade700,
+          ),
         );
-        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open store link: $targetUrl'),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
-        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isForced = versionInfo.forceUpdate;
     final String displayMessage = versionInfo.message.isNotEmpty
         ? versionInfo.message
-        : (isForced
-            ? 'A mandatory update is required to continue using DFSICON. Please update to the latest version.'
-            : 'A new version of DFSICON is available with improvements and new features.');
+        : 'A critical update is required to continue using DFSICON. Please update to the latest version.';
 
     final String latestVersion = versionInfo.latestVersionName.isNotEmpty
         ? 'v${versionInfo.latestVersionName}'
@@ -73,7 +62,7 @@ class AppUpdateDialog extends StatelessWidget {
         : (versionInfo.currentVersionCode > 0 ? 'Build ${versionInfo.currentVersionCode}' : '');
 
     return PopScope(
-      canPop: !isForced,
+      canPop: false,
       child: Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
@@ -119,20 +108,18 @@ class AppUpdateDialog extends StatelessWidget {
                           width: 2,
                         ),
                       ),
-                      child: Center(
+                      child: const Center(
                         child: Icon(
-                          isForced
-                              ? Icons.system_security_update_rounded
-                              : Icons.system_update_alt_rounded,
+                          Icons.system_security_update_rounded,
                           size: 36,
                           color: Colors.white,
                         ),
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Text(
-                      isForced ? 'Update Required' : 'New Update Available',
-                      style: const TextStyle(
+                    const Text(
+                      'Update Required',
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -147,9 +134,9 @@ class AppUpdateDialog extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        isForced ? 'Critical Update' : 'Recommended Update',
-                        style: const TextStyle(
+                      child: const Text(
+                        'Critical Update',
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -284,31 +271,6 @@ class AppUpdateDialog extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    // Cancel / Later Button (only if not force update)
-                    if (!isForced) ...[
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 42,
-                        child: TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Later',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

@@ -1474,6 +1474,83 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     );
   }
 
+  void _showConnectionErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEE2E2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 32,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Connection Request',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Okay',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildConnectionButton(ParticipantItem p, String? assignmentId) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final connProvider = Provider.of<ConnectionsProvider>(context, listen: false);
@@ -1560,26 +1637,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                   netProvider.fetchConversations(accessToken: auth.accessToken);
                 } else if (!success && context.mounted) {
                   final errorMsg = connProvider.lastErrorMessage ?? 'Failed to send connection request.';
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              errorMsg,
-                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                      backgroundColor: const Color(0xFFDC2626),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      duration: const Duration(seconds: 4),
-                    ),
-                  );
+                  _showConnectionErrorDialog(context, errorMsg);
                 }
               },
               icon: const Icon(Icons.person_add_alt_1, size: 12, color: AppColors.primary),
@@ -1772,26 +1830,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             netProvider.fetchConversations(accessToken: auth.accessToken);
           } else if (!success && context.mounted) {
             final errorMsg = connProvider.lastErrorMessage ?? 'Failed to send connection request.';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        errorMsg,
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: const Color(0xFFDC2626),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                duration: const Duration(seconds: 4),
-              ),
-            );
+            _showConnectionErrorDialog(context, errorMsg);
           }
         },
         style: OutlinedButton.styleFrom(

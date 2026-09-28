@@ -99,7 +99,7 @@ class AppVersionService {
 
     await showDialog(
       context: context,
-      barrierDismissible: !info.forceUpdate,
+      barrierDismissible: false,
       routeSettings: const RouteSettings(name: '/app_update_dialog'),
       builder: (dialogContext) => AppUpdateDialog(
         versionInfo: info,

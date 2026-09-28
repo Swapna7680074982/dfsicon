@@ -192,7 +192,7 @@ class ConnectionsProvider extends ChangeNotifier {
         _participants[index].isConnecting = false;
       }
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
           _lastErrorMessage = null;
@@ -208,12 +208,16 @@ class ConnectionsProvider extends ChangeNotifier {
           notifyListeners();
           return true;
         } else {
-          _lastErrorMessage = data['message'] ?? 'Failed to send connection request.';
+          _lastErrorMessage = data['message']?.toString() ?? 'Failed to send connection request.';
         }
       } else {
         try {
           final data = json.decode(response.body);
-          _lastErrorMessage = data['message'] ?? 'Unable to send connection request (${response.statusCode}).';
+          if (data['message'] != null && data['message'].toString().trim().isNotEmpty) {
+            _lastErrorMessage = data['message'].toString().trim();
+          } else {
+            _lastErrorMessage = 'Unable to send connection request (${response.statusCode}).';
+          }
         } catch (_) {
           _lastErrorMessage = 'Unable to send connection request. Please try again.';
         }
