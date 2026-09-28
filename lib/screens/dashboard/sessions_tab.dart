@@ -353,6 +353,7 @@ class _SessionsTabState extends State<SessionsTab> {
 
   Future<void> _handleToggleBookmark(SessionItem session) async {
     if (_loadingBookmarks.contains(session.id)) return;
+    final bool wasBookmarked = session.isBookmarked;
     setState(() {
       _loadingBookmarks.add(session.id);
     });
@@ -372,14 +373,45 @@ class _SessionsTabState extends State<SessionsTab> {
       setState(() {
         _loadingBookmarks.remove(session.id);
       });
-    }
 
-    if (errorMessage != null && context.mounted) {
+      final bool isNowBookmarked = !wasBookmarked;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Row(
+            children: [
+              Icon(
+                errorMessage != null
+                    ? Icons.error_outline_rounded
+                    : (isNowBookmarked ? Icons.bookmark_added_rounded : Icons.bookmark_remove_rounded),
+                color: errorMessage != null ? const Color(0xFFDC2626) : const Color(0xFF047857),
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  errorMessage ??
+                      (isNowBookmarked
+                          ? 'Session bookmarked successfully'
+                          : 'Session removed from bookmarks'),
+                  style: TextStyle(
+                    color: errorMessage != null ? const Color(0xFFB91C1C) : const Color(0xFF065F46),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: errorMessage != null ? const Color(0xFFFEF2F2) : const Color(0xFFECFDF5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: errorMessage != null ? const Color(0xFFFECACA) : const Color(0xFFA7F3D0),
+              width: 1.2,
+            ),
+          ),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.redAccent,
         ),
       );
     }
@@ -898,37 +930,40 @@ class _SessionsTabState extends State<SessionsTab> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    final isAdmin = auth.isAdmin || auth.roleCode == 'AD';
-    final isExhibitor = auth.isExhibitor || auth.roleCode == 'EX';
-    final hideBookmarks = isAdmin || isExhibitor;
-
     final sessionsProvider = Provider.of<SessionsProvider>(context);
     final allSessions = sessionsProvider.sessions;
     final mySessions = sessionsProvider.mySessions;
-    final bookmarkedSessions = allSessions.where((s) => s.isBookmarked).toList();
+    final Set<String> seenBookmarkKeys = {};
+    final List<SessionItem> bookmarkedSessions = [];
+    for (final s in allSessions) {
+      if (s.isBookmarked) {
+        final key = (s.assignmentId != null && s.assignmentId!.isNotEmpty && s.assignmentId != '0')
+            ? 'aid_${s.assignmentId}'
+            : ((s.topicId != null && s.topicId!.isNotEmpty)
+                ? 'tid_${s.topicId}'
+                : (s.slotId != null && s.slotId!.isNotEmpty
+                    ? 'slot_${s.slotId}'
+                    : 'id_${s.id}_${s.title.trim().toLowerCase()}'));
+        if (seenBookmarkKeys.add(key)) {
+          bookmarkedSessions.add(s);
+        }
+      }
+    }
 
-    // If exhibitor, always force list view
-    final isEffectiveCalendarView = !isExhibitor && _isCalendarView;
+    final isEffectiveCalendarView = _isCalendarView;
 
-    // In My Calendar view, we display all sessions for Admin, or bookmarked sessions (and speaker's confirmed sessions) for other roles
+    // In My Calendar view, we display bookmarked sessions (and speaker's confirmed sessions for speaker roles)
     final Map<dynamic, SessionItem> myCalendarMap = {};
-    if (isAdmin) {
-      for (final s in allSessions) {
+    if (auth.isSpeakerRole || auth.isSpeaker) {
+      for (final s in mySessions) {
         final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
         myCalendarMap[key] = s;
       }
-    } else {
-      if (auth.isSpeakerRole || auth.isSpeaker) {
-        for (final s in mySessions) {
-          final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
-          myCalendarMap[key] = s;
-        }
-      }
-      for (final s in bookmarkedSessions) {
-        final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
-        if (!myCalendarMap.containsKey(key)) {
-          myCalendarMap[key] = s;
-        }
+    }
+    for (final s in bookmarkedSessions) {
+      final key = (s.topicId != null && s.topicId!.isNotEmpty) ? 't_${s.topicId}' : 'id_${s.id}';
+      if (!myCalendarMap.containsKey(key)) {
+        myCalendarMap[key] = s;
       }
     }
     final myCalendarSessions = myCalendarMap.values.toList();
@@ -938,7 +973,7 @@ class _SessionsTabState extends State<SessionsTab> {
     if (isEffectiveCalendarView) {
       currentList = myCalendarSessions;
     } else {
-      currentList = (!hideBookmarks && _showOnlyBookmarked) ? bookmarkedSessions : allSessions;
+      currentList = _showOnlyBookmarked ? bookmarkedSessions : allSessions;
     }
 
     // Extract calendar unique dates from myCalendarSessions in calendar mode
@@ -1015,57 +1050,54 @@ class _SessionsTabState extends State<SessionsTab> {
               ),
               tooltip: 'Download Documents & Resources',
             ),
-            if (!isExhibitor) ...[
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isCalendarView = !_isCalendarView;
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: _isCalendarView ? Colors.white : Colors.white.withAlpha(30),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _isCalendarView ? Colors.white : Colors.white.withAlpha(60),
-                      width: 1,
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isCalendarView = !_isCalendarView;
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: _isCalendarView ? Colors.white : Colors.white.withAlpha(30),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _isCalendarView ? Colors.white : Colors.white.withAlpha(60),
+                    width: 1,
+                  ),
+                  boxShadow: _isCalendarView
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(20),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isCalendarView ? Icons.calendar_month : Icons.calendar_month_outlined,
+                      color: _isCalendarView ? AppColors.primary : Colors.white,
+                      size: 18,
                     ),
-                    boxShadow: _isCalendarView
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(20),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isCalendarView ? Icons.calendar_month : Icons.calendar_month_outlined,
+                    const SizedBox(width: 6),
+                    Text(
+                      _isCalendarView ? 'List View' : 'My Calendar',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                         color: _isCalendarView ? AppColors.primary : Colors.white,
-                        size: 18,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _isCalendarView ? 'List View' : (isAdmin ? 'Timeline View' : 'My Calendar'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: _isCalendarView ? AppColors.primary : Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ] else
-              const SizedBox(width: 16),
+            ),
           ],
         ),
         body: Column(
@@ -1196,7 +1228,7 @@ class _SessionsTabState extends State<SessionsTab> {
                       ],
                     ],
                   ),
-                  if (!isEffectiveCalendarView && !hideBookmarks) ...[
+                  if (!isEffectiveCalendarView) ...[
                     const SizedBox(height: 10),
                     // Filter Chips: ALL SESSIONS, BOOKMARKED
                     SingleChildScrollView(
@@ -1946,9 +1978,6 @@ class _SessionsTabState extends State<SessionsTab> {
   }
 
   Widget _buildCalendarSessionCard(SessionItem session, {required bool isMySession}) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final hideBookmarks = auth.isAdmin || auth.roleCode == 'AD' || auth.isExhibitor || auth.roleCode == 'EX';
-
     return GestureDetector(
       onTap: () {
         if (isMySession) {
@@ -1992,7 +2021,7 @@ class _SessionsTabState extends State<SessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: (!hideBookmarks && session.isBookmarked) ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
+            color: session.isBookmarked ? AppColors.primary.withAlpha(50) : AppColors.tileBorder,
             width: 1.2,
           ),
           boxShadow: [
@@ -2021,7 +2050,7 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                   ),
                 ),
-                if (!isMySession && !hideBookmarks) ...[
+                if (!isMySession) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => _handleToggleBookmark(session),
@@ -2111,8 +2140,6 @@ class _SessionsTabState extends State<SessionsTab> {
   // Session Card (with Date & Time in Last Row)
   // ==========================================
   Widget _buildSessionCard(SessionItem session, {required bool isMySession}) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final hideBookmarks = auth.isAdmin || auth.roleCode == 'AD' || auth.isExhibitor || auth.roleCode == 'EX';
     final displayTime = _getSessionDisplayTime(session);
     final displayDate = _formatDateForDisplay(session);
 
@@ -2158,7 +2185,7 @@ class _SessionsTabState extends State<SessionsTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: (!hideBookmarks && session.isBookmarked) ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
+            color: session.isBookmarked ? AppColors.primary.withAlpha(40) : AppColors.tileBorder,
             width: 1.5,
           ),
           boxShadow: [
@@ -2187,7 +2214,7 @@ class _SessionsTabState extends State<SessionsTab> {
                     ),
                   ),
                 ),
-                if (!isMySession && !hideBookmarks) ...[
+                if (!isMySession) ...[
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => _handleToggleBookmark(session),

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/api_service.dart';
 import '../models/exhibitor_models.dart';
+import '../main.dart';
 
 class ExhibitorProvider extends ChangeNotifier {
   static const String _kPendingScansKey = 'pending_exhibitor_scans_queue';
@@ -10,9 +11,12 @@ class ExhibitorProvider extends ChangeNotifier {
   ExhibitorCountsData? _countsData;
   List<ExhibitorParticipant> _participants = [];
   List<Map<String, dynamic>> _pendingScans = [];
+  SponsorQrData? _sponsorQrData;
+  String? _sponsorQrMessage;
 
   bool _isLoadingCounts = false;
   bool _isLoadingParticipants = false;
+  bool _isFetchingSponsorQr = false;
   bool _isScanning = false;
   bool _isSyncing = false;
   String? _errorMessage;
@@ -33,10 +37,13 @@ class ExhibitorProvider extends ChangeNotifier {
   List<ExhibitorParticipant> get participants => _participants;
   List<Map<String, dynamic>> get pendingScans => List.unmodifiable(_pendingScans);
   int get pendingScansCount => _pendingScans.length;
+  SponsorQrData? get sponsorQrData => _sponsorQrData;
+  String? get sponsorQrMessage => _sponsorQrMessage;
+  bool get isFetchingSponsorQr => _isFetchingSponsorQr;
 
   bool get isLoadingCounts => _isLoadingCounts;
   bool get isLoadingParticipants => _isLoadingParticipants;
-  bool get isLoading => _isLoadingCounts || _isLoadingParticipants;
+  bool get isLoading => _isLoadingCounts || _isLoadingParticipants || _isFetchingSponsorQr;
   bool get isScanning => _isScanning;
   bool get isSyncing => _isSyncing;
   String? get errorMessage => _errorMessage;
@@ -221,7 +228,52 @@ class ExhibitorProvider extends ChangeNotifier {
     }
   }
 
-  // Fetch All Footfall & Participants Data
+  // Fetch Exhibitor Sponsor QR Code
+  Future<SponsorQrData?> fetchSponsorQrCode(
+    String accessToken, {
+    bool forceRefresh = false,
+  }) async {
+    if (accessToken.isEmpty) return null;
+    if (!forceRefresh && _sponsorQrData != null) return _sponsorQrData;
+
+    _isFetchingSponsorQr = true;
+    _sponsorQrMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.fetchSponsorQrCode(accessToken: accessToken);
+      if (response.statusCode == 401) {
+        MyApp.redirectToLogin();
+        return null;
+      }
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        _sponsorQrMessage = body['message']?.toString();
+        if (body['status'] == true && body['data'] != null && body['data'] is Map<String, dynamic>) {
+          _sponsorQrData = SponsorQrData.fromJson(Map<String, dynamic>.from(body['data']));
+        } else {
+          _sponsorQrData = null;
+        }
+      } else {
+        try {
+          final body = json.decode(response.body);
+          _sponsorQrMessage = body['message']?.toString();
+        } catch (_) {}
+        _sponsorQrData = null;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [ExhibitorProvider] fetchSponsorQrCode error: $e');
+      _sponsorQrMessage = 'Failed to load sponsor QR code.';
+      _sponsorQrData = null;
+    } finally {
+      _isFetchingSponsorQr = false;
+      notifyListeners();
+    }
+    return _sponsorQrData;
+  }
+
+  // Fetch All Footfall & Participants & Sponsor QR Data
   Future<void> fetchAllExhibitorData(
     String accessToken, {
     dynamic summitId = 1,
@@ -232,6 +284,7 @@ class ExhibitorProvider extends ChangeNotifier {
     await Future.wait([
       fetchCounts(accessToken, summitId: summitId, date: date, forceRefresh: forceRefresh),
       fetchParticipants(accessToken, summitId: summitId, date: date, boothId: boothId, forceRefresh: forceRefresh),
+      fetchSponsorQrCode(accessToken, forceRefresh: forceRefresh),
     ]);
   }
 

@@ -516,36 +516,17 @@ class SessionsProvider extends ChangeNotifier {
         }
       }
 
-      if (anySuccess || targetAssignmentIds.isNotEmpty) {
-        // Update local memory state
-        if (session != null) {
-          session.isBookmarked = !isCurrentlyBookmarked;
+      if (anySuccess) {
+        // Fetch fresh authoritative state directly from server API
+        final List<Future> refreshTasks = [
+          fetchConfirmedSessions(accessToken, forceRefresh: true),
+        ];
+        if (_mySessions.isNotEmpty) {
+          refreshTasks.add(fetchMyConfirmedSessions(accessToken, forceRefresh: true));
         }
-        for (final s in _sessions) {
-          if (s.id == sessionId ||
-              targetAssignmentIds.contains(s.assignmentId) ||
-              (s.slotId != null && s.slotId == sessionId.toString()) ||
-              (titleOverride != null && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase())) {
-            s.isBookmarked = !isCurrentlyBookmarked;
-          }
-        }
-        for (final s in _mySessions) {
-          if (s.id == sessionId ||
-              targetAssignmentIds.contains(s.assignmentId) ||
-              (s.slotId != null && s.slotId == sessionId.toString()) ||
-              (titleOverride != null && s.title.trim().toLowerCase() == titleOverride.trim().toLowerCase())) {
-            s.isBookmarked = !isCurrentlyBookmarked;
-          }
-        }
-
-        if (isCurrentlyBookmarked) {
-          fetchConfirmedSessions(accessToken, forceRefresh: true);
-        }
+        await Future.wait(refreshTasks);
         notifyListeners();
-
-        if (anySuccess) {
-          return null; // Success
-        }
+        return null; // Success
       }
 
       if (lastErrorMessage != null && lastErrorMessage.isNotEmpty) {

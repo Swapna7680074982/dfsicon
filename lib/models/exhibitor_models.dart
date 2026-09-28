@@ -162,3 +162,74 @@ class ExhibitorParticipant {
     'visit_count': visitCount,
   };
 }
+
+class SponsorQrData {
+  final int qrId;
+  final int sponsorId;
+  final String companyName;
+  final String contactPerson;
+  final String qrReference;
+  final String qrText;
+  final String fileName;
+  final String qrImagePath;
+  final String qrImageUrl;
+  final String generatedOn;
+
+  SponsorQrData({
+    required this.qrId,
+    required this.sponsorId,
+    this.companyName = '',
+    this.contactPerson = '',
+    this.qrReference = '',
+    this.qrText = '',
+    this.fileName = '',
+    this.qrImagePath = '',
+    this.qrImageUrl = '',
+    this.generatedOn = '',
+  });
+
+  factory SponsorQrData.fromJson(Map<String, dynamic> json) {
+    String rawUrl = json['qr_image_url']?.toString() ??
+        json['qr_image']?.toString() ??
+        json['url']?.toString() ??
+        '';
+    if (rawUrl.contains('/./')) {
+      rawUrl = rawUrl.replaceAll('/./', '/');
+    }
+    if (rawUrl.isNotEmpty && !rawUrl.startsWith('http')) {
+      if (rawUrl.startsWith('./')) {
+        rawUrl = 'https://services.heterohcl.com/dfs-icon/${rawUrl.substring(2)}';
+      } else if (rawUrl.startsWith('/')) {
+        rawUrl = 'https://services.heterohcl.com/dfs-icon/${rawUrl.substring(1)}';
+      } else {
+        rawUrl = 'https://services.heterohcl.com/dfs-icon/$rawUrl';
+      }
+    }
+
+    return SponsorQrData(
+      qrId: int.tryParse(json['qr_id']?.toString() ?? '') ?? 0,
+      sponsorId: int.tryParse(json['sponsor_id']?.toString() ?? '') ?? 0,
+      companyName: json['company_name']?.toString() ?? '',
+      contactPerson: json['contact_person']?.toString() ?? '',
+      qrReference: json['qr_reference']?.toString() ?? '',
+      qrText: json['qr_text']?.toString() ?? '',
+      fileName: json['file_name']?.toString() ?? '',
+      qrImagePath: json['qr_image_path']?.toString() ?? '',
+      qrImageUrl: rawUrl,
+      generatedOn: json['generated_on']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'qr_id': qrId,
+    'sponsor_id': sponsorId,
+    'company_name': companyName,
+    'contact_person': contactPerson,
+    'qr_reference': qrReference,
+    'qr_text': qrText,
+    'file_name': fileName,
+    'qr_image_path': qrImagePath,
+    'qr_image_url': qrImageUrl,
+    'generated_on': generatedOn,
+  };
+}

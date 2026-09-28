@@ -814,6 +814,7 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
 
   Future<void> _handleToggleBookmark(SessionItem session) async {
     if (_loadingBookmarks.contains(session.id)) return;
+    final bool wasBookmarked = session.isBookmarked;
     setState(() {
       _loadingBookmarks.add(session.id);
     });
@@ -833,14 +834,45 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
       setState(() {
         _loadingBookmarks.remove(session.id);
       });
-    }
 
-    if (errorMessage != null && context.mounted) {
+      final bool isNowBookmarked = !wasBookmarked;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Row(
+            children: [
+              Icon(
+                errorMessage != null
+                    ? Icons.error_outline_rounded
+                    : (isNowBookmarked ? Icons.bookmark_added_rounded : Icons.bookmark_remove_rounded),
+                color: errorMessage != null ? const Color(0xFFDC2626) : const Color(0xFF047857),
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  errorMessage ??
+                      (isNowBookmarked
+                          ? 'Session bookmarked successfully'
+                          : 'Session removed from bookmarks'),
+                  style: TextStyle(
+                    color: errorMessage != null ? const Color(0xFFB91C1C) : const Color(0xFF065F46),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: errorMessage != null ? const Color(0xFFFEF2F2) : const Color(0xFFECFDF5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: errorMessage != null ? const Color(0xFFFECACA) : const Color(0xFFA7F3D0),
+              width: 1.2,
+            ),
+          ),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.redAccent,
         ),
       );
     }
@@ -884,7 +916,22 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
     final allSessions = sessionsProvider.sessions;
     final mySessions = sessionsProvider.mySessions;
     final otherSessions = allSessions.where((s) => !_isMySession(s, mySessions)).toList();
-    final bookmarkedSessions = allSessions.where((s) => s.isBookmarked).toList();
+    final Set<String> seenBookmarkKeys = {};
+    final List<SessionItem> bookmarkedSessions = [];
+    for (final s in allSessions) {
+      if (s.isBookmarked) {
+        final key = (s.assignmentId != null && s.assignmentId!.isNotEmpty && s.assignmentId != '0')
+            ? 'aid_${s.assignmentId}'
+            : ((s.topicId != null && s.topicId!.isNotEmpty)
+                ? 'tid_${s.topicId}'
+                : (s.slotId != null && s.slotId!.isNotEmpty
+                    ? 'slot_${s.slotId}'
+                    : 'id_${s.id}_${s.title.trim().toLowerCase()}'));
+        if (seenBookmarkKeys.add(key)) {
+          bookmarkedSessions.add(s);
+        }
+      }
+    }
 
     // In My Calendar view, we display both the speaker's own sessions AND their bookmarked sessions directly in the calendar timeline
     final Map<dynamic, SessionItem> myCalendarMap = {};

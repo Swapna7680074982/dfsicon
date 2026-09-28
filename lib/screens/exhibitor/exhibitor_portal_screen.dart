@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
@@ -9,6 +10,8 @@ import '../../providers/home_provider.dart';
 import '../../providers/exhibitor_provider.dart';
 import '../../models/exhibitor_models.dart';
 import '../../utils/time_formatter.dart';
+import '../../utils/gallery_helper.dart';
+import '../../services/documents_service.dart';
 import '../calendar/event_calendar_screen.dart';
 import '../profile/profile_screen.dart';
 import '../admin/admin_detail_sheets.dart';
@@ -46,6 +49,203 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   String _selectedExhibitorCategory = 'All';
 
   int _lastTabIndex = 0;
+  bool _isDownloadingQr = false;
+
+  Future<void> _downloadSponsorQr(SponsorQrData qrData) async {
+    if (_isDownloadingQr) return;
+    final url = qrData.qrImageUrl.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QR Code image URL is not available.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isDownloadingQr = true);
+
+    try {
+      final bytes = await GalleryHelper.downloadImageBytes(url);
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('Failed to download image bytes.');
+      }
+
+      final fileName = qrData.fileName.isNotEmpty
+          ? qrData.fileName
+          : 'Sponsor_QR_${qrData.sponsorId > 0 ? qrData.sponsorId : "Booth"}.png';
+
+      // 1. Save to Downloads > DFSICON folder
+      final dir = await DocumentsService.getDocumentsDirectory();
+      if (dir != null) {
+        final file = File('${dir.path}/$fileName');
+        await file.writeAsBytes(bytes);
+      }
+
+      // 2. Also save to Gallery album 'DFSICON'
+      await GalleryHelper.saveBytesToGallery(bytes, album: 'DFSICON');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Color(0xFF047857), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Saved "$fileName" to Downloads > DFSICON',
+                    style: const TextStyle(
+                      color: Color(0xFF065F46),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFECFDF5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Color(0xFFA7F3D0), width: 1.2),
+            ),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Failed to download QR Code: $e',
+                    style: const TextStyle(
+                      color: Color(0xFFB91C1C),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFFEF2F2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Color(0xFFFECACA), width: 1.2),
+            ),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingQr = false);
+      }
+    }
+  }
+
+  void _showEnlargedQrDialog(SponsorQrData qrData) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      qrData.companyName.isNotEmpty ? qrData.companyName : 'Booth QR Code',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(ctx).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 18, color: AppColors.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: 250,
+                height: 250,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.tileBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Image.network(
+                  qrData.qrImageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Icon(Icons.broken_image_rounded, size: 48, color: AppColors.textLight),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _downloadSponsorQr(qrData);
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text(
+                    'Download to DFSICON Folder',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F46E5),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -592,6 +792,9 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
               ),
             ),
 
+            // Exhibitor Sponsor QR Code Section
+            _buildSponsorQrSection(auth, exhibitor),
+
             // Footfall Counts Summary Header & Role Filter Dropdown
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
@@ -1088,6 +1291,245 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSponsorQrSection(AuthProvider auth, ExhibitorProvider exhibitor) {
+    final sponsorQr = exhibitor.sponsorQrData;
+    final isFetching = exhibitor.isFetchingSponsorQr;
+    final message = exhibitor.sponsorQrMessage;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.qr_code_2_rounded,
+                      size: 16,
+                      color: Color(0xFF4F46E5),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'MY QR CODE',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Main Body: Loading / Available / Empty State
+          if (isFetching && sponsorQr == null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              alignment: Alignment.center,
+              child: const Column(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Color(0xFF4F46E5),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Loading Sponsor QR code...',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            )
+          else if (sponsorQr != null && sponsorQr.qrImageUrl.isNotEmpty) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // QR Image with Tap to Enlarge
+                GestureDetector(
+                  onTap: () => _showEnlargedQrDialog(sponsorQr),
+                  child: Container(
+                    width: 110,
+                    height: 110,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              sponsorQr.qrImageUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const Center(
+                                child: Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.textLight),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 2,
+                          right: 2,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Icon(Icons.fullscreen, size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Details & Download Button
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sponsorQr.companyName.isNotEmpty
+                            ? sponsorQr.companyName
+                            : (auth.userName.isNotEmpty ? auth.userName : 'Exhibitor'),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (sponsorQr.contactPerson.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          'Contact: ${sponsorQr.contactPerson}',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 36,
+                        child: ElevatedButton.icon(
+                          onPressed: _isDownloadingQr ? null : () => _downloadSponsorQr(sponsorQr),
+                          icon: _isDownloadingQr
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.download_rounded, size: 16),
+                          label: Text(
+                            _isDownloadingQr ? 'Saving...' : 'Download QR',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Empty / Not Generated Notice from backend
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFDE68A), width: 1),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message ?? 'Sponsor QR code not yet generated for this event.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF92400E),
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

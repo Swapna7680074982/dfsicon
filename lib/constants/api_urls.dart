@@ -107,6 +107,7 @@ class ApiUrls {
   static const String exhibitorCounts = '$baseUrl/exhibitor/counts';
   static const String exhibitorParticipants = '$baseUrl/exhibitor/participants';
   static const String exhibitorScan = '$baseUrl/exhibitor/scan';
+  static const String sponsorQrCode = '$baseUrl/exhibitor/sponsor_qr_code';
 }
 
 

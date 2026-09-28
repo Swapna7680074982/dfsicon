@@ -665,6 +665,7 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     child: GestureDetector(
                       onTap: () async {
                         if (_isSavingBookmark) return;
+                        final bool wasBookmarked = isBookmarked;
                         setState(() {
                           _isSavingBookmark = true;
                         });
@@ -683,12 +684,46 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                         }
                         if (errorMessage == null) {
                           _loadParticipants();
-                        } else if (context.mounted) {
+                        }
+                        if (context.mounted) {
+                          final bool isNowBookmarked = !wasBookmarked;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(errorMessage),
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    errorMessage != null
+                                        ? Icons.error_outline_rounded
+                                        : (isNowBookmarked ? Icons.bookmark_added_rounded : Icons.bookmark_remove_rounded),
+                                    color: errorMessage != null ? const Color(0xFFDC2626) : const Color(0xFF047857),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      errorMessage ??
+                                          (isNowBookmarked
+                                              ? 'Session bookmarked successfully'
+                                              : 'Session removed from bookmarks'),
+                                      style: TextStyle(
+                                        color: errorMessage != null ? const Color(0xFFB91C1C) : const Color(0xFF065F46),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: errorMessage != null ? const Color(0xFFFEF2F2) : const Color(0xFFECFDF5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: errorMessage != null ? const Color(0xFFFECACA) : const Color(0xFFA7F3D0),
+                                  width: 1.2,
+                                ),
+                              ),
+                              duration: const Duration(seconds: 3),
                               behavior: SnackBarBehavior.floating,
-                              backgroundColor: Colors.redAccent,
                             ),
                           );
                         }
