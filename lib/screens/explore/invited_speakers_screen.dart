@@ -62,10 +62,18 @@ class _InvitedSpeakersScreenState extends State<InvitedSpeakersScreen> {
 
     // Filter speakers
     final filteredSpeakers = exploreProvider.invitedSpeakers.where((speaker) {
-      final name = (speaker['full_name'] ?? '').toString().toLowerCase();
+      final query = _searchQuery.toLowerCase().trim();
+      if (query.isEmpty) return true;
+      final name = (speaker['full_name'] ?? speaker['name'] ?? '').toString().toLowerCase();
       final designation = (speaker['designation'] ?? '').toString().toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return name.contains(query) || designation.contains(query);
+      final organisation = (speaker['organisation'] ?? speaker['hospital'] ?? '').toString().toLowerCase();
+      final city = (speaker['city'] ?? '').toString().toLowerCase();
+      final specialty = (speaker['specialty'] ?? speaker['department'] ?? '').toString().toLowerCase();
+      return name.contains(query) ||
+          designation.contains(query) ||
+          organisation.contains(query) ||
+          city.contains(query) ||
+          specialty.contains(query);
     }).toList();
 
     return WaterDropletsBackground(

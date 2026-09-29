@@ -78,11 +78,14 @@ class _WorkshopsListScreenState extends State<WorkshopsListScreen> {
     final activeList = _selectedTabIndex == 0 ? myWorkshops : allWorkshops;
 
     final filtered = activeList.where((w) {
-      final name = w.workshopName.toLowerCase();
-      final code = w.workshopCode.toLowerCase();
-      final type = w.workshopType.toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      return name.contains(query) || code.contains(query) || type.contains(query);
+      final query = _searchQuery.toLowerCase().trim();
+      if (query.isEmpty) return true;
+      return w.workshopName.toLowerCase().contains(query) ||
+          w.workshopCode.toLowerCase().contains(query) ||
+          w.workshopType.toLowerCase().contains(query) ||
+          w.venueName.toLowerCase().contains(query) ||
+          w.description.toLowerCase().contains(query) ||
+          w.city.toLowerCase().contains(query);
     }).toList();
 
     final isLoading = _selectedTabIndex == 0 ? workshopsProvider.isLoading : (adminProv.isLoadingWorkshops && allAdminWorkshops.isEmpty);

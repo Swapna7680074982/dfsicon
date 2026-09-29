@@ -621,7 +621,16 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             (event.speakerName?.toLowerCase().contains(q) ?? false) ||
             (event.category?.toLowerCase().contains(q) ?? false) ||
             (event.hallName?.toLowerCase().contains(q) ?? false) ||
-            (event.workshopCode?.toLowerCase().contains(q) ?? false);
+            (event.hallCode?.toLowerCase().contains(q) ?? false) ||
+            (event.speakerDesignation?.toLowerCase().contains(q) ?? false) ||
+            (event.workshopCode?.toLowerCase().contains(q) ?? false) ||
+            (event.coordinatorName?.toLowerCase().contains(q) ?? false) ||
+            (event.description?.toLowerCase().contains(q) ?? false) ||
+            event.speakers.any((s) => s.toLowerCase().contains(q)) ||
+            event.speakerItems.any((si) =>
+                si.name.toLowerCase().contains(q) ||
+                si.designation.toLowerCase().contains(q) ||
+                si.organisation.toLowerCase().contains(q));
         if (!matches) continue;
       }
 
@@ -972,8 +981,6 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
           return GestureDetector(
             onTap: () => setState(() {
               _selectedDayIndex = index;
-              _adminCategory = AdminCalendarCategory.all;
-              _selectedSessionCategory = 'All Categories';
             }),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),

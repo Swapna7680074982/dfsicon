@@ -3976,6 +3976,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
         List<AdminFootfallParticipant> participants = [];
         AdminPagination pagination = const AdminPagination();
         String searchQuery = '';
+        final searchCtrl = TextEditingController();
         String? error;
 
         return StatefulBuilder(
@@ -4011,6 +4012,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               return p.name.toLowerCase().contains(q) ||
                   p.mobile.toLowerCase().contains(q) ||
                   p.organisation.toLowerCase().contains(q) ||
+                  p.designation.toLowerCase().contains(q) ||
                   p.city.toLowerCase().contains(q) ||
                   p.roleLabel.toLowerCase().contains(q);
             }).toList();
@@ -4086,13 +4088,23 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
                     child: TextField(
+                      controller: searchCtrl,
                       onChanged: (val) {
                         setModalState(() => searchQuery = val);
                       },
                       decoration: InputDecoration(
-                        hintText: 'Search attendee name, phone, city...',
+                        hintText: 'Search attendee name, phone, city, org...',
                         hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
                         prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                        suffixIcon: searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 16, color: Color(0xFF94A3B8)),
+                                onPressed: () {
+                                  searchCtrl.clear();
+                                  setModalState(() => searchQuery = '');
+                                },
+                              )
+                            : null,
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

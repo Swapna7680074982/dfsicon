@@ -977,9 +977,16 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           s.title.toLowerCase().contains(query) ||
           s.speakerName.toLowerCase().contains(query) ||
           s.speakerTitle.toLowerCase().contains(query) ||
+          (s.speakerDesignation ?? '').toLowerCase().contains(query) ||
+          (s.speakerOrganisation ?? '').toLowerCase().contains(query) ||
           s.location.toLowerCase().contains(query) ||
           (s.keywords ?? '').toLowerCase().contains(query) ||
-          (s.coordinatorName ?? '').toLowerCase().contains(query);
+          (s.description ?? '').toLowerCase().contains(query) ||
+          (s.coordinatorName ?? '').toLowerCase().contains(query) ||
+          s.speakers.any((sp) =>
+              sp.name.toLowerCase().contains(query) ||
+              sp.designation.toLowerCase().contains(query) ||
+              sp.organisation.toLowerCase().contains(query));
 
       bool matchesDateFilter = true;
       if (!_isCalendarView && _selectedDate != null) {
@@ -1585,9 +1592,16 @@ class _SpeakerSessionsTabState extends State<SpeakerSessionsTab> {
           s.title.toLowerCase().contains(query) ||
           s.speakerName.toLowerCase().contains(query) ||
           s.speakerTitle.toLowerCase().contains(query) ||
+          (s.speakerDesignation ?? '').toLowerCase().contains(query) ||
+          (s.speakerOrganisation ?? '').toLowerCase().contains(query) ||
           s.location.toLowerCase().contains(query) ||
           (s.keywords ?? '').toLowerCase().contains(query) ||
-          (s.coordinatorName ?? '').toLowerCase().contains(query);
+          (s.description ?? '').toLowerCase().contains(query) ||
+          (s.coordinatorName ?? '').toLowerCase().contains(query) ||
+          s.speakers.any((sp) =>
+              sp.name.toLowerCase().contains(query) ||
+              sp.designation.toLowerCase().contains(query) ||
+              sp.organisation.toLowerCase().contains(query));
 
       return matchesSearch && _matchesDate(s, activeDate);
     }).toList();

@@ -1012,7 +1012,10 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
                       ),
                       if (filteredParticipants.isNotEmpty)
                         TextButton(
-                          onPressed: () => _showAllVisitorsModal(context, filteredParticipants),
+                          onPressed: () => _showAllVisitorsModal(
+                            context,
+                            exhibitor.participants.isNotEmpty ? exhibitor.participants : filteredParticipants,
+                          ),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
@@ -2524,160 +2527,192 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        String searchQuery = '';
-        return StatefulBuilder(
-          builder: (modalContext, setModalState) {
-            final filtered = participants.where((p) {
-              if (searchQuery.trim().isEmpty) return true;
-              final q = searchQuery.toLowerCase();
-              return p.name.toLowerCase().contains(q) ||
-                  p.email.toLowerCase().contains(q) ||
-                  p.mobile.toLowerCase().contains(q) ||
-                  p.organisation.toLowerCase().contains(q) ||
-                  p.city.toLowerCase().contains(q);
-            }).toList();
+      builder: (ctx) => _AllRecordedVisitorsSheet(
+        participants: participants,
+        participantCardBuilder: _buildParticipantCard,
+      ),
+    );
+  }
+}
 
-            return Container(
-              height: MediaQuery.of(ctx).size.height * 0.88,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+class _AllRecordedVisitorsSheet extends StatefulWidget {
+  final List<ExhibitorParticipant> participants;
+  final Widget Function(ExhibitorParticipant) participantCardBuilder;
+
+  const _AllRecordedVisitorsSheet({
+    required this.participants,
+    required this.participantCardBuilder,
+  });
+
+  @override
+  State<_AllRecordedVisitorsSheet> createState() => _AllRecordedVisitorsSheetState();
+}
+
+class _AllRecordedVisitorsSheetState extends State<_AllRecordedVisitorsSheet> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _searchQuery.trim().toLowerCase();
+    final filtered = widget.participants.where((p) {
+      if (q.isEmpty) return true;
+      return p.name.toLowerCase().contains(q) ||
+          p.organisation.toLowerCase().contains(q) ||
+          p.designation.toLowerCase().contains(q) ||
+          p.city.toLowerCase().contains(q) ||
+          p.role.toLowerCase().contains(q) ||
+          p.roleLabel.toLowerCase().contains(q) ||
+          p.mobile.toLowerCase().contains(q) ||
+          p.email.toLowerCase().contains(q) ||
+          p.boothNumber.toLowerCase().contains(q) ||
+          p.boothLabel.toLowerCase().contains(q);
+    }).toList();
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
-              child: Column(
-                children: [
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 16, 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 16, 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEEF2FF),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.group_outlined,
-                            size: 20,
-                            color: Color(0xFF4F46E5),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'All Recorded Visitors',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                              Text(
-                                '${filtered.length} of ${participants.length} visitors',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
-                        ),
-                      ],
-                    ),
+                  child: const Icon(
+                    Icons.group_outlined,
+                    size: 20,
+                    color: Color(0xFF4F46E5),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                    child: Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
-                      ),
-                      child: TextField(
-                        onChanged: (val) {
-                          setModalState(() {
-                            searchQuery = val;
-                          });
-                        },
-                        style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-                        decoration: InputDecoration(
-                          hintText: 'Search visitors by name, org, city...',
-                          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                          prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
-                          suffixIcon: searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 16, color: Color(0xFF64748B)),
-                                  onPressed: () {
-                                    setModalState(() {
-                                      searchQuery = '';
-                                    });
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'All Recorded Visitors',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
-                    ),
+                      Text(
+                        '${filtered.length} of ${widget.participants.length} visitors',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                  Expanded(
-                    child: filtered.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.search_off_rounded, size: 40, color: Color(0xFF94A3B8)),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    'No visitors found matching your search',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF64748B),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Container(
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                  });
+                },
+                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Search visitors by name, org, city, designation...',
+                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16, color: Color(0xFF64748B)),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.search_off_rounded, size: 40, color: Color(0xFF94A3B8)),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'No visitors found matching your search',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final p = filtered[index];
-                              return _buildParticipantCard(p);
-                            },
                           ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final p = filtered[index];
+                      return widget.participantCardBuilder(p);
+                    },
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }
