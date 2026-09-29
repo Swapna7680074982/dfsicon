@@ -6,9 +6,6 @@ import '../../providers/sessions_provider.dart';
 import '../../services/calendar_data_service.dart';
 import '../../services/documents_service.dart';
 import '../../widgets/documents_modal_sheet.dart';
-import '../admin/admin_detail_sheets.dart';
-import '../session_details/session_details_screen.dart';
-import '../workshops/workshop_details_screen.dart';
 
 enum CalendarRole {
   admin,
@@ -1207,8 +1204,6 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
   Widget _buildEventCard(CalendarEventItem event) {
     final currentRole = _effectiveRole;
-    final isSpeakerRole = currentRole == CalendarRole.speaker;
-    final isAdminRole = currentRole == CalendarRole.admin;
     final slotSt = event.slotStatus?.toUpperCase().trim() ?? '';
     final isCancelled = event.type == CalendarItemType.cancelledSlot ||
         (slotSt == 'CANCELLED');
@@ -1297,143 +1292,105 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
     final displayTitle = event.title.replaceAll('#', '·').replaceAll(RegExp(r'\s+·\s+'), ' · ').trim();
 
-    final bool canTap = isAdminRole;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: canTap ? () => _onEventTap(event, isAdminRole, isSpeakerRole, isMyPresentation, isWorkshop) : null,
+    return Container(
+      padding: const EdgeInsets.all(13.0),
+      decoration: BoxDecoration(
+        color: isCancelled ? const Color(0xFFFFFDFD) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(13.0),
-          decoration: BoxDecoration(
-            color: isCancelled ? const Color(0xFFFFFDFD) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor, width: isMyPresentation || isMyWorkshop || isCancelled ? 1.6 : 1.1),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha(4), blurRadius: 6, offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(
+        border: Border.all(color: borderColor, width: isMyPresentation || isMyWorkshop || isCancelled ? 1.6 : 1.1),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(4), blurRadius: 6, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Badges
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Row: Badges
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        // Type Badge
-                        _buildBadgeChip(badgeBg, badgeColor, badgeIcon, badgeText),
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    // Type Badge
+                    _buildBadgeChip(badgeBg, badgeColor, badgeIcon, badgeText),
 
-                        // Slot Status Indicator Badge (ALLOCATED)
-                        if (isAllocated && badgeText != 'ALLOCATED')
-                          _buildBadgeChip(
-                            const Color(0xFFFFFBEB),
-                            const Color(0xFFD97706),
-                            Icons.event_available_rounded,
-                            'ALLOCATED',
-                          ),
+                    // Slot Status Indicator Badge (ALLOCATED)
+                    if (isAllocated && badgeText != 'ALLOCATED')
+                      _buildBadgeChip(
+                        const Color(0xFFFFFBEB),
+                        const Color(0xFFD97706),
+                        Icons.event_available_rounded,
+                        'ALLOCATED',
+                      ),
 
-                        // Time Pill
-                        _buildTimePill('${event.startTime} - ${event.endTime}'),
+                    // Time Pill
+                    _buildTimePill('${event.startTime} - ${event.endTime}'),
 
-                        // Hall Badge
-                        if (event.hallName != null && event.hallName!.isNotEmpty)
-                          _buildHallBadge(event.hallName!),
+                    // Hall Badge
+                    if (event.hallName != null && event.hallName!.isNotEmpty)
+                      _buildHallBadge(event.hallName!),
 
-                        // Workshop Code
-                        if (event.workshopCode != null && event.workshopCode!.isNotEmpty)
-                          _buildWorkshopCodeBadge(event.workshopCode!),
-                      ],
-                    ),
-                  ),
-
-                  // Bookmark button based on role (same as Sessions screen: available for Delegate & Speaker)
-                  if (!hideBookmarks &&
-                      !isMyPresentation &&
-                      !isMyWorkshop &&
-                      !isWorkshop &&
-                      !isFreeSlot &&
-                      !isCancelled)
-                    _buildBookmarkButton(event),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Title
-              Text(
-                displayTitle,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: isCancelled ? const Color(0xFF991B1B) : AppColors.textPrimary,
-                  height: 1.3,
-                  decoration: isCancelled ? TextDecoration.lineThrough : null,
-                  decorationColor: const Color(0xFFEF4444),
+                    // Workshop Code
+                    if (event.workshopCode != null && event.workshopCode!.isNotEmpty)
+                      _buildWorkshopCodeBadge(event.workshopCode!),
+                  ],
                 ),
               ),
 
-              // Workshop Fee
-              if (isWorkshop && event.fee != null && event.fee != '0.00' && event.fee != '0') ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '₹${event.fee}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
-                  ),
-                ),
-              ],
-
-              // Speaker Row
-              if ((event.speakerName != null && event.speakerName!.isNotEmpty && event.speakerName != 'NA') ||
-                  event.speakers.isNotEmpty ||
-                  event.speakerItems.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _buildSpeakerRow(event),
-              ],
+              // Bookmark button based on role (same as Sessions screen: available for Delegate & Speaker)
+              if (!hideBookmarks &&
+                  !isMyPresentation &&
+                  !isMyWorkshop &&
+                  !isWorkshop &&
+                  !isFreeSlot &&
+                  !isCancelled)
+                _buildBookmarkButton(event),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+
+          // Title
+          Text(
+            displayTitle,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: isCancelled ? const Color(0xFF991B1B) : AppColors.textPrimary,
+              height: 1.3,
+              decoration: isCancelled ? TextDecoration.lineThrough : null,
+              decorationColor: const Color(0xFFEF4444),
+            ),
+          ),
+
+          // Workshop Fee
+          if (isWorkshop && event.fee != null && event.fee != '0.00' && event.fee != '0') ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '₹${event.fee}',
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
+              ),
+            ),
+          ],
+
+          // Speaker Row
+          if ((event.speakerName != null && event.speakerName!.isNotEmpty && event.speakerName != 'NA') ||
+              event.speakers.isNotEmpty ||
+              event.speakerItems.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildSpeakerRow(event),
+          ],
+        ],
       ),
     );
-  }
-
-  void _onEventTap(CalendarEventItem event, bool isAdminRole, bool isSpeakerRole,
-      bool isMyPresentation, bool isWorkshop) {
-    if (isAdminRole) {
-      if (isWorkshop) {
-        showAdminWorkshopDetailsModal(context, workshopId: event.id);
-      } else if (event.topicId != null && event.topicId!.isNotEmpty) {
-        showAdminTopicDetailsModal(context, topicId: event.topicId!);
-      } else {
-        showAdminSlotDetailsModal(context, slotId: event.id);
-      }
-    } else {
-      if (isWorkshop) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => WorkshopDetailsScreen(workshop: event.toWorkshopItem()),
-          ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SessionDetailsScreen(session: event.toSessionItem()),
-          ),
-        );
-      }
-    }
   }
 
   Widget _buildBadgeChip(Color bg, Color color, IconData icon, String text) {
