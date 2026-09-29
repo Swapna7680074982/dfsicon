@@ -452,6 +452,10 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       sessionCategories.addAll(catSet.toList()..sort());
     }
 
+    if (_selectedSessionCategory != 'All Categories' && !sessionCategories.contains(_selectedSessionCategory)) {
+      _selectedSessionCategory = 'All Categories';
+    }
+
     final timelineItems = _buildTimelineItems(activeDate, effectiveEvents);
 
     String titleText;
@@ -981,6 +985,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
           return GestureDetector(
             onTap: () => setState(() {
               _selectedDayIndex = index;
+              _selectedSessionCategory = 'All Categories';
             }),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -1340,6 +1345,17 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                     if (event.hallName != null && event.hallName!.isNotEmpty)
                       _buildHallBadge(event.hallName!),
 
+                    // Category Badge
+                    if (event.category != null &&
+                        event.category!.trim().isNotEmpty &&
+                        event.category!.toLowerCase() != 'scientific session' &&
+                        event.category!.toLowerCase() != 'my presentation' &&
+                        event.category!.toLowerCase() != 'available slot' &&
+                        event.category!.toLowerCase() != 'cancelled slot' &&
+                        event.category!.toLowerCase() != 'all' &&
+                        event.category!.toLowerCase() != 'all categories')
+                      _buildCategoryBadge(event.category!.trim()),
+
                     // Workshop Code
                     if (event.workshopCode != null && event.workshopCode!.isNotEmpty)
                       _buildWorkshopCodeBadge(event.workshopCode!),
@@ -1489,6 +1505,38 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         border: Border.all(color: const Color(0xFFE9D5FF)),
       ),
       child: Text(code, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF7E22CE))),
+    );
+  }
+
+  Widget _buildCategoryBadge(String category) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 240),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.category_outlined, size: 10, color: Color(0xFF16A34A)),
+          const SizedBox(width: 3.5),
+          Flexible(
+            child: Text(
+              category,
+              style: const TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF15803D),
+                letterSpacing: 0.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1644,16 +1692,16 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             Text(
               speakerNamesList.join(', '),
               style: const TextStyle(
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
-                height: 1.25,
+                height: 1.35,
               ),
-              maxLines: 2,
+              maxLines: 4,
               overflow: TextOverflow.ellipsis,
             ),
           ],

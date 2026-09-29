@@ -524,12 +524,33 @@ class CalendarDataService {
               }
             }
           }
+          if (topicCategory == null && slot.sessions.isNotEmpty) {
+            for (final sess in slot.sessions) {
+              if (sess.topicId.isNotEmpty) {
+                for (final t in adminProv.topics) {
+                  if (t.topicId.trim() == sess.topicId.trim() && t.categoryOfSubmission.isNotEmpty) {
+                    topicCategory = t.categoryOfSubmission;
+                    break;
+                  }
+                }
+              }
+              if (topicCategory != null) break;
+            }
+          }
           if (topicCategory == null && hasTopic) {
             for (final t in adminProv.topics) {
               if (t.title.trim().toLowerCase() == slotTopicTitle.toLowerCase()) {
                 if (t.categoryOfSubmission.isNotEmpty) {
                   topicCategory = t.categoryOfSubmission;
                 }
+                break;
+              }
+            }
+          }
+          if (topicCategory == null && matchedSession?.topicId != null && matchedSession!.topicId!.isNotEmpty) {
+            for (final t in adminProv.topics) {
+              if (t.topicId.trim() == matchedSession.topicId!.trim() && t.categoryOfSubmission.isNotEmpty) {
+                topicCategory = t.categoryOfSubmission;
                 break;
               }
             }
