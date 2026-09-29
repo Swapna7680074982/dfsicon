@@ -187,7 +187,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             imgFile = File(photoProvider.imagePath!);
                           }
 
-                          final success = await authProvider.updateProfileApi(
+                          final errorMessage = await authProvider.updateProfileApi(
                             fields: fields,
                             profileImage: imgFile,
                           );
@@ -197,7 +197,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           });
 
                           if (mounted) {
-                            if (success) {
+                            if (errorMessage == null) {
                               photoProvider.clearImage();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -209,8 +209,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               Navigator.pop(context);
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Failed to update profile. Please try again.'),
+                                SnackBar(
+                                  content: Text(errorMessage),
                                   behavior: SnackBarBehavior.floating,
                                   backgroundColor: Colors.redAccent,
                                 ),

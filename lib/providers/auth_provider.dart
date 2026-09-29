@@ -610,11 +610,11 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updateProfileApi({
+  Future<String?> updateProfileApi({
     required Map<String, String> fields,
     File? profileImage,
   }) async {
-    if (_accessToken.isEmpty) return false;
+    if (_accessToken.isEmpty) return 'Session expired. Please log in again.';
     try {
       final response = await ApiService.updateProfile(
         fields: fields,
@@ -623,19 +623,52 @@ class AuthProvider with ChangeNotifier {
       );
       if (response.statusCode == 401) {
         MyApp.redirectToLogin();
-        return false;
+        return 'Session expired. Please log in again.';
       }
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
           await fetchMyProfile();
-          return true;
+          return null; // success
+        }
+        if (data['message'] != null && data['message'].toString().trim().isNotEmpty) {
+          return data['message'].toString().trim();
         }
       }
-      return false;
+
+      // Parse error details from response body (e.g. status 400, 422, etc.)
+      try {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) {
+          if (data['errors'] is Map) {
+            final errors = data['errors'] as Map;
+            final errorMessages = <String>[];
+            errors.forEach((key, val) {
+              if (val is List && val.isNotEmpty) {
+                errorMessages.add(val.first.toString());
+              } else if (val != null) {
+                errorMessages.add(val.toString());
+              }
+            });
+            if (errorMessages.isNotEmpty) {
+              return errorMessages.join(', ');
+            }
+          } else if (data['errors'] is List && (data['errors'] as List).isNotEmpty) {
+            return (data['errors'] as List).map((e) => e.toString()).join(', ');
+          }
+          if (data['message'] != null && data['message'].toString().trim().isNotEmpty) {
+            return data['message'].toString().trim();
+          }
+          if (data['error'] != null && data['error'].toString().trim().isNotEmpty) {
+            return data['error'].toString().trim();
+          }
+        }
+      } catch (_) {}
+
+      return 'Failed to update profile. Please check the entered details.';
     } catch (e, stack) {
       CustomLogger.logError('Update profile failed', e, stack);
-      return false;
+      return 'Network error occurred. Please try again.';
     }
   }
 

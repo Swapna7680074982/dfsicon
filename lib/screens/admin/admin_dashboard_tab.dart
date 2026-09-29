@@ -203,13 +203,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
 
         final overviewFuture = admin.fetchFootfallOverview(auth.accessToken, summitId: 1);
 
-        // Fetch stats for all sponsors to compute Top 10
+        // Fetch stats for all sponsors to compute Top 10 (overall all dates)
         final List<Future<_TopExhibitorRankItem>> statsFutures = admin.sponsors.map((sp) async {
           try {
             final stats = await admin.fetchSponsorBoothStats(
               auth.accessToken,
               sponsorId: sp.sponsorId,
-              date: _selectedFootfallDate,
+              date: null,
             );
             final uniqueCount = stats?.summary.uniqueVisitors ?? 0;
             final totalCount = stats?.summary.totalVisits ?? 0;
@@ -227,11 +227,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
         final overview = await overviewFuture;
         final rankResults = await Future.wait(statsFutures);
 
-        // Sort descending by highest visits
+        // Sort descending by highest visits, then alphabetical A-Z by company name if counts are equal
         rankResults.sort((a, b) {
           final cmp = b.uniqueVisitors.compareTo(a.uniqueVisitors);
           if (cmp != 0) return cmp;
-          return b.totalVisits.compareTo(a.totalVisits);
+          final cmpTotal = b.totalVisits.compareTo(a.totalVisits);
+          if (cmpTotal != 0) return cmpTotal;
+          return a.sponsor.companyName.trim().toLowerCase().compareTo(b.sponsor.companyName.trim().toLowerCase());
         });
 
         if (mounted) {
@@ -2992,112 +2994,51 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-
-              // Date Filter Button (Beside Search Box)
-              InkWell(
-                onTap: () => _pickFootfallDate(context),
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  height: 42,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: _selectedFootfallDate != null ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _selectedFootfallDate != null ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 14,
-                        color: _selectedFootfallDate != null ? const Color(0xFF059669) : const Color(0xFF64748B),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        _selectedFootfallDate != null ? TimeFormatter.formatDate(_selectedFootfallDate!) : 'Date',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: _selectedFootfallDate != null ? const Color(0xFF047857) : const Color(0xFF64748B),
-                        ),
-                      ),
-                      if (_selectedFootfallDate != null) ...[
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedFootfallDate = null;
-                            });
-                            _loadFootfallData(reset: true);
-                          },
-                          child: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF059669)),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
               if (!isAllMode) ...[
                 const SizedBox(width: 8),
-                // Export / Download Report Button (Inside only for Admin, auto-disabled when no data)
+                // Date Filter Button (Beside Search Box)
                 InkWell(
-                  onTap: _footfallParticipants.isNotEmpty
-                      ? () {
-                          final total = _footfallParticipants.length;
-                          final speakers = _footfallParticipants
-                              .where((p) => p.role.toUpperCase() == 'SK' || p.roleLabel.toLowerCase().contains('speaker'))
-                              .length;
-                          final delegates = total - speakers;
-
-                          FootfallReportService.showDownloadReportModal(
-                            context: context,
-                            totalCount: total,
-                            speakersCount: speakers,
-                            delegatesCount: delegates,
-                            onDownload: (filter) async {
-                              await FootfallReportService.downloadAdminFootfallReport(
-                                context: context,
-                                participants: _footfallParticipants,
-                                filter: filter,
-                                sponsorName: currentSponsor?.companyName,
-                              );
-                            },
-                          );
-                        }
-                      : null,
+                  onTap: () => _pickFootfallDate(context),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     height: 42,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
-                      color: _footfallParticipants.isNotEmpty ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                      color: _selectedFootfallDate != null ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _footfallParticipants.isNotEmpty ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                        color: _selectedFootfallDate != null ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.file_download_outlined,
+                          Icons.calendar_today_rounded,
                           size: 14,
-                          color: _footfallParticipants.isNotEmpty ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+                          color: _selectedFootfallDate != null ? const Color(0xFF059669) : const Color(0xFF64748B),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Text(
-                          'Report',
+                          _selectedFootfallDate != null ? TimeFormatter.formatDate(_selectedFootfallDate!) : 'Date',
                           style: TextStyle(
                             fontSize: 11.5,
-                            fontWeight: FontWeight.bold,
-                            color: _footfallParticipants.isNotEmpty ? const Color(0xFF047857) : const Color(0xFF94A3B8),
+                            fontWeight: FontWeight.w600,
+                            color: _selectedFootfallDate != null ? const Color(0xFF047857) : const Color(0xFF64748B),
                           ),
                         ),
+                        if (_selectedFootfallDate != null) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedFootfallDate = null;
+                              });
+                              _loadFootfallData(reset: true);
+                            },
+                            child: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF059669)),
+                          ),
+                        ],
                       ],
                     ),
                   ),
