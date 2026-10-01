@@ -3713,37 +3713,41 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   ),
                 ),
               ),
-              InkWell(
-                onTap: () => _showVisitedAllBoothsSheet(context, admin, auth),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.military_tech_rounded, size: 13, color: Color(0xFF34D399)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'All-Booths (${overview.visitedAllBoothsCount})',
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF34D399),
-                        ),
+              ElevatedButton.icon(
+                onPressed: () => _showVisitedAllBoothsSheet(context, admin, auth),
+                icon: const Icon(Icons.military_tech_rounded, size: 14, color: Colors.white),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'All Booths (${overview.visitedAllBoothsCount})',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.chevron_right_rounded, size: 14, color: Colors.white),
+                  ],
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  elevation: 2,
+                  shadowColor: const Color(0xFF10B981).withValues(alpha: 0.5),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // 6 Stats Grid (2 rows x 3 columns)
+          const SizedBox(height: 14),
+          // 2 Stats Grid (Sponsors & Total Visits)
           Row(
             children: [
               Expanded(
@@ -3754,53 +3758,13 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
                   value: '${overview.totalSponsors}',
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildOverviewMetricItem(
-                  icon: Icons.storefront_rounded,
-                  iconColor: const Color(0xFF38BDF8),
-                  label: 'Total Booths',
-                  value: '${overview.totalBooths}',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildOverviewMetricItem(
-                  icon: Icons.check_circle_outline_rounded,
-                  iconColor: const Color(0xFF34D399),
-                  label: 'Assigned',
-                  value: '${overview.assignedBooths}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildOverviewMetricItem(
-                  icon: Icons.meeting_room_outlined,
-                  iconColor: const Color(0xFFFBBF24),
-                  label: 'Free Booths',
-                  value: '${overview.freeBooths}',
-                ),
-              ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildOverviewMetricItem(
                   icon: Icons.visibility_rounded,
                   iconColor: const Color(0xFFC084FC),
                   label: 'Total Visits',
                   value: '${overview.totalVisits > 0 ? overview.totalVisits : overview.uniqueVisitors}',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildOverviewMetricItem(
-                  icon: Icons.military_tech_rounded,
-                  iconColor: const Color(0xFFF43F5E),
-                  label: 'Visited All',
-                  value: '${overview.visitedAllBoothsCount}',
                 ),
               ),
             ],
@@ -3848,24 +3812,24 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
     required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 12, color: iconColor),
-              const SizedBox(width: 4),
+              Icon(icon, size: 14, color: iconColor),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 8.5,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF94A3B8),
                   ),
@@ -3875,11 +3839,11 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> with SingleTicker
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
