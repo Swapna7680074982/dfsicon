@@ -159,7 +159,7 @@ class _GalleryTabState extends State<GalleryTab> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                'Sessions',
+                                'All Photos',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -844,6 +844,7 @@ class _GalleryTabState extends State<GalleryTab> {
     final images = await galProvider.fetchGalleryImages(
       accessToken: authProvider.accessToken,
       galleryDayId: day.galleryDayId,
+      page: 1,
     );
 
     if (!mounted) return;
@@ -856,6 +857,8 @@ class _GalleryTabState extends State<GalleryTab> {
         builder: (context) => GalleryDetailScreen(
           title: day.dayTitle,
           photos: photoUrls,
+          images: images,
+          galleryDayId: day.galleryDayId,
         ),
       ),
     );
@@ -888,6 +891,7 @@ class _GalleryTabState extends State<GalleryTab> {
         builder: (context) => GalleryDetailScreen(
           title: face.fullName,
           photos: photoUrls,
+          images: images,
         ),
       ),
     );
@@ -927,6 +931,7 @@ class _GalleryTabState extends State<GalleryTab> {
           builder: (context) => GalleryDetailScreen(
             title: title,
             photos: photoUrls,
+            images: images,
           ),
         ),
       );
