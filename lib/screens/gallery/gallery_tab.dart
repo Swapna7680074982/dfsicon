@@ -657,8 +657,8 @@ class GalleryTabState extends State<GalleryTab> {
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 16,
-          mainAxisSpacing: 24,
-          childAspectRatio: 0.70,
+          mainAxisSpacing: 20,
+          childAspectRatio: 0.75,
         ),
         itemCount: filteredFaces.length,
         itemBuilder: (context, index) {
@@ -783,26 +783,14 @@ class GalleryTabState extends State<GalleryTab> {
                 Text(
                   f.fullName,
                   textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                     color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  f.designation.isNotEmpty
-                      ? f.designation
-                      : (f.roleCode == 'SK' ? 'Speaker' : 'Delegate'),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                    height: 1.25,
                   ),
                 ),
               ],
