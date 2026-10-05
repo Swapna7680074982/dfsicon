@@ -207,6 +207,7 @@ class PersonGallery {
 
 class GalleryProvider with ChangeNotifier {
   List<GalleryDay> _days = [];
+  List<GalleryFace> _allFaces = [];
   List<GalleryFace> _faces = [];
   bool _isLoadingDays = false;
   bool _isLoadingFaces = false;
@@ -215,6 +216,7 @@ class GalleryProvider with ChangeNotifier {
 
   List<GalleryDay> get days => _days;
   List<GalleryFace> get faces => _faces;
+  List<GalleryFace> get allFaces => _allFaces;
   bool get isLoadingDays => _isLoadingDays;
   bool get isLoadingFaces => _isLoadingFaces;
   String? get daysError => _daysError;
@@ -286,7 +288,19 @@ class GalleryProvider with ChangeNotifier {
     bool forceRefresh = false,
   }) async {
     if (accessToken.isEmpty) return false;
-    if (_faces.isNotEmpty && (search == null || search.isEmpty) && !forceRefresh && !_isLoadingFaces) return true;
+
+    final isSearching = search != null && search.trim().isNotEmpty;
+
+    // If clearing search and we already have all faces, restore them instantly
+    if (!isSearching && !forceRefresh && _allFaces.isNotEmpty) {
+      _faces = List.from(_allFaces);
+      _isLoadingFaces = false;
+      _facesError = null;
+      notifyListeners();
+      return true;
+    }
+
+    if (!isSearching && _allFaces.isNotEmpty && !forceRefresh && !_isLoadingFaces) return true;
 
     _isLoadingFaces = true;
     _facesError = null;
@@ -303,7 +317,13 @@ class GalleryProvider with ChangeNotifier {
         final data = json.decode(response.body);
         if (data['status'] == true && data['data'] != null) {
           final List list = data['data'];
-          _faces = list.map((item) => GalleryFace.fromJson(item)).toList();
+          final parsed = list.map((item) => GalleryFace.fromJson(item)).toList();
+          if (!isSearching) {
+            _allFaces = List.from(parsed);
+            _faces = List.from(parsed);
+          } else {
+            _faces = parsed;
+          }
           _isLoadingFaces = false;
           notifyListeners();
           return true;

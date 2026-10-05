@@ -12,18 +12,19 @@ class GalleryTab extends StatefulWidget {
   const GalleryTab({super.key, this.isStandalone = false});
 
   @override
-  State<GalleryTab> createState() => _GalleryTabState();
+  State<GalleryTab> createState() => GalleryTabState();
 }
 
-class _GalleryTabState extends State<GalleryTab> {
+class GalleryTabState extends State<GalleryTab> {
   int _selectedSegment = 0;
   
   // People selection states
   bool _isPeopleSelectMode = false;
   final Set<GalleryFace> _selectedPeople = {};
 
-  // Search state for People tab
+  // Search state
   bool _isSearching = false;
+  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -59,6 +60,19 @@ class _GalleryTabState extends State<GalleryTab> {
         forceRefresh: true,
       );
     }
+  }
+
+  List<GalleryFace> _getFilteredFaces(List<GalleryFace> faces) {
+    if (_searchQuery.trim().isEmpty) return faces;
+    final q = _searchQuery.trim().toLowerCase();
+    return faces.where((face) {
+      final nameMatch = face.fullName.toLowerCase().contains(q);
+      final desigMatch = face.designation.toLowerCase().contains(q);
+      final orgMatch = face.organisationName.toLowerCase().contains(q);
+      final roleMatch = (face.roleCode == 'SK' ? 'speaker' : 'delegate').toLowerCase().contains(q);
+      final meMatch = face.isMe && ('you'.contains(q) || 'me'.contains(q));
+      return nameMatch || desigMatch || orgMatch || roleMatch || meMatch;
+    }).toList();
   }
 
   void _toggleSelectPerson(GalleryFace f) {
@@ -150,6 +164,8 @@ class _GalleryTabState extends State<GalleryTab> {
                                 _selectedSegment = 0;
                                 _exitPeopleSelectMode();
                                 _isSearching = false;
+                                _searchQuery = '';
+                                _searchController.clear();
                               });
                             },
                             child: Container(
@@ -199,16 +215,20 @@ class _GalleryTabState extends State<GalleryTab> {
                           controller: _searchController,
                           autofocus: true,
                           decoration: InputDecoration(
-                            hintText: 'Search people by name...',
+                            hintText: 'Search people by name, designation...',
                             hintStyle: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
                             prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                _onSearchFaces('');
-                              },
-                            ),
+                            suffixIcon: _searchController.text.isNotEmpty || _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {
+                                        _searchQuery = '';
+                                      });
+                                    },
+                                  )
+                                : null,
                             filled: true,
                             fillColor: Colors.grey.shade100,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -217,7 +237,16 @@ class _GalleryTabState extends State<GalleryTab> {
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          onSubmitted: _onSearchFaces,
+                          onChanged: (val) {
+                            setState(() {
+                              _searchQuery = val;
+                            });
+                          },
+                          onSubmitted: (val) {
+                            setState(() {
+                              _searchQuery = val;
+                            });
+                          },
                         ),
                       ],
                     ],
@@ -363,6 +392,7 @@ class _GalleryTabState extends State<GalleryTab> {
                     _isSearching = !_isSearching;
                     if (!_isSearching) {
                       _searchController.clear();
+                      _searchQuery = '';
                       _onSearchFaces('');
                     }
                   });
@@ -527,13 +557,15 @@ class _GalleryTabState extends State<GalleryTab> {
 
   // --- People Grid Builder ---
   Widget _buildPeopleGrid(GalleryProvider galProvider) {
-    if (galProvider.isLoadingFaces && galProvider.faces.isEmpty) {
+    final sourceFaces = galProvider.allFaces.isNotEmpty ? galProvider.allFaces : galProvider.faces;
+
+    if (galProvider.isLoadingFaces && sourceFaces.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
-    if (galProvider.faces.isEmpty) {
+    if (sourceFaces.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async => _loadData(force: true),
         color: AppColors.primary,
@@ -569,6 +601,53 @@ class _GalleryTabState extends State<GalleryTab> {
       );
     }
 
+    final filteredFaces = _getFilteredFaces(sourceFaces);
+
+    if (filteredFaces.isEmpty && _searchQuery.isNotEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async => _loadData(force: true),
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: 400,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_search_outlined, size: 56, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No people found matching "$_searchQuery"',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try searching with a different name, designation, or role',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Clear Search'),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () async => _loadData(force: true),
       color: AppColors.primary,
@@ -581,9 +660,9 @@ class _GalleryTabState extends State<GalleryTab> {
           mainAxisSpacing: 24,
           childAspectRatio: 0.70,
         ),
-        itemCount: galProvider.faces.length,
+        itemCount: filteredFaces.length,
         itemBuilder: (context, index) {
-          final f = galProvider.faces[index];
+          final f = filteredFaces[index];
           final isSelected = _selectedPeople.contains(f);
 
           return GestureDetector(
@@ -829,6 +908,20 @@ class _GalleryTabState extends State<GalleryTab> {
     );
   }
 
+  void refreshTab() {
+    _resetSearchAndRefresh();
+  }
+
+  void _resetSearchAndRefresh() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+      _exitPeopleSelectMode();
+    });
+    _loadData(force: true);
+  }
+
   // --- API Triggers ---
   void _openDayGallery(GalleryDay day) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -851,7 +944,7 @@ class _GalleryTabState extends State<GalleryTab> {
     navigator.pop(); // Close loader
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GalleryDetailScreen(
@@ -862,6 +955,9 @@ class _GalleryTabState extends State<GalleryTab> {
         ),
       ),
     );
+
+    if (!mounted) return;
+    _resetSearchAndRefresh();
   }
 
   void _openFaceGallery(GalleryFace face) async {
@@ -885,7 +981,7 @@ class _GalleryTabState extends State<GalleryTab> {
     navigator.pop(); // Close loader
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GalleryDetailScreen(
@@ -895,6 +991,9 @@ class _GalleryTabState extends State<GalleryTab> {
         ),
       ),
     );
+
+    if (!mounted) return;
+    _resetSearchAndRefresh();
   }
 
   void _filterPhotosBySelectedPeople() async {
@@ -925,7 +1024,7 @@ class _GalleryTabState extends State<GalleryTab> {
     final title = _getFilteredTitle(list);
 
     if (photoUrls.isNotEmpty) {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => GalleryDetailScreen(
@@ -935,6 +1034,9 @@ class _GalleryTabState extends State<GalleryTab> {
           ),
         ),
       );
+
+      if (!mounted) return;
+      _resetSearchAndRefresh();
     } else {
       showDialog(
         context: context,

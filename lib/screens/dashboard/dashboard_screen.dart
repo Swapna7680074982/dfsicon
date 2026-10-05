@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPressTime;
   String? _lastRoleCode;
+  final GlobalKey<GalleryTabState> _galleryKey = GlobalKey<GalleryTabState>();
 
   @override
   void initState() {
@@ -190,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SpeakerAbstractTab(),
             const SpeakerSessionsTab(),
             const NetworkTab(),
-            const GalleryTab(),
+            GalleryTab(key: _galleryKey),
           ]
         : [
             HomeTab(
@@ -203,7 +204,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SessionsTab(),
             const NetworkTab(),
             const ExploreTab(),
-            const GalleryTab(),
+            GalleryTab(key: _galleryKey),
           ];
 
     final List<BottomNavigationBarItem> barItems = isSpeaker
@@ -388,6 +389,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               setState(() {
                 _currentIndex = index;
               });
+              if (index == 4) {
+                _galleryKey.currentState?.refreshTab();
+              }
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,

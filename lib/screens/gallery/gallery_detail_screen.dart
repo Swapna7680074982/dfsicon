@@ -570,6 +570,32 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey.shade100,
+                          child: Center(
+                            child: SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -789,18 +815,64 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                         });
                       },
                       itemBuilder: (context, index) {
+                        final item = _items[index];
                         return InteractiveViewer(
                           clipBehavior: Clip.none,
                           maxScale: 4.0,
                           minScale: 1.0,
                           child: Center(
-                            child: Image.network(
-                              _items[index].imageUrl,
-                              cacheWidth: 2560,
-                              filterQuality: FilterQuality.high,
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                              height: double.infinity,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Low-res thumbnail backdrop while high-res image loads
+                                if (item.thumbnailUrl.isNotEmpty && item.thumbnailUrl != item.imageUrl)
+                                  Image.network(
+                                    item.thumbnailUrl,
+                                    fit: BoxFit.contain,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                  ),
+                                // High-res image with white loading spinner
+                                Image.network(
+                                  item.imageUrl,
+                                  cacheWidth: 2560,
+                                  filterQuality: FilterQuality.high,
+                                  fit: BoxFit.contain,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: SizedBox(
+                                        width: 36,
+                                        height: 36,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Failed to load image',
+                                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
