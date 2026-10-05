@@ -981,6 +981,10 @@ class GalleryTabState extends State<GalleryTab> {
     navigator.pop(); // Close loader
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
+    final msg = (galProvider.lastMatchMessage != null && galProvider.lastMatchMessage!.trim().isNotEmpty)
+        ? galProvider.lastMatchMessage!
+        : 'No photos found for the selected people';
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -988,6 +992,7 @@ class GalleryTabState extends State<GalleryTab> {
           title: face.fullName,
           photos: photoUrls,
           images: images,
+          emptyMessage: msg,
         ),
       ),
     );
@@ -1022,56 +1027,23 @@ class GalleryTabState extends State<GalleryTab> {
 
     final photoUrls = images.map((e) => e.imageUrl).where((url) => url.isNotEmpty).toList();
     final title = _getFilteredTitle(list);
+    final msg = (galProvider.lastMatchMessage != null && galProvider.lastMatchMessage!.trim().isNotEmpty)
+        ? galProvider.lastMatchMessage!
+        : 'No photos found for the selected people';
 
-    if (photoUrls.isNotEmpty) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => GalleryDetailScreen(
-            title: title,
-            photos: photoUrls,
-            images: images,
-          ),
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GalleryDetailScreen(
+          title: title,
+          photos: photoUrls,
+          images: images,
+          emptyMessage: msg,
         ),
-      );
+      ),
+    );
 
-      if (!mounted) return;
-      _resetSearchAndRefresh();
-    } else {
-      showDialog(
-        context: context,
-        builder: (dialogContext) => BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            backgroundColor: Colors.white,
-            title: const Row(
-              children: [
-                Icon(Icons.face_retouching_natural_outlined, color: AppColors.primary, size: 28),
-                SizedBox(width: 10),
-                Text(
-                  'No Common Photos',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ],
-            ),
-            content: Text(
-              'We couldn\'t find photos where all ${list.length} selected individuals are present together.',
-              style: const TextStyle(fontSize: 14, height: 1.4, color: AppColors.textSecondary),
-            ),
-            actionsAlignment: MainAxisAlignment.end,
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    if (!mounted) return;
+    _resetSearchAndRefresh();
   }
 }

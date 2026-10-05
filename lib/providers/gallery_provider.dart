@@ -213,6 +213,7 @@ class GalleryProvider with ChangeNotifier {
   bool _isLoadingFaces = false;
   String? _daysError;
   String? _facesError;
+  String? _lastMatchMessage;
 
   List<GalleryDay> get days => _days;
   List<GalleryFace> get faces => _faces;
@@ -221,6 +222,7 @@ class GalleryProvider with ChangeNotifier {
   bool get isLoadingFaces => _isLoadingFaces;
   String? get daysError => _daysError;
   String? get facesError => _facesError;
+  String? get lastMatchMessage => _lastMatchMessage;
 
   // Backward compatibility getters
   List<SessionGallery> get sessions => _days.map((d) => SessionGallery(
@@ -383,8 +385,12 @@ class GalleryProvider with ChangeNotifier {
         requireAll: requireAll,
       );
 
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic>) {
+        _lastMatchMessage = data['message']?.toString() ?? data['error']?.toString();
+      }
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
         if (data['status'] == true && data['data'] != null) {
           final List list = data['data'];
           return list.map((item) => GalleryImage.fromJson(item)).toList();

@@ -36,6 +36,7 @@ class GalleryDetailScreen extends StatefulWidget {
   final List<String>? photos;
   final List<GalleryImage>? images;
   final dynamic galleryDayId;
+  final String? emptyMessage;
 
   const GalleryDetailScreen({
     super.key,
@@ -43,6 +44,7 @@ class GalleryDetailScreen extends StatefulWidget {
     this.photos,
     this.images,
     this.galleryDayId,
+    this.emptyMessage,
   });
 
   @override
@@ -171,6 +173,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (_items.isEmpty) {
+      final message = widget.emptyMessage ?? 'No photos found for the selected people';
       return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -181,7 +184,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            widget.title.toUpperCase(),
+            widget.title,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -189,10 +192,37 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
             ),
           ),
         ),
-        body: const Center(
-          child: Text(
-            'NO PHOTOS AVAILABLE',
-            style: TextStyle(color: AppColors.textSecondary),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.photo_library_outlined,
+                    size: 56,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
