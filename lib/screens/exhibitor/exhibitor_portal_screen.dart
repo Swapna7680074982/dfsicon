@@ -19,6 +19,7 @@ import '../../services/footfall_report_service.dart';
 import 'exhibitor_live_scanner_screen.dart';
 import 'exhibitor_participant_detail_modal.dart';
 import '../../services/app_version_service.dart';
+import '../gallery/gallery_tab.dart';
 
 class ExhibitorPortalScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -251,9 +252,9 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 5,
+      length: 6,
       vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, 4),
+      initialIndex: widget.initialTabIndex.clamp(0, 5),
     );
     _lastTabIndex = _tabController.index;
     _tabController.addListener(_handleTabChange);
@@ -489,89 +490,156 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
-          child: Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              padding: EdgeInsets.zero,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-              indicatorColor: const Color(0xFF4F46E5),
-              indicatorWeight: 2.8,
-              indicatorSize: TabBarIndicatorSize.label,
-              labelColor: const Color(0xFF4F46E5),
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(
-                fontSize: 13.0,
-                fontWeight: FontWeight.bold,
+          child: Stack(
+            alignment: Alignment.centerRight,
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  padding: const EdgeInsets.only(right: 36),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                  indicatorColor: const Color(0xFF4F46E5),
+                  indicatorWeight: 2.8,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelColor: const Color(0xFF4F46E5),
+                  unselectedLabelColor: AppColors.textSecondary,
+                  labelStyle: const TextStyle(
+                    fontSize: 13.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 13.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.qr_code_scanner_rounded, size: 16),
+                          SizedBox(width: 5),
+                          Text('Scan & Visitors'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.photo_library_rounded, size: 16),
+                          SizedBox(width: 5),
+                          Text('Gallery'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_month_rounded, size: 16),
+                          SizedBox(width: 5),
+                          Text('Full Agenda'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.record_voice_over_rounded, size: 16),
+                          SizedBox(width: 5),
+                          Text('Speakers'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.people_alt_rounded, size: 16),
+                          SizedBox(width: 5),
+                          Text('Delegates'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.storefront_rounded, size: 16),
+                          SizedBox(width: 5),
+                          Text('Exhibitors'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 13.0,
-                fontWeight: FontWeight.w500,
+              // Right edge fade gradient with scroll arrow indicator
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 1,
+                child: GestureDetector(
+                  onTap: () {
+                    if (_tabController.index < _tabController.length - 1) {
+                      _tabController.animateTo(_tabController.index + 1);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.only(left: 14, right: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.0),
+                          Colors.white.withValues(alpha: 0.95),
+                          Colors.white,
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFC7D2FE), width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4F46E5).withValues(alpha: 0.12),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 11,
+                          color: Color(0xFF4F46E5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              tabs: const [
-                Tab(
-                  iconMargin: EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.qr_code_scanner_rounded, size: 16),
-                      SizedBox(width: 5),
-                      Text('Scan & Visitors'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  iconMargin: EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.calendar_month_rounded, size: 16),
-                      SizedBox(width: 5),
-                      Text('Full Agenda'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  iconMargin: EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.record_voice_over_rounded, size: 16),
-                      SizedBox(width: 5),
-                      Text('Speakers'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  iconMargin: EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.people_alt_rounded, size: 16),
-                      SizedBox(width: 5),
-                      Text('Delegates'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  iconMargin: EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.storefront_rounded, size: 16),
-                      SizedBox(width: 5),
-                      Text('Exhibitors'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -581,19 +649,24 @@ class _ExhibitorPortalScreenState extends State<ExhibitorPortalScreen>
           // 1. Scanner & Visited Participants Tab
           _buildScannerAndVisitorsTab(auth, exhibitor, home),
 
-          // 2. Full Agenda (Master Schedule Calendar View)
+          // 2. Gallery Tab
+          const GalleryTab(
+            hideAppBar: true,
+          ),
+
+          // 3. Full Agenda (Master Schedule Calendar View)
           const EventCalendarScreen(
             role: CalendarRole.exhibitor,
             hideAppBar: true,
           ),
 
-          // 3. Speakers Tab (Admin UI)
+          // 4. Speakers Tab (Admin UI)
           _buildSpeakersTab(auth, admin),
 
-          // 4. Delegates Tab (Admin UI)
+          // 5. Delegates Tab (Admin UI)
           _buildDelegatesTab(auth, admin),
 
-          // 5. Exhibitors Tab (Admin UI)
+          // 6. Exhibitors Tab (Admin UI)
           _buildSponsorsTab(auth, admin),
         ],
       ),

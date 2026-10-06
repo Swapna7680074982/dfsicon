@@ -9,7 +9,8 @@ import '../../widgets/water_droplets_background.dart';
 
 class GalleryTab extends StatefulWidget {
   final bool isStandalone;
-  const GalleryTab({super.key, this.isStandalone = false});
+  final bool hideAppBar;
+  const GalleryTab({super.key, this.isStandalone = false, this.hideAppBar = false});
 
   @override
   State<GalleryTab> createState() => GalleryTabState();
@@ -207,6 +208,44 @@ class GalleryTabState extends State<GalleryTab> {
                               ),
                             ),
                           ),
+                          if (widget.hideAppBar && !isSessions && !_isPeopleSelectMode) ...[
+                            const Spacer(),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                _isSearching ? Icons.search_off : Icons.search,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                              tooltip: 'Search People',
+                              onPressed: () {
+                                setState(() {
+                                  _isSearching = !_isSearching;
+                                  if (!_isSearching) {
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                    _onSearchFaces('');
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 14),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(Icons.library_add_check_outlined, color: AppColors.primary, size: 22),
+                              tooltip: 'Select Multiple People',
+                              onPressed: () {
+                                setState(() {
+                                  _isPeopleSelectMode = true;
+                                  _selectedPeople.clear();
+                                });
+                              },
+                            ),
+                          ],
                         ],
                       ),
                       if (!isSessions && _isSearching) ...[
@@ -308,7 +347,7 @@ class GalleryTabState extends State<GalleryTab> {
   }
 
   // --- AppBar Handler ---
-  PreferredSizeWidget _buildAppBar(GalleryProvider galProvider) {
+  PreferredSizeWidget? _buildAppBar(GalleryProvider galProvider) {
     if (_isPeopleSelectMode && _selectedSegment == 1) {
       return AppBar(
         flexibleSpace: Container(
@@ -349,6 +388,10 @@ class GalleryTabState extends State<GalleryTab> {
           const SizedBox(width: 8),
         ],
       );
+    }
+
+    if (widget.hideAppBar) {
+      return null;
     }
 
     return AppBar(
