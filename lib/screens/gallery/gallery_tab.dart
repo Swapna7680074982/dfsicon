@@ -532,6 +532,7 @@ class GalleryTabState extends State<GalleryTab> {
                 children: [
                   Image.network(
                     day.coverUrl,
+                    cacheWidth: 600,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey.shade300,
@@ -751,6 +752,8 @@ class GalleryTabState extends State<GalleryTab> {
                             children: [
                               Image.network(
                                 f.photoUrl,
+                                cacheWidth: 200,
+                                cacheHeight: 200,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 height: double.infinity,

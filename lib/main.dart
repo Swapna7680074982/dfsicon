@@ -25,6 +25,9 @@ import 'screens/exhibitor/exhibitor_portal_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Prevent OOM crashes when browsing hundreds of images in Gallery
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20; // 100 MB max image cache
+  PaintingBinding.instance.imageCache.maximumSize = 100; // max 100 cached images
   await FcmService.initialize();
   runApp(const MyApp());
 }

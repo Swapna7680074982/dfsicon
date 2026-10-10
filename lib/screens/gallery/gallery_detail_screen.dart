@@ -351,217 +351,228 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
     );
   }
 
-  // --- Grid View Mode with Low-Memory Thumbnails & Manual Load More ---
+  // --- Grid View Mode with Low-Memory Thumbnails & Viewport Virtualization ---
   Widget _buildGridView() {
-    return SingleChildScrollView(
+    return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
               childAspectRatio: 1.0,
             ),
-            itemCount: _items.length,
-            itemBuilder: (context, index) {
-              final item = _items[index];
-              final isSelected = _selectedPhotos.contains(item.imageUrl);
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = _items[index];
+                final isSelected = _selectedPhotos.contains(item.imageUrl);
 
-              return GestureDetector(
-                onTap: () {
-                  if (_isSelectMode) {
-                    _toggleSelectPhoto(item.imageUrl);
-                  } else {
-                    _openFullScreenViewer(index);
-                  }
-                },
-                onLongPress: () {
-                  if (!_isSelectMode) {
-                    _enterSelectMode(item.imageUrl);
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: isSelected
-                        ? Border.all(color: AppColors.primary, width: 3)
-                        : Border.all(color: Colors.transparent, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(isSelected ? 20 : 5),
-                        blurRadius: isSelected ? 8 : 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Net Thumbnail Image with high-DPI resolution
-                        Image.network(
-                          item.thumbnailUrl,
-                          cacheWidth: 700,
-                          cacheHeight: 700,
-                          filterQuality: FilterQuality.medium,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Colors.grey.shade100,
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                        : null,
-                                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                return GestureDetector(
+                  onTap: () {
+                    if (_isSelectMode) {
+                      _toggleSelectPhoto(item.imageUrl);
+                    } else {
+                      _openFullScreenViewer(index);
+                    }
+                  },
+                  onLongPress: () {
+                    if (!_isSelectMode) {
+                      _enterSelectMode(item.imageUrl);
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: isSelected
+                          ? Border.all(color: AppColors.primary, width: 3)
+                          : Border.all(color: Colors.transparent, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(isSelected ? 20 : 5),
+                          blurRadius: isSelected ? 8 : 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Net Thumbnail Image with optimized memory footprint
+                          Image.network(
+                            item.thumbnailUrl,
+                            cacheWidth: 350,
+                            cacheHeight: 350,
+                            filterQuality: FilterQuality.low,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                                    ),
                                   ),
                                 ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.broken_image, color: Colors.grey),
+                            ),
+                          ),
+                          
+                          // Selection Overlay
+                          if (_isSelectMode) ...[
+                            // Transparent dark shade for unselected items in select mode to highlight selection
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              color: isSelected 
+                                  ? Colors.black.withAlpha(30)
+                                  : Colors.black.withAlpha(80),
+                            ),
+                            // Checkmark Indicator
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected ? AppColors.primary : Colors.white.withAlpha(160),
+                                  border: Border.all(
+                                    color: isSelected ? Colors.white : Colors.grey.shade400,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Icon(Icons.check, color: Colors.white, size: 14)
+                                    : null,
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.broken_image, color: Colors.grey),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+              childCount: _items.length,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
+            ),
+          ),
+        ),
+
+        // Explicit "LOAD MORE PHOTOS" Footer
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                if (_hasMore) ...[
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withAlpha(60),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoadingMore ? null : _loadMorePhotos,
+                        icon: _isLoadingMore
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.expand_more_rounded, size: 22, color: Colors.white),
+                        label: Text(
+                          _isLoadingMore ? 'LOADING PHOTOS...' : 'LOAD MORE PHOTOS',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            letterSpacing: 0.6,
+                            color: Colors.white,
                           ),
                         ),
-                        
-                        // Selection Overlay
-                        if (_isSelectMode) ...[
-                          // Transparent dark shade for unselected items in select mode to highlight selection
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            color: isSelected 
-                                ? Colors.black.withAlpha(30)
-                                : Colors.black.withAlpha(80),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppColors.primary.withAlpha(180),
+                          disabledForegroundColor: Colors.white70,
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
                           ),
-                          // Checkmark Indicator
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isSelected ? AppColors.primary : Colors.white.withAlpha(160),
-                                border: Border.all(
-                                  color: isSelected ? Colors.white : Colors.grey.shade400,
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: isSelected
-                                  ? const Icon(Icons.check, color: Colors.white, size: 14)
-                                  : null,
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 48), // Safe spacing above Android bottom navigation bar
+                ] else if (_items.length >= 15) ...[
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade300, width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'All ${_items.length} photos loaded',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // Explicit "LOAD MORE PHOTOS" Button
-          if (_hasMore) ...[
-            const SizedBox(height: 24),
-            Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(60),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: _isLoadingMore ? null : _loadMorePhotos,
-                  icon: _isLoadingMore
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.expand_more_rounded, size: 22, color: Colors.white),
-                  label: Text(
-                    _isLoadingMore ? 'LOADING PHOTOS...' : 'LOAD MORE PHOTOS',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      letterSpacing: 0.6,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.primary.withAlpha(180),
-                    disabledForegroundColor: Colors.white70,
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 48), // Safe spacing above Android bottom navigation bar
-          ] else if (_items.length >= 15) ...[
-            const SizedBox(height: 24),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey.shade300, width: 0.8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle, size: 16, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'All ${_items.length} photos loaded',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(height: 48), // Safe spacing above Android bottom navigation bar
+                ] else ...[
+                  const SizedBox(height: 36),
+                ],
+              ],
             ),
-            const SizedBox(height: 48), // Safe spacing above Android bottom navigation bar
-          ] else ...[
-            const SizedBox(height: 36),
-          ],
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -595,7 +606,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                     borderRadius: BorderRadius.circular(24),
                     child: Image.network(
                       activePhoto.imageUrl,
-                      cacheWidth: 1600,
+                      cacheWidth: 1200,
                       filterQuality: FilterQuality.medium,
                       fit: BoxFit.cover,
                       width: double.infinity,
@@ -858,6 +869,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                                 if (item.thumbnailUrl.isNotEmpty && item.thumbnailUrl != item.imageUrl)
                                   Image.network(
                                     item.thumbnailUrl,
+                                    cacheWidth: 400,
                                     fit: BoxFit.contain,
                                     width: double.infinity,
                                     height: double.infinity,
@@ -866,8 +878,8 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
                                 // High-res image with white loading spinner
                                 Image.network(
                                   item.imageUrl,
-                                  cacheWidth: 2560,
-                                  filterQuality: FilterQuality.high,
+                                  cacheWidth: 1600,
+                                  filterQuality: FilterQuality.medium,
                                   fit: BoxFit.contain,
                                   width: double.infinity,
                                   height: double.infinity,
